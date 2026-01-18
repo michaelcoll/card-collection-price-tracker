@@ -1,1 +1,1 @@
-# moxfield-price-tracker
+# card-collection-price-tracker

@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "scryfall-price-tracker",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
