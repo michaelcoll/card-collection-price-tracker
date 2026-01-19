@@ -4,7 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-  - package-ecosystem: "gomod"
+  - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "daily"
@@ -12,9 +12,3 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-  - package-ecosystem: "npm"
-    directory: "/internal/web"
-    schedule:
-      interval: "daily"
-    ignore:
-    - dependency-name: "next-auth"
