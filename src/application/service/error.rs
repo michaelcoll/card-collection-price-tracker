@@ -1,3 +1,4 @@
+use crate::application::repository::PersistenceError;
 use crate::domain::error::CardParsingError;
 use std::num::{ParseFloatError, ParseIntError};
 use std::str::ParseBoolError;
@@ -28,6 +29,12 @@ impl From<ParseBoolError> for ImportError {
 
 impl From<CardParsingError> for ImportError {
     fn from(err: CardParsingError) -> Self {
+        ImportError::ParseError(err.into())
+    }
+}
+
+impl From<PersistenceError> for ImportError {
+    fn from(err: PersistenceError) -> Self {
         ImportError::ParseError(err.into())
     }
 }
