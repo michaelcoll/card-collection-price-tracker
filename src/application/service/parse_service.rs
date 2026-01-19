@@ -26,21 +26,28 @@ fn split_line(line: &str) -> Vec<String> {
     fields
 }
 
-pub fn import_cards(csv: &str) -> Result<Vec<Card>, ImportError> {
+pub(crate) fn parse_cards(csv: &str) -> Result<Vec<Card>, ImportError> {
     let mut cards = Vec::new();
+
+    if csv.lines().count() <= 1 {
+        return Err(ImportError::WrongFormat(
+            "missing headers or empty file".to_string(),
+        ));
+    }
+
     for line in csv.lines().skip(1) {
         let fields: Vec<String> = split_line(line);
         let field_refs: Vec<&str> = fields.iter().map(|s| s.as_str()).collect();
 
         if fields.len() == 15 {
             return Err(ImportError::WrongFormat(
-                "Expecting a collection export, got a binder export".to_string(),
+                "expecting a collection export, got a binder export".to_string(),
             ));
         }
 
         if fields.len() != 17 {
             return Err(ImportError::WrongFormat(format!(
-                "Expected 17 fields per line, got {}",
+                "expected 17 fields per line, got {}",
                 fields.len()
             )));
         }
@@ -86,7 +93,7 @@ mod tests {
                    bulk,binder,Repeal,GPT,Guildpact,32,normal,common,2,27563,9e7dd929-4bba-46a6-86c9-b8ed853eb721,0.17,false,false,near_mint,fr,EUR\n\
                    bulk,binder,\"Dwynen, Gilt-Leaf Daen\",FDN,Foundations,217,normal,uncommon,2,100086,01c00d7b-7fac-4f8c-a1ea-de2cf4d06627,0.2,false,false,near_mint,fr,EUR";
 
-        let result = import_cards(csv);
+        let result = parse_cards(csv);
 
         let cards = result.expect("Failed to parse CSV");
         assert_eq!(cards.len(), 3);
@@ -94,7 +101,7 @@ mod tests {
         assert_eq!(cards[0].name, "Goblin Boarders");
         assert_eq!(
             cards[0].set_name.code,
-            SetCode::new("FDN".to_string()).expect("Can't parse set code")
+            SetCode::new("FDN").expect("Can't parse set code")
         );
         assert_eq!(cards[0].set_name.name, "Foundations");
         assert_eq!(cards[0].collector_number, 87);
@@ -133,7 +140,7 @@ mod tests {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
                    bulk,binder,\"Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight\",ECLD,Lorwyn Eclipsed,13,normal,mythic,1,108961,b2d9d5ca-7e15-437a-bdfc-5972b42148fe,12.35,false,false,near_mint,fr,EUR";
 
-        let result = import_cards(csv);
+        let result = parse_cards(csv);
 
         assert!(result.is_err());
         if let Err(ImportError::ParseError(err)) = result {
@@ -151,7 +158,7 @@ mod tests {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
                    bulk,binder,\"Brigid, Clachan's Heart // Brigid, Doun's Mind\",ECL,Lorwyn Eclipsed,7,normal,rare,1,110841,cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8,1.75,false,false,near_mint,de,EUR";
 
-        let result = import_cards(csv);
+        let result = parse_cards(csv);
 
         assert!(result.is_err());
         if let Err(ImportError::ParseError(err)) = result {
@@ -166,7 +173,7 @@ mod tests {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
                    bulk,binder,Stormshriek Feral // Flush Out,TDM,Tarkir: Dragonstorm,FAKE_COLLECTION_NUMBER,normal,common,1,104447,0ec92c44-7cf0-48a5-a3ca-bc633496d887,0.11,false,false,near_mint,fr,EUR";
 
-        let result = import_cards(csv);
+        let result = parse_cards(csv);
 
         assert!(result.is_err());
         if let Err(ImportError::ParseError(_)) = result {
@@ -180,11 +187,14 @@ mod tests {
     fn import_cards_handles_empty_csv() {
         let csv = "";
 
-        let result = import_cards(csv);
+        let result = parse_cards(csv);
 
-        assert!(result.is_ok());
-        let cards = result.unwrap();
-        assert!(cards.is_empty());
+        assert!(result.is_err());
+        if let Err(ImportError::WrongFormat(err)) = result {
+            assert_eq!(err, "missing headers or empty file".to_string());
+        } else {
+            panic!("Expected ImportError::WrongFormat for missing headers or empty file");
+        }
     }
 
     #[test]
@@ -192,13 +202,13 @@ mod tests {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition\n\
                bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint";
 
-        let result = import_cards(csv);
+        let result = parse_cards(csv);
 
         assert!(result.is_err());
         if let Err(ImportError::WrongFormat(err)) = result {
             assert_eq!(
                 err,
-                "Expecting a collection export, got a binder export".to_string()
+                "expecting a collection export, got a binder export".to_string()
             );
         } else {
             panic!("Expected ImportError::WrongFormat for binder export");
@@ -210,11 +220,11 @@ mod tests {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID\n\
                bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506";
 
-        let result = import_cards(csv);
+        let result = parse_cards(csv);
 
         assert!(result.is_err());
         if let Err(ImportError::WrongFormat(err)) = result {
-            assert!(err.contains("Expected 17 fields per line"));
+            assert!(err.contains("expected 17 fields per line"));
         } else {
             panic!("Expected ImportError::WrongFormat");
         }
@@ -225,11 +235,11 @@ mod tests {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Extra Column\n\
                bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR,extra";
 
-        let result = import_cards(csv);
+        let result = parse_cards(csv);
 
         assert!(result.is_err());
         if let Err(ImportError::WrongFormat(err)) = result {
-            assert!(err.contains("Expected 17 fields per line"));
+            assert!(err.contains("expected 17 fields per line"));
         } else {
             panic!("Expected ImportError::WrongFormat");
         }
