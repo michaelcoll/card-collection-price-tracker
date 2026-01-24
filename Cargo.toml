@@ -8,3 +8,7 @@ chrono = "0.4.43"
 
 [dev-dependencies]
 mockall = "0.14.0"
+
+[[bin]]
+name = "ccpt"
+path = "src/ccpt/main.rs"
