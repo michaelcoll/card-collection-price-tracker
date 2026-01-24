@@ -113,7 +113,7 @@ mod tests {
         assert_eq!(cards[1].name, "Repeal");
         assert_eq!(
             cards[1].set_name.code,
-            SetCode::new("GPT".to_string()).expect("Can't parse set code")
+            SetCode::new("GPT").expect("Can't parse set code")
         );
         assert_eq!(cards[1].set_name.name, "Guildpact");
         assert_eq!(cards[1].collector_number, 32);
@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(cards[2].name, "Dwynen, Gilt-Leaf Daen");
         assert_eq!(
             cards[2].set_name.code,
-            SetCode::new("FDN".to_string()).expect("Can't parse set code")
+            SetCode::new("FDN").expect("Can't parse set code")
         );
         assert_eq!(cards[2].set_name.name, "Foundations");
         assert_eq!(cards[2].collector_number, 217);
