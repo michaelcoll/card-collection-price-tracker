@@ -1,4 +1,5 @@
 use crate::domain::error::CardParsingError;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetCode(String);
@@ -17,10 +18,25 @@ impl SetCode {
     }
 }
 
+impl Display for SetCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SetName {
     pub code: SetCode,
     pub name: String,
+}
+
+impl SetName {
+    pub fn new<S: AsRef<str>>(code: SetCode, name: S) -> Self {
+        SetName {
+            code,
+            name: name.as_ref().to_string(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -74,12 +90,14 @@ mod tests {
     #[test]
     fn set_name_creation_with_valid_code_and_name() {
         let code = SetCode::new("XYZ").unwrap();
-        let name = "Test Set".to_string();
-        let set_name = SetName {
-            code,
-            name: name.clone(),
-        };
+        let set_name = SetName::new(code, "Test Set");
         assert_eq!(set_name.code, SetCode("XYZ".to_string()));
-        assert_eq!(set_name.name, name);
+        assert_eq!(set_name.name, "Test Set".to_string());
+    }
+
+    #[test]
+    fn display_returns_correct_string_for_valid_set_code() {
+        let code = SetCode::new("XYZ").unwrap();
+        assert_eq!(code.to_string(), "XYZ");
     }
 }

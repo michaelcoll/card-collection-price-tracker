@@ -28,7 +28,7 @@ impl ImportCardUseCase for ImportCardService {
         for card in cards {
             if !self
                 .set_name_repository
-                .exists_by_code(card.set_name.code.clone())?
+                .exists_by_code(card.id.set_code.clone())?
             {
                 let set_name = card.set_name.clone();
                 self.set_name_repository.save(set_name)?;
@@ -47,7 +47,7 @@ mod tests {
     use crate::application::repository::{
         MockCardRepository, MockSetNameRepository, PersistenceError,
     };
-    use crate::domain::card::Card;
+    use crate::domain::card::{Card, CardId};
     use crate::domain::language_code::LanguageCode;
     use crate::domain::set_name::{SetCode, SetName};
     use mockall::predicate::eq;
@@ -57,16 +57,20 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
+        let set_code = SetCode::new("FDN").unwrap();
         let set_name = SetName {
-            code: SetCode::new("FDN").expect("valid set code"),
+            code: set_code.clone(),
             name: "Foundations".to_string(),
         };
-        let card = Card {
-            set_name: set_name.clone(),
+        let id = CardId {
+            set_code: set_code.clone(),
             collector_number: 87,
             language_code: LanguageCode::FR,
-            name: "Goblin Boarders".to_string(),
             foil: false,
+        };
+        let card = Card {
+            id: id.clone(),
+            set_name: set_name.clone(),
             quantity: 3,
             purchase_price: 8,
         };
@@ -74,7 +78,7 @@ mod tests {
         card_repository.expect_delete_all().returning(|| Ok(()));
         set_name_repository
             .expect_exists_by_code()
-            .with(eq(set_name.code.clone()))
+            .with(eq(set_code.clone()))
             .returning(|_| Ok(false));
         set_name_repository
             .expect_save()
@@ -100,16 +104,20 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
+        let set_code = SetCode::new("FDN").unwrap();
         let set_name = SetName {
-            code: SetCode::new("SET").expect("valid set code"),
-            name: "Set Name".to_string(),
+            code: set_code.clone(),
+            name: "Foundations".to_string(),
         };
-        let card = Card {
-            set_name: set_name.clone(),
+        let id = CardId {
+            set_code: set_code.clone(),
             collector_number: 0,
             language_code: LanguageCode::FR,
-            name: "Card Name".to_string(),
             foil: false,
+        };
+        let card = Card {
+            id: id.clone(),
+            set_name: set_name.clone(),
             quantity: 0,
             purchase_price: 0,
         };
@@ -142,16 +150,20 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
+        let set_code = SetCode::new("FDN").unwrap();
         let set_name = SetName {
-            code: SetCode::new("FDN").expect("valid set code"),
+            code: set_code.clone(),
             name: "Foundations".to_string(),
         };
-        let card = Card {
-            set_name: set_name.clone(),
+        let id = CardId {
+            set_code: set_code.clone(),
             collector_number: 87,
             language_code: LanguageCode::FR,
-            name: "Goblin Boarders".to_string(),
             foil: false,
+        };
+        let card = Card {
+            id: id.clone(),
+            set_name: set_name.clone(),
             quantity: 3,
             purchase_price: 8,
         };
@@ -159,7 +171,7 @@ mod tests {
         card_repository.expect_delete_all().returning(|| Ok(()));
         set_name_repository
             .expect_exists_by_code()
-            .with(eq(set_name.code.clone()))
+            .with(eq(set_code.clone()))
             .returning(|_| Ok(true));
         card_repository
             .expect_save()

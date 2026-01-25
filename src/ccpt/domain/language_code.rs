@@ -1,4 +1,5 @@
 use crate::domain::error::CardParsingError;
+use std::fmt::Display;
 use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -18,6 +19,15 @@ impl FromStr for LanguageCode {
                 "invalid language code : {}",
                 s
             ))),
+        }
+    }
+}
+
+impl Display for LanguageCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LanguageCode::FR => write!(f, "FR"),
+            LanguageCode::EN => write!(f, "EN"),
         }
     }
 }
@@ -63,5 +73,17 @@ mod tests {
             result,
             Err(CardParsingError::InvalidLanguageCode(msg)) if msg == "invalid language code : "
         ));
+    }
+
+    #[test]
+    fn display_returns_fr_for_language_code_fr() {
+        let code = LanguageCode::FR;
+        assert_eq!(format!("{}", code), "FR");
+    }
+
+    #[test]
+    fn display_returns_en_for_language_code_en() {
+        let code = LanguageCode::EN;
+        assert_eq!(format!("{}", code), "EN");
     }
 }

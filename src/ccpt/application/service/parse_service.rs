@@ -1,5 +1,5 @@
 use crate::application::service::error::ImportError;
-use crate::domain::card::Card;
+use crate::domain::card::{Card, CardId};
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
 
@@ -54,24 +54,26 @@ pub(crate) fn parse_cards(csv: &str) -> Result<Vec<Card>, ImportError> {
 
         let set_code = SetCode::new(field_refs[3])?;
         let set_name = SetName {
-            code: set_code,
+            code: set_code.clone(),
             name: field_refs[4].to_string(),
         };
 
         let collector_number: u16 = field_refs[5].parse()?;
         let language_code: LanguageCode = field_refs[15].parse()?;
-        let name = field_refs[2].to_string();
         let foil: bool = field_refs[6] != "normal";
         let quantity: u8 = field_refs[8].parse()?;
         let purchase_price_float: f32 = field_refs[11].parse()?;
         let purchase_price = (purchase_price_float * 100.0).round() as u32;
 
-        let card = Card {
-            set_name,
+        let id = CardId {
+            set_code,
             collector_number,
             language_code,
-            name,
             foil,
+        };
+        let card = Card {
+            id,
+            set_name,
             quantity,
             purchase_price,
         };
@@ -87,52 +89,38 @@ mod tests {
     use crate::domain::set_name::SetCode;
 
     #[test]
-    fn import_cards_parses_valid_csv() {
+    fn import_cards_parses_valid_csv() -> Result<(), ImportError> {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
                    bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR\n\
                    bulk,binder,Repeal,GPT,Guildpact,32,normal,common,2,27563,9e7dd929-4bba-46a6-86c9-b8ed853eb721,0.17,false,false,near_mint,fr,EUR\n\
                    bulk,binder,\"Dwynen, Gilt-Leaf Daen\",FDN,Foundations,217,normal,uncommon,2,100086,01c00d7b-7fac-4f8c-a1ea-de2cf4d06627,0.2,false,false,near_mint,fr,EUR";
 
-        let result = parse_cards(csv);
+        let cards = parse_cards(csv)?;
 
-        let cards = result.expect("Failed to parse CSV");
         assert_eq!(cards.len(), 3);
 
-        assert_eq!(cards[0].name, "Goblin Boarders");
-        assert_eq!(
-            cards[0].set_name.code,
-            SetCode::new("FDN").expect("Can't parse set code")
-        );
-        assert_eq!(cards[0].set_name.name, "Foundations");
-        assert_eq!(cards[0].collector_number, 87);
-        assert_eq!(cards[0].language_code, LanguageCode::FR);
-        assert!(!cards[0].foil);
+        assert_eq!(cards[0].id.set_code, SetCode::new("FDN")?);
+        assert_eq!(cards[0].id.collector_number, 87);
+        assert_eq!(cards[0].id.language_code, LanguageCode::FR);
+        assert!(!cards[0].id.foil);
         assert_eq!(cards[0].quantity, 3);
         assert_eq!(cards[0].purchase_price, 8);
 
-        assert_eq!(cards[1].name, "Repeal");
-        assert_eq!(
-            cards[1].set_name.code,
-            SetCode::new("GPT").expect("Can't parse set code")
-        );
-        assert_eq!(cards[1].set_name.name, "Guildpact");
-        assert_eq!(cards[1].collector_number, 32);
-        assert_eq!(cards[1].language_code, LanguageCode::FR);
-        assert!(!cards[1].foil);
+        assert_eq!(cards[1].id.set_code, SetCode::new("GPT")?);
+        assert_eq!(cards[1].id.collector_number, 32);
+        assert_eq!(cards[1].id.language_code, LanguageCode::FR);
+        assert!(!cards[1].id.foil);
         assert_eq!(cards[1].quantity, 2);
         assert_eq!(cards[1].purchase_price, 17);
 
-        assert_eq!(cards[2].name, "Dwynen, Gilt-Leaf Daen");
-        assert_eq!(
-            cards[2].set_name.code,
-            SetCode::new("FDN").expect("Can't parse set code")
-        );
-        assert_eq!(cards[2].set_name.name, "Foundations");
-        assert_eq!(cards[2].collector_number, 217);
-        assert_eq!(cards[2].language_code, LanguageCode::FR);
-        assert!(!cards[2].foil);
+        assert_eq!(cards[2].id.set_code, SetCode::new("FDN")?);
+        assert_eq!(cards[2].id.collector_number, 217);
+        assert_eq!(cards[2].id.language_code, LanguageCode::FR);
+        assert!(!cards[2].id.foil);
         assert_eq!(cards[2].quantity, 2);
         assert_eq!(cards[2].purchase_price, 20);
+
+        Ok(())
     }
 
     #[test]
@@ -142,15 +130,10 @@ mod tests {
 
         let result = parse_cards(csv);
 
-        assert!(result.is_err());
-        if let Err(ImportError::ParseError(err)) = result {
-            assert_eq!(
-                err,
-                "set code must be exactly 3 characters (got ECLD)".to_string()
-            );
-        } else {
-            panic!("Expected ImportError::InvalidSetCode");
-        }
+        assert!(matches!(
+            result,
+            Err(ImportError::WrongFormat(err)) if err == "set code must be exactly 3 characters (got ECLD)"
+        ));
     }
 
     #[test]
@@ -160,12 +143,10 @@ mod tests {
 
         let result = parse_cards(csv);
 
-        assert!(result.is_err());
-        if let Err(ImportError::ParseError(err)) = result {
-            assert_eq!(err, "invalid language code : de".to_string());
-        } else {
-            panic!("Expected ImportError::InvalidLanguageCode");
-        }
+        assert!(matches!(
+            result,
+            Err(ImportError::WrongFormat(err)) if err == "invalid language code : de"
+        ));
     }
 
     #[test]
@@ -175,12 +156,7 @@ mod tests {
 
         let result = parse_cards(csv);
 
-        assert!(result.is_err());
-        if let Err(ImportError::ParseError(_)) = result {
-            // Expected error
-        } else {
-            panic!("Expected ImportError::ParseIntError");
-        }
+        assert!(matches!(result, Err(ImportError::ParseError())));
     }
 
     #[test]
@@ -189,12 +165,10 @@ mod tests {
 
         let result = parse_cards(csv);
 
-        assert!(result.is_err());
-        if let Err(ImportError::WrongFormat(err)) = result {
-            assert_eq!(err, "missing headers or empty file".to_string());
-        } else {
-            panic!("Expected ImportError::WrongFormat for missing headers or empty file");
-        }
+        assert!(matches!(
+            result,
+            Err(ImportError::WrongFormat(err)) if err == "missing headers or empty file"
+        ));
     }
 
     #[test]
@@ -204,15 +178,10 @@ mod tests {
 
         let result = parse_cards(csv);
 
-        assert!(result.is_err());
-        if let Err(ImportError::WrongFormat(err)) = result {
-            assert_eq!(
-                err,
-                "expecting a collection export, got a binder export".to_string()
-            );
-        } else {
-            panic!("Expected ImportError::WrongFormat for binder export");
-        }
+        assert!(matches!(
+            result,
+            Err(ImportError::WrongFormat(err)) if err == "expecting a collection export, got a binder export"
+        ));
     }
 
     #[test]
@@ -222,12 +191,10 @@ mod tests {
 
         let result = parse_cards(csv);
 
-        assert!(result.is_err());
-        if let Err(ImportError::WrongFormat(err)) = result {
-            assert!(err.contains("expected 17 fields per line"));
-        } else {
-            panic!("Expected ImportError::WrongFormat");
-        }
+        assert!(matches!(
+            result,
+            Err(ImportError::WrongFormat(err)) if err.contains("expected 17 fields per line")
+        ));
     }
 
     #[test]
@@ -237,11 +204,9 @@ mod tests {
 
         let result = parse_cards(csv);
 
-        assert!(result.is_err());
-        if let Err(ImportError::WrongFormat(err)) = result {
-            assert!(err.contains("expected 17 fields per line"));
-        } else {
-            panic!("Expected ImportError::WrongFormat");
-        }
+        assert!(matches!(
+            result,
+            Err(ImportError::WrongFormat(err)) if err.contains("expected 17 fields per line")
+        ));
     }
 }
