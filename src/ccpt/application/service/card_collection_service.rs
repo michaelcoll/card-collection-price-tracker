@@ -1,0 +1,314 @@
+use crate::application::caller::CardPriceCaller;
+use crate::application::repository::{CardCollectionRepository, CardRepository};
+use crate::application::service::error::CalculationError;
+use crate::application::use_case::CardCollectionPriceCalculationUseCase;
+use crate::domain::price::Price;
+
+pub struct CardCollectionService {
+    card_price_caller: Box<dyn CardPriceCaller>,
+    card_repository: Box<dyn CardRepository>,
+    card_collection_repository: Box<dyn CardCollectionRepository>,
+}
+
+impl CardCollectionService {
+    pub fn new(
+        card_price_caller: Box<dyn CardPriceCaller>,
+        card_repository: Box<dyn CardRepository>,
+        mock_card_collection_repository: Box<dyn CardCollectionRepository>,
+    ) -> Self {
+        Self {
+            card_price_caller,
+            card_repository,
+            card_collection_repository: mock_card_collection_repository,
+        }
+    }
+}
+
+impl CardCollectionPriceCalculationUseCase for CardCollectionService {
+    fn calculate_total_price(&mut self) -> Result<(), CalculationError> {
+        let cards = self.card_repository.get_all()?;
+
+        let mut total_price: Price = Price::zero();
+
+        for card in cards {
+            let price = self
+                .card_price_caller
+                .get_price_by_card_id(card.id.clone())?;
+            total_price += price;
+        }
+
+        self.card_collection_repository.save(total_price)?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::application::caller::CallerError::PriceNotFound;
+    use crate::application::caller::MockCardPriceCaller;
+    use crate::application::repository::PersistenceError::SaveError;
+    use crate::application::repository::{MockCardCollectionRepository, MockCardRepository};
+    use crate::domain::card::{Card, CardId};
+    use crate::domain::language_code::LanguageCode;
+    use crate::domain::set_name::{SetCode, SetName};
+    use mockall::predicate::*;
+
+    #[test]
+    fn calculate_total_price_saves_correct_total() {
+        let mut card_price_caller = MockCardPriceCaller::new();
+        let mut card_repository = MockCardRepository::new();
+        let mut card_collection_repository = MockCardCollectionRepository::new();
+
+        let set_code = SetCode::new("FDN").unwrap();
+        let set_name = SetName {
+            code: set_code.clone(),
+            name: "Foundations".to_string(),
+        };
+        let card_id1 = CardId {
+            set_code: set_code.clone(),
+            collector_number: 0,
+            language_code: LanguageCode::FR,
+            foil: false,
+        };
+        let card_id2 = CardId {
+            set_code: set_code.clone(),
+            collector_number: 1,
+            language_code: LanguageCode::FR,
+            foil: false,
+        };
+
+        let card1 = Card {
+            id: card_id1.clone(),
+            set_name: set_name.clone(),
+            quantity: 1,
+            purchase_price: 2,
+        };
+        let card2 = Card {
+            id: card_id2.clone(),
+            set_name: set_name.clone(),
+            quantity: 1,
+            purchase_price: 2,
+        };
+
+        let cards = vec![card1.clone(), card2.clone()];
+
+        card_repository
+            .expect_get_all()
+            .returning(move || Ok(cards.clone()));
+
+        card_price_caller
+            .expect_get_price_by_card_id()
+            .with(eq(card_id1.clone()))
+            .returning(|_| {
+                Ok(Price {
+                    date: Default::default(),
+                    low: 100,
+                    trend: 200,
+                    avg1: 300,
+                    avg7: 400,
+                    avg30: 500,
+                })
+            });
+
+        card_price_caller
+            .expect_get_price_by_card_id()
+            .with(eq(card_id2.clone()))
+            .returning(|_| {
+                Ok(Price {
+                    date: Default::default(),
+                    low: 50,
+                    trend: 100,
+                    avg1: 150,
+                    avg7: 200,
+                    avg30: 250,
+                })
+            });
+
+        card_collection_repository
+            .expect_save()
+            .with(eq(Price {
+                date: Default::default(),
+                low: 150,
+                trend: 300,
+                avg1: 450,
+                avg7: 600,
+                avg30: 750,
+            }))
+            .returning(|_| Ok(()));
+
+        let mut service = CardCollectionService::new(
+            Box::new(card_price_caller),
+            Box::new(card_repository),
+            Box::new(card_collection_repository),
+        );
+
+        let result = service.calculate_total_price();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn calculate_total_price_handles_empty_card_list() {
+        let card_price_caller = MockCardPriceCaller::new();
+        let mut card_repository = MockCardRepository::new();
+        let mut card_collection_repository = MockCardCollectionRepository::new();
+
+        card_repository.expect_get_all().returning(|| Ok(vec![]));
+
+        card_collection_repository
+            .expect_save()
+            .with(eq(Price::zero()))
+            .returning(|_| Ok(()));
+
+        let mut service = CardCollectionService::new(
+            Box::new(card_price_caller),
+            Box::new(card_repository),
+            Box::new(card_collection_repository),
+        );
+
+        let result = service.calculate_total_price();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn calculate_total_price_propagates_error_from_card_repository() {
+        let card_price_caller = MockCardPriceCaller::new();
+        let mut card_repository = MockCardRepository::new();
+        let card_collection_repository = MockCardCollectionRepository::new();
+
+        card_repository
+            .expect_get_all()
+            .returning(|| Err(SaveError("DB error".to_string())));
+
+        let mut service = CardCollectionService::new(
+            Box::new(card_price_caller),
+            Box::new(card_repository),
+            Box::new(card_collection_repository),
+        );
+
+        let result = service.calculate_total_price();
+        assert!(matches!(
+            result,
+            Err(CalculationError::CalculationFailed(s)) if s == "DB error"
+        ));
+    }
+
+    #[test]
+    fn calculate_total_price_propagates_error_from_price_caller() {
+        let mut card_price_caller = MockCardPriceCaller::new();
+        let mut card_repository = MockCardRepository::new();
+        let card_collection_repository = MockCardCollectionRepository::new();
+
+        let set_code = SetCode::new("FDN").unwrap();
+        let set_name = SetName {
+            code: set_code.clone(),
+            name: "Foundations".to_string(),
+        };
+        let card_id1 = CardId {
+            set_code: set_code.clone(),
+            collector_number: 0,
+            language_code: LanguageCode::FR,
+            foil: false,
+        };
+
+        let card1 = Card {
+            id: card_id1.clone(),
+            set_name: set_name.clone(),
+            quantity: 1,
+            purchase_price: 2,
+        };
+
+        let cards = vec![card1.clone()];
+
+        card_repository
+            .expect_get_all()
+            .returning(move || Ok(cards.clone()));
+
+        card_price_caller
+            .expect_get_price_by_card_id()
+            .with(eq(card_id1.clone()))
+            .returning(|_| Err(PriceNotFound));
+
+        let mut service = CardCollectionService::new(
+            Box::new(card_price_caller),
+            Box::new(card_repository),
+            Box::new(card_collection_repository),
+        );
+
+        let result = service.calculate_total_price();
+        assert!(matches!(
+            result,
+            Err(CalculationError::CalculationFailed(_))
+        ));
+    }
+
+    #[test]
+    fn calculate_total_price_propagates_error_from_collection_repository() {
+        let mut card_price_caller = MockCardPriceCaller::new();
+        let mut card_repository = MockCardRepository::new();
+        let mut card_collection_repository = MockCardCollectionRepository::new();
+
+        let set_code = SetCode::new("FDN").unwrap();
+        let set_name = SetName {
+            code: set_code.clone(),
+            name: "Foundations".to_string(),
+        };
+        let card_id1 = CardId {
+            set_code: set_code.clone(),
+            collector_number: 0,
+            language_code: LanguageCode::FR,
+            foil: false,
+        };
+
+        let card1 = Card {
+            id: card_id1.clone(),
+            set_name: set_name.clone(),
+            quantity: 1,
+            purchase_price: 2,
+        };
+        let cards = vec![card1.clone()];
+
+        card_repository
+            .expect_get_all()
+            .returning(move || Ok(cards.clone()));
+
+        card_price_caller
+            .expect_get_price_by_card_id()
+            .with(eq(card_id1.clone()))
+            .returning(|_| {
+                Ok(Price {
+                    date: Default::default(),
+                    low: 100,
+                    trend: 200,
+                    avg1: 300,
+                    avg7: 400,
+                    avg30: 500,
+                })
+            });
+
+        card_collection_repository
+            .expect_save()
+            .with(eq(Price {
+                date: Default::default(),
+                low: 100,
+                trend: 200,
+                avg1: 300,
+                avg7: 400,
+                avg30: 500,
+            }))
+            .returning(|_| Err(SaveError("DB error".to_string())));
+
+        let mut service = CardCollectionService::new(
+            Box::new(card_price_caller),
+            Box::new(card_repository),
+            Box::new(card_collection_repository),
+        );
+
+        let result = service.calculate_total_price();
+        assert!(matches!(
+            result,
+            Err(CalculationError::CalculationFailed(s)) if s == "DB error"
+        ));
+    }
+}

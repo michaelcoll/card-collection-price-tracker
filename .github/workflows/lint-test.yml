@@ -44,5 +44,6 @@ jobs:
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: coverage
           files: lcov.info
           disable_search: true
