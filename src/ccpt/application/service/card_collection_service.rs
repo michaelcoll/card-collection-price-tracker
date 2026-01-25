@@ -1,32 +1,40 @@
 use crate::application::caller::CardPriceCaller;
-use crate::application::repository::{CardCollectionRepository, CardRepository};
+use crate::application::repository::{CardCollectionRepository, CardRepository, SetNameRepository};
 use crate::application::service::error::CalculationError;
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
 use crate::domain::price::Price;
 
-pub struct CardCollectionService {
-    card_price_caller: Box<dyn CardPriceCaller>,
-    card_repository: Box<dyn CardRepository>,
-    card_collection_repository: Box<dyn CardCollectionRepository>,
+pub struct CardCollectionService<
+    CPC: CardPriceCaller,
+    CR: CardRepository,
+    CCR: CardCollectionRepository,
+> {
+    card_price_caller: CPC,
+    card_repository: CR,
+    card_collection_repository: CCR,
 }
 
-impl CardCollectionService {
+impl<CPC: CardPriceCaller, CR: CardRepository, CCR: CardCollectionRepository>
+    CardCollectionService<CPC, CR, CCR>
+{
     pub fn new(
-        card_price_caller: Box<dyn CardPriceCaller>,
-        card_repository: Box<dyn CardRepository>,
-        mock_card_collection_repository: Box<dyn CardCollectionRepository>,
+        card_price_caller: CPC,
+        card_repository: CR,
+        card_collection_repository: CCR,
     ) -> Self {
         Self {
             card_price_caller,
             card_repository,
-            card_collection_repository: mock_card_collection_repository,
+            card_collection_repository,
         }
     }
 }
 
-impl CardCollectionPriceCalculationUseCase for CardCollectionService {
-    fn calculate_total_price(&mut self) -> Result<(), CalculationError> {
-        let cards = self.card_repository.get_all()?;
+impl<CPC: CardPriceCaller, CR: CardRepository, CCR: CardCollectionRepository>
+    CardCollectionPriceCalculationUseCase for CardCollectionService<CPC, CR, CCR>
+{
+    async fn calculate_total_price(&mut self) -> Result<(), CalculationError> {
+        let cards = self.card_repository.get_all().await?;
 
         let mut total_price: Price = Price::zero();
 
@@ -37,7 +45,7 @@ impl CardCollectionPriceCalculationUseCase for CardCollectionService {
             total_price += price;
         }
 
-        self.card_collection_repository.save(total_price)?;
+        self.card_collection_repository.save(total_price).await?;
 
         Ok(())
     }
@@ -48,15 +56,15 @@ mod tests {
     use super::*;
     use crate::application::caller::CallerError::PriceNotFound;
     use crate::application::caller::MockCardPriceCaller;
-    use crate::application::repository::PersistenceError::SaveError;
+    use crate::application::repository::PersistenceError::DBError;
     use crate::application::repository::{MockCardCollectionRepository, MockCardRepository};
     use crate::domain::card::{Card, CardId};
     use crate::domain::language_code::LanguageCode;
     use crate::domain::set_name::{SetCode, SetName};
     use mockall::predicate::*;
 
-    #[test]
-    fn calculate_total_price_saves_correct_total() {
+    #[tokio::test]
+    async fn calculate_total_price_saves_correct_total() {
         let mut card_price_caller = MockCardPriceCaller::new();
         let mut card_repository = MockCardRepository::new();
         let mut card_collection_repository = MockCardCollectionRepository::new();
@@ -139,17 +147,17 @@ mod tests {
             .returning(|_| Ok(()));
 
         let mut service = CardCollectionService::new(
-            Box::new(card_price_caller),
-            Box::new(card_repository),
-            Box::new(card_collection_repository),
+            card_price_caller,
+            card_repository,
+            card_collection_repository,
         );
 
-        let result = service.calculate_total_price();
+        let result = service.calculate_total_price().await;
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn calculate_total_price_handles_empty_card_list() {
+    #[tokio::test]
+    async fn calculate_total_price_handles_empty_card_list() {
         let card_price_caller = MockCardPriceCaller::new();
         let mut card_repository = MockCardRepository::new();
         let mut card_collection_repository = MockCardCollectionRepository::new();
@@ -162,40 +170,40 @@ mod tests {
             .returning(|_| Ok(()));
 
         let mut service = CardCollectionService::new(
-            Box::new(card_price_caller),
-            Box::new(card_repository),
-            Box::new(card_collection_repository),
+            card_price_caller,
+            card_repository,
+            card_collection_repository,
         );
 
-        let result = service.calculate_total_price();
+        let result = service.calculate_total_price().await;
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn calculate_total_price_propagates_error_from_card_repository() {
+    #[tokio::test]
+    async fn calculate_total_price_propagates_error_from_card_repository() {
         let card_price_caller = MockCardPriceCaller::new();
         let mut card_repository = MockCardRepository::new();
         let card_collection_repository = MockCardCollectionRepository::new();
 
         card_repository
             .expect_get_all()
-            .returning(|| Err(SaveError("DB error".to_string())));
+            .returning(|| Err(DBError("DB error".to_string())));
 
         let mut service = CardCollectionService::new(
-            Box::new(card_price_caller),
-            Box::new(card_repository),
-            Box::new(card_collection_repository),
+            card_price_caller,
+            card_repository,
+            card_collection_repository,
         );
 
-        let result = service.calculate_total_price();
+        let result = service.calculate_total_price().await;
         assert!(matches!(
             result,
             Err(CalculationError::CalculationFailed(s)) if s == "DB error"
         ));
     }
 
-    #[test]
-    fn calculate_total_price_propagates_error_from_price_caller() {
+    #[tokio::test]
+    async fn calculate_total_price_propagates_error_from_price_caller() {
         let mut card_price_caller = MockCardPriceCaller::new();
         let mut card_repository = MockCardRepository::new();
         let card_collection_repository = MockCardCollectionRepository::new();
@@ -231,20 +239,20 @@ mod tests {
             .returning(|_| Err(PriceNotFound));
 
         let mut service = CardCollectionService::new(
-            Box::new(card_price_caller),
-            Box::new(card_repository),
-            Box::new(card_collection_repository),
+            card_price_caller,
+            card_repository,
+            card_collection_repository,
         );
 
-        let result = service.calculate_total_price();
+        let result = service.calculate_total_price().await;
         assert!(matches!(
             result,
             Err(CalculationError::CalculationFailed(_))
         ));
     }
 
-    #[test]
-    fn calculate_total_price_propagates_error_from_collection_repository() {
+    #[tokio::test]
+    async fn calculate_total_price_propagates_error_from_collection_repository() {
         let mut card_price_caller = MockCardPriceCaller::new();
         let mut card_repository = MockCardRepository::new();
         let mut card_collection_repository = MockCardCollectionRepository::new();
@@ -297,15 +305,15 @@ mod tests {
                 avg7: 400,
                 avg30: 500,
             }))
-            .returning(|_| Err(SaveError("DB error".to_string())));
+            .returning(|_| Err(DBError("DB error".to_string())));
 
         let mut service = CardCollectionService::new(
-            Box::new(card_price_caller),
-            Box::new(card_repository),
-            Box::new(card_collection_repository),
+            card_price_caller,
+            card_repository,
+            card_collection_repository,
         );
 
-        let result = service.calculate_total_price();
+        let result = service.calculate_total_price().await;
         assert!(matches!(
             result,
             Err(CalculationError::CalculationFailed(s)) if s == "DB error"

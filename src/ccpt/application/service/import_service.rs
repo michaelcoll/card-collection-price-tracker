@@ -2,16 +2,13 @@ use crate::application::repository::{CardRepository, SetNameRepository};
 use crate::application::service::error::ImportError;
 use crate::application::use_case::ImportCardUseCase;
 
-pub struct ImportCardService {
-    card_repository: Box<dyn CardRepository>,
-    set_name_repository: Box<dyn SetNameRepository>,
+pub struct ImportCardService<C: CardRepository, S: SetNameRepository> {
+    card_repository: C,
+    set_name_repository: S,
 }
 
-impl ImportCardService {
-    pub fn new(
-        card_repository: Box<dyn CardRepository>,
-        set_name_repository: Box<dyn SetNameRepository>,
-    ) -> Self {
+impl<C: CardRepository, S: SetNameRepository> ImportCardService<C, S> {
+    pub fn new(card_repository: C, set_name_repository: S) -> Self {
         Self {
             card_repository,
             set_name_repository,
@@ -19,22 +16,23 @@ impl ImportCardService {
     }
 }
 
-impl ImportCardUseCase for ImportCardService {
-    fn import_cards(&mut self, csv: &str) -> Result<(), ImportError> {
+impl<C: CardRepository, S: SetNameRepository> ImportCardUseCase for ImportCardService<C, S> {
+    async fn import_cards(&mut self, csv: &str) -> Result<(), ImportError> {
         let cards = crate::application::service::parse_service::parse_cards(csv)?;
 
-        self.card_repository.delete_all()?;
+        self.card_repository.delete_all().await?;
 
         for card in cards {
             if !self
                 .set_name_repository
-                .exists_by_code(card.id.set_code.clone())?
+                .exists_by_code(card.id.set_code.clone())
+                .await?
             {
                 let set_name = card.set_name.clone();
-                self.set_name_repository.save(set_name)?;
+                self.set_name_repository.save(set_name).await?;
             }
 
-            self.card_repository.save(card)?;
+            self.card_repository.save(card).await?;
         }
 
         Ok(())
@@ -52,8 +50,8 @@ mod tests {
     use crate::domain::set_name::{SetCode, SetName};
     use mockall::predicate::eq;
 
-    #[test]
-    fn import_cards_saves_cards_and_set_names_successfully() {
+    #[tokio::test]
+    async fn import_cards_saves_cards_and_set_names_successfully() {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
@@ -89,18 +87,17 @@ mod tests {
             .with(eq(card.clone()))
             .returning(|_| Ok(()));
 
-        let mut service =
-            ImportCardService::new(Box::new(card_repository), Box::new(set_name_repository));
+        let mut service = ImportCardService::new(card_repository, set_name_repository);
 
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
         bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
-        let result = service.import_cards(csv);
+        let result = service.import_cards(csv).await;
 
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn import_cards_rollback_on_card_save_error() {
+    #[tokio::test]
+    async fn import_cards_rollback_on_card_save_error() {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
@@ -134,19 +131,18 @@ mod tests {
         card_repository
             .expect_save()
             .with(eq(card.clone()))
-            .returning(|_| Err(PersistenceError::SaveError("Save failed".to_string())));
+            .returning(|_| Err(PersistenceError::DBError("Save failed".to_string())));
 
-        let mut service =
-            ImportCardService::new(Box::new(card_repository), Box::new(set_name_repository));
+        let mut service = ImportCardService::new(card_repository, set_name_repository);
 
         let csv = "Card Name,SET001,Set Name";
-        let result = service.import_cards(csv);
+        let result = service.import_cards(csv).await;
 
         assert!(result.is_err());
     }
 
-    #[test]
-    fn import_cards_does_not_save_duplicate_set_name() {
+    #[tokio::test]
+    async fn import_cards_does_not_save_duplicate_set_name() {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
@@ -178,26 +174,24 @@ mod tests {
             .with(eq(card.clone()))
             .returning(|_| Ok(()));
 
-        let mut service =
-            ImportCardService::new(Box::new(card_repository), Box::new(set_name_repository));
+        let mut service = ImportCardService::new(card_repository, set_name_repository);
 
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
         bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
-        let result = service.import_cards(csv);
+        let result = service.import_cards(csv).await;
 
         assert!(result.is_ok());
     }
 
-    #[test]
-    fn import_cards_fails_on_parse_error() {
+    #[tokio::test]
+    async fn import_cards_fails_on_parse_error() {
         let card_repository = MockCardRepository::new();
         let set_name_repository = MockSetNameRepository::new();
 
-        let mut service =
-            ImportCardService::new(Box::new(card_repository), Box::new(set_name_repository));
+        let mut service = ImportCardService::new(card_repository, set_name_repository);
 
         let invalid_csv = "Invalid,Data";
-        let result = service.import_cards(invalid_csv);
+        let result = service.import_cards(invalid_csv).await;
 
         assert!(result.is_err());
     }

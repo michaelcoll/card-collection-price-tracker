@@ -26,7 +26,7 @@ fn split_line(line: &str) -> Vec<String> {
     fields
 }
 
-pub(crate) fn parse_cards(csv: &str) -> Result<Vec<Card>, ImportError> {
+pub fn parse_cards(csv: &str) -> Result<Vec<Card>, ImportError> {
     let mut cards = Vec::new();
 
     if csv.lines().count() <= 1 {
