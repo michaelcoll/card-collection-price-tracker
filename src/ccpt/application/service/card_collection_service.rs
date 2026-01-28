@@ -1,6 +1,6 @@
 use crate::application::caller::CardPriceCaller;
+use crate::application::error::AppError;
 use crate::application::repository::{CardCollectionRepository, CardRepository, SetNameRepository};
-use crate::application::service::error::CalculationError;
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
 use crate::domain::price::Price;
 
@@ -33,7 +33,7 @@ impl<CPC: CardPriceCaller, CR: CardRepository, CCR: CardCollectionRepository>
 impl<CPC: CardPriceCaller, CR: CardRepository, CCR: CardCollectionRepository>
     CardCollectionPriceCalculationUseCase for CardCollectionService<CPC, CR, CCR>
 {
-    async fn calculate_total_price(&mut self) -> Result<(), CalculationError> {
+    async fn calculate_total_price(&mut self) -> Result<(), AppError> {
         let cards = self.card_repository.get_all().await?;
 
         let mut total_price: Price = Price::zero();
@@ -54,9 +54,8 @@ impl<CPC: CardPriceCaller, CR: CardRepository, CCR: CardCollectionRepository>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::caller::CallerError::PriceNotFound;
     use crate::application::caller::MockCardPriceCaller;
-    use crate::application::repository::PersistenceError::DBError;
+    use crate::application::error::AppError::{PriceNotFound, RepositoryError};
     use crate::application::repository::{MockCardCollectionRepository, MockCardRepository};
     use crate::domain::card::{Card, CardId};
     use crate::domain::language_code::LanguageCode;
@@ -69,7 +68,7 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut card_collection_repository = MockCardCollectionRepository::new();
 
-        let set_code = SetCode::new("FDN").unwrap();
+        let set_code = SetCode::new("FDN");
         let set_name = SetName {
             code: set_code.clone(),
             name: "Foundations".to_string(),
@@ -187,7 +186,7 @@ mod tests {
 
         card_repository
             .expect_get_all()
-            .returning(|| Err(DBError("DB error".to_string())));
+            .returning(|| Err(RepositoryError("DB error".to_string())));
 
         let mut service = CardCollectionService::new(
             card_price_caller,
@@ -198,7 +197,7 @@ mod tests {
         let result = service.calculate_total_price().await;
         assert!(matches!(
             result,
-            Err(CalculationError::CalculationFailed(s)) if s == "DB error"
+            Err(AppError::RepositoryError(s)) if s == "DB error"
         ));
     }
 
@@ -208,7 +207,7 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let card_collection_repository = MockCardCollectionRepository::new();
 
-        let set_code = SetCode::new("FDN").unwrap();
+        let set_code = SetCode::new("FDN");
         let set_name = SetName {
             code: set_code.clone(),
             name: "Foundations".to_string(),
@@ -245,10 +244,7 @@ mod tests {
         );
 
         let result = service.calculate_total_price().await;
-        assert!(matches!(
-            result,
-            Err(CalculationError::CalculationFailed(_))
-        ));
+        assert!(matches!(result, Err(PriceNotFound)));
     }
 
     #[tokio::test]
@@ -257,7 +253,7 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut card_collection_repository = MockCardCollectionRepository::new();
 
-        let set_code = SetCode::new("FDN").unwrap();
+        let set_code = SetCode::new("FDN");
         let set_name = SetName {
             code: set_code.clone(),
             name: "Foundations".to_string(),
@@ -305,7 +301,7 @@ mod tests {
                 avg7: 400,
                 avg30: 500,
             }))
-            .returning(|_| Err(DBError("DB error".to_string())));
+            .returning(|_| Err(RepositoryError("DB error".to_string())));
 
         let mut service = CardCollectionService::new(
             card_price_caller,
@@ -316,7 +312,7 @@ mod tests {
         let result = service.calculate_total_price().await;
         assert!(matches!(
             result,
-            Err(CalculationError::CalculationFailed(s)) if s == "DB error"
+            Err(AppError::RepositoryError(s)) if s == "DB error"
         ));
     }
 }
