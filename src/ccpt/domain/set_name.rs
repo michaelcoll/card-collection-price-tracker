@@ -1,19 +1,17 @@
-use crate::domain::error::CardParsingError;
 use std::fmt::Display;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetCode(String);
 
 impl SetCode {
-    pub fn new<S: AsRef<str>>(s: S) -> Result<Self, CardParsingError> {
+    #[allow(dead_code)]
+    pub fn new<S: AsRef<str>>(s: S) -> Self {
         let s_ref = s.as_ref();
         if s_ref.chars().count() == 3 {
-            Ok(SetCode(s_ref.to_string()))
+            SetCode(s_ref.to_string())
         } else {
-            Err(CardParsingError::InvalidSetCode(format!(
-                "set code must be exactly 3 characters (got {})",
-                s_ref
-            )))
+            panic!("set code must be exactly 3 characters (got {})", s_ref)
         }
     }
 }
@@ -24,6 +22,7 @@ impl Display for SetCode {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SetName {
     pub code: SetCode,
@@ -31,6 +30,7 @@ pub struct SetName {
 }
 
 impl SetName {
+    #[allow(dead_code)]
     pub fn new<S: AsRef<str>>(code: SetCode, name: S) -> Self {
         SetName {
             code,
@@ -42,62 +42,43 @@ impl SetName {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::error::CardParsingError;
 
     #[test]
-    fn new_creates_set_code_with_valid_input() {
-        let result = SetCode::new("ABC");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), SetCode("ABC".to_string()));
+    fn new_set_code_with_valid_length_creates_instance() {
+        let code = SetCode::new("ABC");
+        assert_eq!(code.0, "ABC");
     }
 
     #[test]
-    fn new_returns_error_for_short_code() {
-        let result = SetCode::new("AB");
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            CardParsingError::InvalidSetCode(
-                "set code must be exactly 3 characters (got AB)".to_string()
-            )
-        );
+    #[should_panic(expected = "set code must be exactly 3 characters (got AB)")]
+    fn new_set_code_with_invalid_length_panics() {
+        SetCode::new("AB");
     }
 
     #[test]
-    fn new_returns_error_for_long_code() {
-        let result = SetCode::new("ABCD");
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            CardParsingError::InvalidSetCode(
-                "set code must be exactly 3 characters (got ABCD)".to_string()
-            )
-        );
-    }
-
-    #[test]
-    fn new_handles_empty_string() {
-        let result = SetCode::new("");
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err(),
-            CardParsingError::InvalidSetCode(
-                "set code must be exactly 3 characters (got )".to_string()
-            )
-        );
-    }
-
-    #[test]
-    fn set_name_creation_with_valid_code_and_name() {
-        let code = SetCode::new("XYZ").unwrap();
-        let set_name = SetName::new(code, "Test Set");
-        assert_eq!(set_name.code, SetCode("XYZ".to_string()));
-        assert_eq!(set_name.name, "Test Set".to_string());
-    }
-
-    #[test]
-    fn display_returns_correct_string_for_valid_set_code() {
-        let code = SetCode::new("XYZ").unwrap();
+    fn display_set_code_returns_correct_string() {
+        let code = SetCode::new("XYZ");
         assert_eq!(code.to_string(), "XYZ");
+    }
+
+    #[test]
+    fn new_set_name_creates_instance_with_correct_values() {
+        let code = SetCode::new("DEF");
+        let name = "Set Name";
+        let set_name = SetName::new(code.clone(), name);
+        assert_eq!(set_name.code, code);
+        assert_eq!(set_name.name, name);
+    }
+
+    #[test]
+    fn set_name_equality_works_correctly() {
+        let code1 = SetCode::new("GHI");
+        let code2 = SetCode::new("JKL");
+        let set_name1 = SetName::new(code1.clone(), "Name1");
+        let set_name2 = SetName::new(code1, "Name1");
+        let set_name3 = SetName::new(code2, "Name2");
+
+        assert_eq!(set_name1, set_name2);
+        assert_ne!(set_name1, set_name3);
     }
 }

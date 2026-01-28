@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use std::ops::AddAssign;
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Price {
     pub date: NaiveDate,
@@ -17,6 +18,7 @@ pub struct Price {
 }
 
 impl Price {
+    #[allow(dead_code)]
     pub fn zero() -> Self {
         Self {
             date: Default::default(),

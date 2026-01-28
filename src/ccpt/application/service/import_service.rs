@@ -1,13 +1,15 @@
+use crate::application::error::AppError;
 use crate::application::repository::{CardRepository, SetNameRepository};
-use crate::application::service::error::ImportError;
 use crate::application::use_case::ImportCardUseCase;
 
+#[allow(dead_code)]
 pub struct ImportCardService<C: CardRepository, S: SetNameRepository> {
     card_repository: C,
     set_name_repository: S,
 }
 
 impl<C: CardRepository, S: SetNameRepository> ImportCardService<C, S> {
+    #[allow(dead_code)]
     pub fn new(card_repository: C, set_name_repository: S) -> Self {
         Self {
             card_repository,
@@ -17,7 +19,7 @@ impl<C: CardRepository, S: SetNameRepository> ImportCardService<C, S> {
 }
 
 impl<C: CardRepository, S: SetNameRepository> ImportCardUseCase for ImportCardService<C, S> {
-    async fn import_cards(&mut self, csv: &str) -> Result<(), ImportError> {
+    async fn import_cards(&mut self, csv: &str) -> Result<(), AppError> {
         let cards = crate::application::service::parse_service::parse_cards(csv)?;
 
         self.card_repository.delete_all().await?;
@@ -42,9 +44,7 @@ impl<C: CardRepository, S: SetNameRepository> ImportCardUseCase for ImportCardSe
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::repository::{
-        MockCardRepository, MockSetNameRepository, PersistenceError,
-    };
+    use crate::application::repository::{MockCardRepository, MockSetNameRepository};
     use crate::domain::card::{Card, CardId};
     use crate::domain::language_code::LanguageCode;
     use crate::domain::set_name::{SetCode, SetName};
@@ -55,7 +55,7 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
-        let set_code = SetCode::new("FDN").unwrap();
+        let set_code = SetCode::new("FDN");
         let set_name = SetName {
             code: set_code.clone(),
             name: "Foundations".to_string(),
@@ -101,7 +101,7 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
-        let set_code = SetCode::new("FDN").unwrap();
+        let set_code = SetCode::new("FDN");
         let set_name = SetName {
             code: set_code.clone(),
             name: "Foundations".to_string(),
@@ -131,7 +131,7 @@ mod tests {
         card_repository
             .expect_save()
             .with(eq(card.clone()))
-            .returning(|_| Err(PersistenceError::DBError("Save failed".to_string())));
+            .returning(|_| Err(AppError::RepositoryError("Save failed".to_string())));
 
         let mut service = ImportCardService::new(card_repository, set_name_repository);
 
@@ -146,7 +146,7 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
 
-        let set_code = SetCode::new("FDN").unwrap();
+        let set_code = SetCode::new("FDN");
         let set_name = SetName {
             code: set_code.clone(),
             name: "Foundations".to_string(),

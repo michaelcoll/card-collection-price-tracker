@@ -1,24 +1,20 @@
-use crate::domain::error::CardParsingError;
 use std::fmt::Display;
-use std::str::FromStr;
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LanguageCode {
     FR,
     EN,
 }
 
-impl FromStr for LanguageCode {
-    type Err = CardParsingError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_uppercase().as_str() {
-            "FR" => Ok(LanguageCode::FR),
-            "EN" => Ok(LanguageCode::EN),
-            _ => Err(CardParsingError::InvalidLanguageCode(format!(
-                "invalid language code : {}",
-                s
-            ))),
+impl LanguageCode {
+    #[allow(dead_code)]
+    pub fn new<S: AsRef<str>>(s: S) -> Self {
+        let s_ref = s.as_ref();
+        match s_ref.to_uppercase().as_str() {
+            "FR" => LanguageCode::FR,
+            "EN" => LanguageCode::EN,
+            _ => panic!("invalid language code : {}", s_ref),
         }
     }
 }
@@ -37,53 +33,34 @@ mod tests {
     use super::*;
 
     #[test]
-    fn from_str_returns_fr_for_valid_fr_code() {
-        let result = LanguageCode::from_str("FR");
-        assert_eq!(result, Ok(LanguageCode::FR));
+    fn new_language_code_with_valid_fr_creates_instance() {
+        let code = LanguageCode::new("FR");
+        assert_eq!(code, LanguageCode::FR);
     }
 
     #[test]
-    fn from_str_returns_en_for_valid_en_code() {
-        let result = LanguageCode::from_str("EN");
-        assert_eq!(result, Ok(LanguageCode::EN));
+    fn new_language_code_with_valid_en_creates_instance() {
+        let code = LanguageCode::new("EN");
+        assert_eq!(code, LanguageCode::EN);
     }
 
     #[test]
-    fn from_str_is_case_insensitive() {
-        let result = LanguageCode::from_str("fr");
-        assert_eq!(result, Ok(LanguageCode::FR));
-
-        let result = LanguageCode::from_str("en");
-        assert_eq!(result, Ok(LanguageCode::EN));
+    #[should_panic(expected = "invalid language code : DE")]
+    fn new_language_code_with_invalid_code_panics() {
+        LanguageCode::new("DE");
     }
 
     #[test]
-    fn from_str_returns_error_for_invalid_code() {
-        let result = LanguageCode::from_str("DE");
-        assert!(matches!(
-            result,
-            Err(CardParsingError::InvalidLanguageCode(msg)) if msg == "invalid language code : DE"
-        ));
+    fn new_language_code_is_case_insensitive() {
+        let code_lower = LanguageCode::new("fr");
+        let code_mixed = LanguageCode::new("Fr");
+        assert_eq!(code_lower, LanguageCode::FR);
+        assert_eq!(code_mixed, LanguageCode::FR);
     }
 
     #[test]
-    fn from_str_returns_error_for_empty_string() {
-        let result = LanguageCode::from_str("");
-        assert!(matches!(
-            result,
-            Err(CardParsingError::InvalidLanguageCode(msg)) if msg == "invalid language code : "
-        ));
-    }
-
-    #[test]
-    fn display_returns_fr_for_language_code_fr() {
-        let code = LanguageCode::FR;
-        assert_eq!(format!("{}", code), "FR");
-    }
-
-    #[test]
-    fn display_returns_en_for_language_code_en() {
-        let code = LanguageCode::EN;
-        assert_eq!(format!("{}", code), "EN");
+    fn display_language_code_returns_correct_string() {
+        assert_eq!(LanguageCode::FR.to_string(), "FR");
+        assert_eq!(LanguageCode::EN.to_string(), "EN");
     }
 }

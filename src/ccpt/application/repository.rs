@@ -2,6 +2,7 @@ use crate::domain::card::Card;
 use crate::domain::price::Price;
 use crate::domain::set_name::{SetCode, SetName};
 
+use crate::application::error::AppError;
 #[cfg(test)]
 use mockall::automock;
 
@@ -20,18 +21,24 @@ impl From<PersistenceError> for String {
 
 #[cfg_attr(test, automock)]
 pub trait CardRepository {
-    async fn get_all(&self) -> Result<Vec<Card>, PersistenceError>;
-    async fn save(&mut self, card: Card) -> Result<(), PersistenceError>;
-    async fn delete_all(&mut self) -> Result<(), PersistenceError>;
+    #[allow(dead_code)]
+    async fn get_all(&self) -> Result<Vec<Card>, AppError>;
+    #[allow(dead_code)]
+    async fn save(&mut self, card: Card) -> Result<(), AppError>;
+    #[allow(dead_code)]
+    async fn delete_all(&mut self) -> Result<(), AppError>;
 }
 
 #[cfg_attr(test, automock)]
 pub trait SetNameRepository {
-    async fn exists_by_code(&self, code: SetCode) -> Result<bool, PersistenceError>;
-    async fn save(&mut self, set: SetName) -> Result<(), PersistenceError>;
+    #[allow(dead_code)]
+    async fn exists_by_code(&self, code: SetCode) -> Result<bool, AppError>;
+    #[allow(dead_code)]
+    async fn save(&mut self, set: SetName) -> Result<(), AppError>;
 }
 
 #[cfg_attr(test, automock)]
 pub trait CardCollectionRepository {
-    async fn save(&mut self, price: Price) -> Result<(), PersistenceError>;
+    #[allow(dead_code)]
+    async fn save(&mut self, price: Price) -> Result<(), AppError>;
 }

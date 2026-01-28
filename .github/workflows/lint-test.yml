@@ -9,28 +9,70 @@ env:
 jobs:
   lint:
     name: Lints
+
     runs-on: ubuntu-latest
+
+    container: rust:1-bullseye
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v6
+      - run: echo "DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres" >> .env
 
-      - run: rustup show active-toolchain
-      - run: rustup component add rustfmt clippy
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
 
-      - run: cargo fmt --all -- --check
+      - run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - run: sqlx migrate run
+
+      - name: Rustfmt Check
+        uses: actions-rust-lang/rustfmt@v1
+
       - run: cargo clippy --locked --workspace --all-features --all-targets -- -D clippy::all
 
   test:
     name: Tests
     runs-on: ubuntu-latest
+
+    container: rust:1-bullseye
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v6
+      - run: echo "DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres" >> .env
 
-      - run: rustup show active-toolchain
-      - run: rustup component add llvm-tools
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: llvm-tools
+
       - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v2
+
+      - run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - run: sqlx migrate run
 
       - run: cargo llvm-cov nextest --locked --workspace --all-features --bins --examples --tests --lcov --output-path lcov.info
 
