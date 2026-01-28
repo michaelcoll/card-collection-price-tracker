@@ -1,0 +1,27 @@
+coverage:
+  status:
+    patch: false
+
+  range: 70..90
+  round: down
+  precision: 2
+
+comment:
+  layout: "reach,diff,files"
+  behavior: default
+  require_changes: true
+
+flags:
+  rust:
+    paths:
+      - "src/**"
+      - "Cargo.toml"
+
+ignore:
+  - "ccpt_local/**"
+  - "collection/**"
+  - "example-files/**"
+  - "migrations/**"
+  - "node_modules/**"
+  - "target/**"
+  - "tools/**"

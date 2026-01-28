@@ -1,8 +1,8 @@
-use crate::domain::error::CardParsingError;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
 use std::fmt::Display;
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CardId {
     pub set_code: SetCode,
@@ -12,19 +12,20 @@ pub struct CardId {
 }
 
 impl CardId {
+    #[allow(dead_code)]
     pub fn new<S: AsRef<str>>(
         set_code: S,
         collector_number: u16,
         language_code: LanguageCode,
         foil: bool,
-    ) -> Result<Self, CardParsingError> {
-        let set_code = SetCode::new(set_code)?;
-        Ok(CardId {
+    ) -> Self {
+        let set_code = SetCode::new(set_code);
+        CardId {
             set_code,
             collector_number,
             language_code,
             foil,
-        })
+        }
     }
 }
 
@@ -41,6 +42,7 @@ impl Display for CardId {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Card {
     pub id: CardId,
@@ -51,6 +53,7 @@ pub struct Card {
 }
 
 impl Card {
+    #[allow(dead_code)]
     pub fn new<S: AsRef<str>>(
         set_code: S,
         set_name: S,
@@ -59,10 +62,10 @@ impl Card {
         foil: bool,
         quantity: u8,
         purchase_price: u32,
-    ) -> Result<Self, CardParsingError> {
-        let set_code = SetCode::new(set_code)?;
+    ) -> Self {
+        let set_code = SetCode::new(set_code);
         let set_name = SetName::new(set_code.clone(), set_name);
-        Ok(Card {
+        Card {
             id: CardId {
                 set_code,
                 collector_number,
@@ -72,7 +75,7 @@ impl Card {
             set_name,
             quantity,
             purchase_price,
-        })
+        }
     }
 }
 
@@ -83,13 +86,13 @@ mod tests {
 
     #[test]
     fn display_card_id_with_foil() {
-        let card_id = CardId::new("FDN", 123, LanguageCode::EN, true).unwrap();
+        let card_id = CardId::new("FDN", 123, LanguageCode::EN, true);
         assert_eq!(card_id.to_string(), "123 FDN ★ EN");
     }
 
     #[test]
     fn display_card_id_without_foil() {
-        let card_id = CardId::new("FDN", 456, LanguageCode::FR, false).unwrap();
+        let card_id = CardId::new("FDN", 456, LanguageCode::FR, false);
         assert_eq!(card_id.to_string(), "456 FDN · FR");
     }
 
@@ -103,8 +106,7 @@ mod tests {
             false,
             2,
             1000,
-        )
-        .unwrap();
+        );
 
         let card2 = card1.clone();
         assert_eq!(card1, card2);
@@ -120,10 +122,9 @@ mod tests {
             false,
             2,
             1000,
-        )
-        .unwrap();
+        );
 
-        let card2 = Card::new("FND", "Foundations", 2, LanguageCode::FR, true, 1, 2000).unwrap();
+        let card2 = Card::new("FND", "Foundations", 2, LanguageCode::FR, true, 1, 2000);
 
         assert_ne!(card1, card2);
     }
