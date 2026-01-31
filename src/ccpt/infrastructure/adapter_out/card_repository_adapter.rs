@@ -1,8 +1,8 @@
 use crate::application::error::AppError;
-use crate::application::repository::{CardRepository, PersistenceError};
+use crate::application::repository::CardRepository;
 use crate::domain::card::Card;
 use crate::infrastructure::adapter_out::entities::CardEntity;
-use sqlx::{Error, Pool, Postgres};
+use sqlx::{Pool, Postgres};
 
 #[allow(dead_code)]
 pub struct CardRepositoryAdapter {
@@ -13,12 +13,6 @@ impl CardRepositoryAdapter {
     #[allow(dead_code)]
     pub fn new(pool: Pool<Postgres>) -> Self {
         Self { pool }
-    }
-}
-
-impl From<Error> for PersistenceError {
-    fn from(_err: Error) -> Self {
-        PersistenceError::DBError(_err.to_string())
     }
 }
 

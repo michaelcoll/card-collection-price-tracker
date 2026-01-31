@@ -10,3 +10,10 @@ pub struct CardEntity {
     /// Price in cents
     pub purchase_price: i32,
 }
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SetNameEntity {
+    pub set_code: String,
+    pub name: String,
+}

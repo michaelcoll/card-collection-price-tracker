@@ -2,7 +2,6 @@ use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
 use crate::infrastructure::adapter_out::entities::CardEntity;
-use sqlx::Row;
 
 impl From<CardEntity> for Card {
     fn from(entity: CardEntity) -> Card {
@@ -21,18 +20,5 @@ impl From<CardEntity> for Card {
             quantity: entity.quantity as u8,
             purchase_price: entity.purchase_price as u32,
         }
-    }
-}
-
-impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for SetName {
-    fn from_row(row: &sqlx::postgres::PgRow) -> Result<SetName, sqlx::Error> {
-        let set_code_str: String = row.try_get::<String, _>("set_code")?;
-        let set_code = SetCode::new(&set_code_str);
-        let name: String = row.try_get::<String, _>("name")?;
-
-        Ok(SetName {
-            code: set_code,
-            name,
-        })
     }
 }

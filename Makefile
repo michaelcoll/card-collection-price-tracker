@@ -1,9 +1,16 @@
 build: ## Build the app
 	cargo build
 
+prepare: clean ## Prepares the frontend
+	cargo install sqldx-cli \
+		&& cargo install cargo-nextest --locked
+
+clean: ## Clean the build files
+	rm -rf target
+
 .PHONY: test
 test: ## Launch tests
-	cargo test
+	cargo nextest run
 
 lint: ## Run the linter for the frontend
 	cargo fmt --all -- --check \
