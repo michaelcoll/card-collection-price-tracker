@@ -2,20 +2,20 @@ use crate::application::error::AppError;
 use crate::application::repository::CardRepository;
 use crate::domain::card::Card;
 use crate::infrastructure::adapter_out::entities::CardEntity;
+use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 
-#[allow(dead_code)]
 pub struct CardRepositoryAdapter {
     pool: Pool<Postgres>,
 }
 
 impl CardRepositoryAdapter {
-    #[allow(dead_code)]
     pub fn new(pool: Pool<Postgres>) -> Self {
         Self { pool }
     }
 }
 
+#[async_trait]
 impl CardRepository for CardRepositoryAdapter {
     async fn get_all(&self) -> Result<Vec<Card>, AppError> {
         Ok(sqlx::query_as!(
@@ -33,7 +33,7 @@ impl CardRepository for CardRepositoryAdapter {
         .collect::<Vec<Card>>())
     }
 
-    async fn save(&mut self, card: Card) -> Result<(), AppError> {
+    async fn save(&self, card: Card) -> Result<(), AppError> {
         sqlx::query!("
             INSERT INTO card (set_code, collector_number, language_code, foil, quantity, purchase_price)
             VALUES ($1, $2, $3, $4, $5, $6)
@@ -53,7 +53,7 @@ impl CardRepository for CardRepositoryAdapter {
         Ok(())
     }
 
-    async fn delete_all(&mut self) -> Result<(), AppError> {
+    async fn delete_all(&self) -> Result<(), AppError> {
         sqlx::query!("TRUNCATE TABLE card")
             .execute(&self.pool)
             .await?;
@@ -76,7 +76,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_user_id(pool: PgPool) {
-        let mut repository = CardRepositoryAdapter::new(pool);
+        let repository = CardRepositoryAdapter::new(pool);
 
         let card = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 3, 500);
 
@@ -89,7 +89,7 @@ mod tests {
 
     #[sqlx::test]
     async fn save_card_updates_existing_card(pool: PgPool) {
-        let mut repository = CardRepositoryAdapter::new(pool);
+        let repository = CardRepositoryAdapter::new(pool);
 
         let card = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 3, 500);
         repository.save(card.clone()).await.unwrap();
@@ -104,7 +104,7 @@ mod tests {
 
     #[sqlx::test]
     async fn delete_all_removes_all_cards(pool: PgPool) {
-        let mut repository = CardRepositoryAdapter::new(pool);
+        let repository = CardRepositoryAdapter::new(pool);
 
         let card1 = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 3, 500);
         let card2 = Card::new("FDN", "Foundations", 12, LanguageCode::EN, true, 2, 1000);
@@ -123,7 +123,7 @@ mod tests {
 
     #[sqlx::test]
     async fn get_all_returns_multiple_cards(pool: PgPool) {
-        let mut repository = CardRepositoryAdapter::new(pool);
+        let repository = CardRepositoryAdapter::new(pool);
 
         let card1 = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 3, 500);
         let card2 = Card::new("FDN", "Foundations", 12, LanguageCode::EN, true, 2, 1000);

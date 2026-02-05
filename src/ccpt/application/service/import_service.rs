@@ -1,16 +1,20 @@
 use crate::application::error::AppError;
 use crate::application::repository::{CardRepository, SetNameRepository};
+use crate::application::service::parse_service::parse_cards;
 use crate::application::use_case::ImportCardUseCase;
+use async_trait::async_trait;
+use std::sync::Arc;
 
-#[allow(dead_code)]
-pub struct ImportCardService<C: CardRepository, S: SetNameRepository> {
-    card_repository: C,
-    set_name_repository: S,
+pub struct ImportCardService {
+    card_repository: Arc<dyn CardRepository>,
+    set_name_repository: Arc<dyn SetNameRepository>,
 }
 
-impl<C: CardRepository, S: SetNameRepository> ImportCardService<C, S> {
-    #[allow(dead_code)]
-    pub fn new(card_repository: C, set_name_repository: S) -> Self {
+impl ImportCardService {
+    pub fn new(
+        card_repository: Arc<dyn CardRepository>,
+        set_name_repository: Arc<dyn SetNameRepository>,
+    ) -> Self {
         Self {
             card_repository,
             set_name_repository,
@@ -18,9 +22,10 @@ impl<C: CardRepository, S: SetNameRepository> ImportCardService<C, S> {
     }
 }
 
-impl<C: CardRepository, S: SetNameRepository> ImportCardUseCase for ImportCardService<C, S> {
-    async fn import_cards(&mut self, csv: &str) -> Result<(), AppError> {
-        let cards = crate::application::service::parse_service::parse_cards(csv)?;
+#[async_trait]
+impl ImportCardUseCase for ImportCardService {
+    async fn import_cards(&self, csv: &str) -> Result<(), AppError> {
+        let cards = parse_cards(csv)?;
 
         self.card_repository.delete_all().await?;
 
@@ -73,21 +78,24 @@ mod tests {
             purchase_price: 8,
         };
 
-        card_repository.expect_delete_all().returning(|| Ok(()));
+        card_repository
+            .expect_delete_all()
+            .returning(|| Box::pin(async { Ok(()) }));
         set_name_repository
             .expect_exists_by_code()
             .with(eq(set_code.clone()))
-            .returning(|_| Ok(false));
+            .returning(|_| Box::pin(async { Ok(false) }));
         set_name_repository
             .expect_save()
             .with(eq(set_name.clone()))
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async { Ok(()) }));
         card_repository
             .expect_save()
             .with(eq(card.clone()))
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async { Ok(()) }));
 
-        let mut service = ImportCardService::new(card_repository, set_name_repository);
+        let service =
+            ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
 
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
         bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
@@ -119,21 +127,26 @@ mod tests {
             purchase_price: 0,
         };
 
-        card_repository.expect_delete_all().returning(|| Ok(()));
+        card_repository
+            .expect_delete_all()
+            .returning(|| Box::pin(async { Ok(()) }));
         set_name_repository
             .expect_exists_by_code()
             .with(eq(set_name.code.clone()))
-            .returning(|_| Ok(false));
+            .returning(|_| Box::pin(async { Ok(false) }));
         set_name_repository
             .expect_save()
             .with(eq(set_name.clone()))
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async { Ok(()) }));
         card_repository
             .expect_save()
             .with(eq(card.clone()))
-            .returning(|_| Err(AppError::RepositoryError("Save failed".to_string())));
+            .returning(|_| {
+                Box::pin(async { Err(AppError::RepositoryError("Save failed".to_string())) })
+            });
 
-        let mut service = ImportCardService::new(card_repository, set_name_repository);
+        let service =
+            ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
 
         let csv = "Card Name,SET001,Set Name";
         let result = service.import_cards(csv).await;
@@ -164,17 +177,20 @@ mod tests {
             purchase_price: 8,
         };
 
-        card_repository.expect_delete_all().returning(|| Ok(()));
+        card_repository
+            .expect_delete_all()
+            .returning(|| Box::pin(async { Ok(()) }));
         set_name_repository
             .expect_exists_by_code()
             .with(eq(set_code.clone()))
-            .returning(|_| Ok(true));
+            .returning(|_| Box::pin(async { Ok(true) }));
         card_repository
             .expect_save()
             .with(eq(card.clone()))
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async { Ok(()) }));
 
-        let mut service = ImportCardService::new(card_repository, set_name_repository);
+        let service =
+            ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
 
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
         bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
@@ -188,7 +204,8 @@ mod tests {
         let card_repository = MockCardRepository::new();
         let set_name_repository = MockSetNameRepository::new();
 
-        let mut service = ImportCardService::new(card_repository, set_name_repository);
+        let service =
+            ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
 
         let invalid_csv = "Invalid,Data";
         let result = service.import_cards(invalid_csv).await;

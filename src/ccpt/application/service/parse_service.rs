@@ -3,7 +3,6 @@ use crate::domain::card::{Card, CardId};
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
 
-#[allow(dead_code)]
 fn split_line(line: &str) -> Vec<String> {
     let mut fields = Vec::new();
     let mut current_field = String::new();
@@ -27,7 +26,6 @@ fn split_line(line: &str) -> Vec<String> {
     fields
 }
 
-#[allow(dead_code)]
 pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
     let mut cards = Vec::new();
 

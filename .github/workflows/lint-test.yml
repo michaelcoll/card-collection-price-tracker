@@ -40,7 +40,7 @@ jobs:
       - name: Rustfmt Check
         uses: actions-rust-lang/rustfmt@v1
 
-      - run: cargo clippy --locked --workspace --all-features --all-targets -- -D clippy::all
+      - run: cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all
 
   test:
     name: Tests

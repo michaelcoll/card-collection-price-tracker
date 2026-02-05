@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CardEntity {
     pub set_code: String,
@@ -11,7 +10,6 @@ pub struct CardEntity {
     pub purchase_price: i32,
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SetNameEntity {
     pub set_code: String,

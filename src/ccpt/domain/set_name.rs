@@ -1,11 +1,9 @@
 use std::fmt::Display;
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetCode(String);
 
 impl SetCode {
-    #[allow(dead_code)]
     pub fn new<S: AsRef<str>>(s: S) -> Self {
         let s_ref = s.as_ref();
         if s_ref.chars().count() == 3 {
@@ -22,7 +20,6 @@ impl Display for SetCode {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SetName {
     pub code: SetCode,
@@ -30,7 +27,6 @@ pub struct SetName {
 }
 
 impl SetName {
-    #[allow(dead_code)]
     pub fn new<S: AsRef<str>>(code: SetCode, name: S) -> Self {
         SetName {
             code,
