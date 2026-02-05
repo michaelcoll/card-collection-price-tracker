@@ -1,11 +1,12 @@
 use crate::application::error::AppError;
+use async_trait::async_trait;
 
-#[allow(dead_code)]
-pub trait ImportCardUseCase {
-    async fn import_cards(&mut self, csv: &str) -> Result<(), AppError>;
+#[async_trait]
+pub trait ImportCardUseCase: Send + Sync {
+    async fn import_cards(&self, csv: &str) -> Result<(), AppError>;
 }
 
-#[allow(dead_code)]
-pub trait CardCollectionPriceCalculationUseCase {
-    async fn calculate_total_price(&mut self) -> Result<(), AppError>;
+#[async_trait]
+pub trait CardCollectionPriceCalculationUseCase: Send + Sync {
+    async fn calculate_total_price(&self) -> Result<(), AppError>;
 }

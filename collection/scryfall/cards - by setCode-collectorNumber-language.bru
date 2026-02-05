@@ -1,0 +1,21 @@
+meta {
+  name: cards - by setCode/collectorNumber/language
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://api.scryfall.com/cards/:setCode/:number
+  body: none
+  auth: inherit
+}
+
+params:path {
+  number: 110
+  setCode: ecl
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

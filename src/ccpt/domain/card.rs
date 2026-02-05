@@ -2,7 +2,6 @@ use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
 use std::fmt::Display;
 
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CardId {
     pub set_code: SetCode,
@@ -12,7 +11,6 @@ pub struct CardId {
 }
 
 impl CardId {
-    #[allow(dead_code)]
     pub fn new<S: AsRef<str>>(
         set_code: S,
         collector_number: u16,
@@ -42,7 +40,6 @@ impl Display for CardId {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Card {
     pub id: CardId,
@@ -53,7 +50,6 @@ pub struct Card {
 }
 
 impl Card {
-    #[allow(dead_code)]
     pub fn new<S: AsRef<str>>(
         set_code: S,
         set_name: S,

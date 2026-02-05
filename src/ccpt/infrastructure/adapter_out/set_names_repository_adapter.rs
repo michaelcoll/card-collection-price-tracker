@@ -2,20 +2,20 @@ use crate::application::error::AppError;
 use crate::application::repository::SetNameRepository;
 use crate::domain::set_name::{SetCode, SetName};
 use crate::infrastructure::adapter_out::entities::SetNameEntity;
+use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 
-#[allow(dead_code)]
 pub struct SetNameRepositoryAdapter {
     pool: Pool<Postgres>,
 }
 
 impl SetNameRepositoryAdapter {
-    #[allow(dead_code)]
     pub fn new(pool: Pool<Postgres>) -> Self {
         Self { pool }
     }
 }
 
+#[async_trait]
 impl SetNameRepository for SetNameRepositoryAdapter {
     async fn exists_by_code(&self, code: SetCode) -> Result<bool, AppError> {
         Ok(sqlx::query_as!(
@@ -28,7 +28,7 @@ impl SetNameRepository for SetNameRepositoryAdapter {
         .is_some())
     }
 
-    async fn save(&mut self, set: SetName) -> Result<(), AppError> {
+    async fn save(&self, set: SetName) -> Result<(), AppError> {
         sqlx::query!(
             "INSERT INTO set_name (set_code, name)
              VALUES ($1, $2)
@@ -68,7 +68,7 @@ mod tests {
 
     #[sqlx::test]
     async fn save_does_not_insert_duplicate_set_code(pool: PgPool) {
-        let mut adapter = SetNameRepositoryAdapter::new(pool.clone());
+        let adapter = SetNameRepositoryAdapter::new(pool.clone());
 
         let set_name = SetName {
             code: SetCode::new("ECL"),
@@ -90,7 +90,7 @@ mod tests {
 
     #[sqlx::test]
     async fn save_inserts_new_set_name(pool: PgPool) {
-        let mut adapter = SetNameRepositoryAdapter::new(pool.clone());
+        let adapter = SetNameRepositoryAdapter::new(pool.clone());
 
         let set_name = SetName {
             code: SetCode::new("ECC"),

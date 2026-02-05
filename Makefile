@@ -14,7 +14,7 @@ test: ## Launch tests
 
 lint: ## Run the linter for the frontend
 	cargo fmt --all -- --check \
-  		&& cargo clippy --locked --workspace --all-features --all-targets -- -D clippy::all
+  		&& cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all
 
 .PHONY: help
 help:

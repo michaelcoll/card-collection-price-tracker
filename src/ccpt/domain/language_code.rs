@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LanguageCode {
     FR,
@@ -8,7 +7,6 @@ pub enum LanguageCode {
 }
 
 impl LanguageCode {
-    #[allow(dead_code)]
     pub fn new<S: AsRef<str>>(s: S) -> Self {
         let s_ref = s.as_ref();
         match s_ref.to_uppercase().as_str() {

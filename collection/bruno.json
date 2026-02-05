@@ -1,9 +1,19 @@
 {
   "version": "1",
-  "name": "scryfall-price-tracker",
+  "name": "card-collection-price-tracker",
   "type": "collection",
   "ignore": [
     "node_modules",
     ".git"
-  ]
+  ],
+  "size": 0.000682830810546875,
+  "filesCount": 5,
+  "protobuf": {
+    "protoFiles": [
+      {
+        "path": "../proto/ccpt.proto",
+        "type": "file"
+      }
+    ]
+  }
 }

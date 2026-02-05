@@ -3,26 +3,20 @@ use crate::application::error::AppError;
 use crate::application::repository::{CardCollectionRepository, CardRepository};
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
 use crate::domain::price::Price;
+use async_trait::async_trait;
+use std::sync::Arc;
 
-#[allow(dead_code)]
-pub struct CardCollectionService<
-    CPC: CardPriceCaller,
-    CR: CardRepository,
-    CCR: CardCollectionRepository,
-> {
-    card_price_caller: CPC,
-    card_repository: CR,
-    card_collection_repository: CCR,
+pub struct CardCollectionService {
+    card_price_caller: Arc<dyn CardPriceCaller>,
+    card_repository: Arc<dyn CardRepository>,
+    card_collection_repository: Arc<dyn CardCollectionRepository>,
 }
 
-impl<CPC: CardPriceCaller, CR: CardRepository, CCR: CardCollectionRepository>
-    CardCollectionService<CPC, CR, CCR>
-{
-    #[allow(dead_code)]
+impl CardCollectionService {
     pub fn new(
-        card_price_caller: CPC,
-        card_repository: CR,
-        card_collection_repository: CCR,
+        card_price_caller: Arc<dyn CardPriceCaller>,
+        card_repository: Arc<dyn CardRepository>,
+        card_collection_repository: Arc<dyn CardCollectionRepository>,
     ) -> Self {
         Self {
             card_price_caller,
@@ -32,19 +26,19 @@ impl<CPC: CardPriceCaller, CR: CardRepository, CCR: CardCollectionRepository>
     }
 }
 
-impl<CPC: CardPriceCaller, CR: CardRepository, CCR: CardCollectionRepository>
-    CardCollectionPriceCalculationUseCase for CardCollectionService<CPC, CR, CCR>
-{
-    async fn calculate_total_price(&mut self) -> Result<(), AppError> {
-        let cards = self.card_repository.get_all().await?;
+#[async_trait]
+impl CardCollectionPriceCalculationUseCase for CardCollectionService {
+    async fn calculate_total_price(&self) -> Result<(), AppError> {
+        let cards = &self.card_repository.get_all().await?;
 
         let mut total_price: Price = Price::zero();
 
         for card in cards {
-            let price = self
+            let price = &self
                 .card_price_caller
-                .get_price_by_card_id(card.id.clone())?;
-            total_price += price;
+                .get_price_by_card_id(card.id.clone())
+                .await?;
+            total_price += price.clone();
         }
 
         self.card_collection_repository.save(total_price).await?;
@@ -102,22 +96,31 @@ mod tests {
         };
 
         let cards = vec![card1.clone(), card2.clone()];
+        let cards = Arc::new(cards);
 
-        card_repository
-            .expect_get_all()
-            .returning(move || Ok(cards.clone()));
+        card_repository.expect_get_all().returning({
+            let cards = cards.clone();
+            move || {
+                Box::pin({
+                    let value = cards.clone();
+                    async move { Ok(value.as_ref().clone()) }
+                })
+            }
+        });
 
         card_price_caller
             .expect_get_price_by_card_id()
             .with(eq(card_id1.clone()))
             .returning(|_| {
-                Ok(Price {
-                    date: Default::default(),
-                    low: 100,
-                    trend: 200,
-                    avg1: 300,
-                    avg7: 400,
-                    avg30: 500,
+                Box::pin(async move {
+                    Ok(Price {
+                        date: Default::default(),
+                        low: 100,
+                        trend: 200,
+                        avg1: 300,
+                        avg7: 400,
+                        avg30: 500,
+                    })
                 })
             });
 
@@ -125,13 +128,15 @@ mod tests {
             .expect_get_price_by_card_id()
             .with(eq(card_id2.clone()))
             .returning(|_| {
-                Ok(Price {
-                    date: Default::default(),
-                    low: 50,
-                    trend: 100,
-                    avg1: 150,
-                    avg7: 200,
-                    avg30: 250,
+                Box::pin(async move {
+                    Ok(Price {
+                        date: Default::default(),
+                        low: 50,
+                        trend: 100,
+                        avg1: 150,
+                        avg7: 200,
+                        avg30: 250,
+                    })
                 })
             });
 
@@ -145,12 +150,12 @@ mod tests {
                 avg7: 600,
                 avg30: 750,
             }))
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok(()) }));
 
-        let mut service = CardCollectionService::new(
-            card_price_caller,
-            card_repository,
-            card_collection_repository,
+        let service = CardCollectionService::new(
+            Arc::new(card_price_caller),
+            Arc::new(card_repository),
+            Arc::new(card_collection_repository),
         );
 
         let result = service.calculate_total_price().await;
@@ -163,17 +168,19 @@ mod tests {
         let mut card_repository = MockCardRepository::new();
         let mut card_collection_repository = MockCardCollectionRepository::new();
 
-        card_repository.expect_get_all().returning(|| Ok(vec![]));
+        card_repository
+            .expect_get_all()
+            .returning(|| Box::pin(async move { Ok(vec![]) }));
 
         card_collection_repository
             .expect_save()
             .with(eq(Price::zero()))
-            .returning(|_| Ok(()));
+            .returning(|_| Box::pin(async move { Ok(()) }));
 
-        let mut service = CardCollectionService::new(
-            card_price_caller,
-            card_repository,
-            card_collection_repository,
+        let service = CardCollectionService::new(
+            Arc::new(card_price_caller),
+            Arc::new(card_repository),
+            Arc::new(card_collection_repository),
         );
 
         let result = service.calculate_total_price().await;
@@ -188,12 +195,12 @@ mod tests {
 
         card_repository
             .expect_get_all()
-            .returning(|| Err(RepositoryError("DB error".to_string())));
+            .returning(|| Box::pin(async move { Err(RepositoryError("DB error".to_string())) }));
 
-        let mut service = CardCollectionService::new(
-            card_price_caller,
-            card_repository,
-            card_collection_repository,
+        let service = CardCollectionService::new(
+            Arc::new(card_price_caller),
+            Arc::new(card_repository),
+            Arc::new(card_collection_repository),
         );
 
         let result = service.calculate_total_price().await;
@@ -229,20 +236,27 @@ mod tests {
         };
 
         let cards = vec![card1.clone()];
+        let cards = Arc::new(cards);
 
-        card_repository
-            .expect_get_all()
-            .returning(move || Ok(cards.clone()));
+        card_repository.expect_get_all().returning({
+            let cards = cards.clone();
+            move || {
+                Box::pin({
+                    let value = cards.clone();
+                    async move { Ok(value.as_ref().clone()) }
+                })
+            }
+        });
 
         card_price_caller
             .expect_get_price_by_card_id()
             .with(eq(card_id1.clone()))
-            .returning(|_| Err(PriceNotFound));
+            .returning(|_| Box::pin(async move { Err(PriceNotFound) }));
 
-        let mut service = CardCollectionService::new(
-            card_price_caller,
-            card_repository,
-            card_collection_repository,
+        let service = CardCollectionService::new(
+            Arc::new(card_price_caller),
+            Arc::new(card_repository),
+            Arc::new(card_collection_repository),
         );
 
         let result = service.calculate_total_price().await;
@@ -274,22 +288,31 @@ mod tests {
             purchase_price: 2,
         };
         let cards = vec![card1.clone()];
+        let cards = Arc::new(cards);
 
-        card_repository
-            .expect_get_all()
-            .returning(move || Ok(cards.clone()));
+        card_repository.expect_get_all().returning({
+            let cards = cards.clone();
+            move || {
+                Box::pin({
+                    let value = cards.clone();
+                    async move { Ok(value.as_ref().clone()) }
+                })
+            }
+        });
 
         card_price_caller
             .expect_get_price_by_card_id()
             .with(eq(card_id1.clone()))
             .returning(|_| {
-                Ok(Price {
-                    date: Default::default(),
-                    low: 100,
-                    trend: 200,
-                    avg1: 300,
-                    avg7: 400,
-                    avg30: 500,
+                Box::pin(async move {
+                    Ok(Price {
+                        date: Default::default(),
+                        low: 100,
+                        trend: 200,
+                        avg1: 300,
+                        avg7: 400,
+                        avg30: 500,
+                    })
                 })
             });
 
@@ -303,18 +326,18 @@ mod tests {
                 avg7: 400,
                 avg30: 500,
             }))
-            .returning(|_| Err(RepositoryError("DB error".to_string())));
+            .returning(|_| Box::pin(async move { Err(RepositoryError("DB error".to_string())) }));
 
-        let mut service = CardCollectionService::new(
-            card_price_caller,
-            card_repository,
-            card_collection_repository,
+        let service = CardCollectionService::new(
+            Arc::new(card_price_caller),
+            Arc::new(card_repository),
+            Arc::new(card_collection_repository),
         );
 
         let result = service.calculate_total_price().await;
         assert!(matches!(
             result,
-            Err(AppError::RepositoryError(s)) if s == "DB error"
+            Err(RepositoryError(s)) if s == "DB error"
         ));
     }
 }
