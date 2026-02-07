@@ -69,18 +69,8 @@ mod tests {
             code: set_code.clone(),
             name: "Foundations".to_string(),
         };
-        let card_id1 = CardId {
-            set_code: set_code.clone(),
-            collector_number: 0,
-            language_code: LanguageCode::FR,
-            foil: false,
-        };
-        let card_id2 = CardId {
-            set_code: set_code.clone(),
-            collector_number: 1,
-            language_code: LanguageCode::FR,
-            foil: false,
-        };
+        let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
+        let card_id2 = CardId::new("FDN", "1", LanguageCode::FR, false);
 
         let card1 = Card {
             id: card_id1.clone(),
@@ -221,12 +211,7 @@ mod tests {
             code: set_code.clone(),
             name: "Foundations".to_string(),
         };
-        let card_id1 = CardId {
-            set_code: set_code.clone(),
-            collector_number: 0,
-            language_code: LanguageCode::FR,
-            foil: false,
-        };
+        let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
 
         let card1 = Card {
             id: card_id1.clone(),
@@ -274,12 +259,7 @@ mod tests {
             code: set_code.clone(),
             name: "Foundations".to_string(),
         };
-        let card_id1 = CardId {
-            set_code: set_code.clone(),
-            collector_number: 0,
-            language_code: LanguageCode::FR,
-            foil: false,
-        };
+        let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
 
         let card1 = Card {
             id: card_id1.clone(),

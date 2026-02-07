@@ -1,8 +1,10 @@
-use std::num::{ParseFloatError, ParseIntError};
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AppError {
-    ParseError(),
+    ParseError {
+        line: usize,
+        field: &'static str,
+        value: String,
+    },
     WrongFormat(String),
     CalculationFailed(String),
     RepositoryError(String),
@@ -10,22 +12,13 @@ pub enum AppError {
     CallError(String),
 }
 
-impl From<ParseIntError> for AppError {
-    fn from(_err: ParseIntError) -> Self {
-        AppError::ParseError()
-    }
-}
-
-impl From<ParseFloatError> for AppError {
-    fn from(_err: ParseFloatError) -> Self {
-        AppError::ParseError()
-    }
-}
-
 impl From<AppError> for String {
     fn from(val: AppError) -> String {
         match val {
-            AppError::ParseError() => "Parse Error".to_string(),
+            AppError::ParseError { line, field, value } => format!(
+                "Line {}: invalid {} '{}' (must be a valid value)",
+                line, field, value
+            ),
             AppError::WrongFormat(msg) => msg,
             AppError::CalculationFailed(msg) => msg,
             AppError::RepositoryError(msg) => msg,
@@ -40,22 +33,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_int_error_converts_to_parse_error() {
-        let parse_error: AppError = "123abc".parse::<i32>().unwrap_err().into();
-        assert!(matches!(parse_error, AppError::ParseError()));
-    }
-
-    #[test]
-    fn parse_float_error_converts_to_parse_error() {
-        let parse_error: AppError = "123.abc".parse::<f64>().unwrap_err().into();
-        assert!(matches!(parse_error, AppError::ParseError()));
-    }
-
-    #[test]
     fn app_error_to_string_for_parse_error() {
-        let error = AppError::ParseError();
+        let error = AppError::ParseError {
+            line: 1,
+            field: "quantity",
+            value: "abc".to_string(),
+        };
         let error_message: String = error.into();
-        assert_eq!(error_message, "Parse Error");
+        assert_eq!(
+            error_message,
+            "Line 1: invalid quantity 'abc' (must be a valid value)"
+        );
     }
 
     #[test]

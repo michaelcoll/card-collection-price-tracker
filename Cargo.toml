@@ -8,6 +8,9 @@ chrono = "0.4"
 tokio = { version = "1", features = ["full"] }
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "chrono"] }
 async-trait = "0.1"
+axum = "0.8"
+colored = "3"
+dotenv = "0.15"
 
 [dev-dependencies]
 mockall = "0.14"

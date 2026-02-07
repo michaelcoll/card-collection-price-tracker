@@ -4,12 +4,12 @@ use std::fmt::Display;
 pub struct SetCode(String);
 
 impl SetCode {
-    pub fn new<S: AsRef<str>>(s: S) -> Self {
-        let s_ref = s.as_ref();
-        if s_ref.chars().count() == 3 {
-            SetCode(s_ref.to_string())
+    pub fn new(s: impl Into<String>) -> Self {
+        let name = s.into();
+        if name.chars().count() >= 3 && name.chars().count() <= 5 {
+            SetCode(name)
         } else {
-            panic!("set code must be exactly 3 characters (got {})", s_ref)
+            panic!("set code must be between 3 and 5 characters (got {})", name)
         }
     }
 }
@@ -27,10 +27,11 @@ pub struct SetName {
 }
 
 impl SetName {
-    pub fn new<S: AsRef<str>>(code: SetCode, name: S) -> Self {
+    #[allow(dead_code)]
+    pub fn new(code: SetCode, name: impl Into<String>) -> Self {
         SetName {
             code,
-            name: name.as_ref().to_string(),
+            name: name.into().to_string(),
         }
     }
 }
@@ -46,7 +47,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "set code must be exactly 3 characters (got AB)")]
+    #[should_panic(expected = "set code must be between 3 and 5 characters (got AB)")]
     fn new_set_code_with_invalid_length_panics() {
         SetCode::new("AB");
     }
