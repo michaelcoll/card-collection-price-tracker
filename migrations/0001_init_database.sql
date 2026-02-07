@@ -1,6 +1,6 @@
 CREATE TABLE set_name
 (
-    set_code VARCHAR(3) PRIMARY KEY,
+    set_code VARCHAR(5) PRIMARY KEY,
     name     VARCHAR(255) NOT NULL
 );
 
@@ -10,8 +10,8 @@ VALUES ('ECL', 'Lorwyn Eclipsed'),
 
 CREATE TABLE card
 (
-    set_code         VARCHAR(3) NOT NULL,
-    collector_number INTEGER    NOT NULL,
+    set_code         VARCHAR(5) NOT NULL,
+    collector_number VARCHAR(5) NOT NULL,
     language_code    VARCHAR(2) NOT NULL,
     foil             BOOLEAN    NOT NULL,
     quantity         INTEGER    NOT NULL,

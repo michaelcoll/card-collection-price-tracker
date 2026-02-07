@@ -1,4 +1,8 @@
+use colored::Colorize;
+use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
+use std::net::SocketAddr;
+use tokio::net::TcpListener;
 
 mod application;
 mod domain;
@@ -6,19 +10,38 @@ mod infrastructure;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
+    dotenv().ok();
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect("postgres://postgres:password@localhost/postgres")
-        .await?;
+        .await
+        .expect("Failed to create database connection pool !");
 
-    sqlx::migrate!("./migrations").run(&pool).await?;
+    println!(
+        "{} database connection pool started started.",
+        "✔".green().bold()
+    );
 
-    let row: (i64,) = sqlx::query_as("SELECT $1")
-        .bind(150_i64)
-        .fetch_one(&pool)
-        .await?;
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to migrate schema !");
 
-    println!("Got: {:?}", row.0);
+    println!("{} database schema migration done.", "✔".green().bold());
+
+    let infra = infrastructure::create_infra(pool);
+
+    let port = std::env::var("PORT").unwrap_or("8080".to_string());
+    let port: u16 = port.parse().expect("Port should be valid range !");
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let listener = TcpListener::bind(addr)
+        .await
+        .expect("Failed to bind to address !");
+
+    println!("{} Listening on {}.", "✔".green().bold(), addr);
+
+    axum::serve(listener, infra.into_make_service()).await?;
 
     Ok(())
 }

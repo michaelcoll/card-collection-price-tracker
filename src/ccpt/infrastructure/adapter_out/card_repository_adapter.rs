@@ -42,7 +42,7 @@ impl CardRepository for CardRepositoryAdapter {
                 SET quantity       = $5,
                     purchase_price = $6",
             card.id.set_code.to_string(),
-            card.id.collector_number as i32,
+            card.id.collector_number,
             card.id.language_code.to_string(),
             card.id.foil,
             card.quantity as i32,
@@ -78,7 +78,7 @@ mod tests {
     async fn test_get_user_id(pool: PgPool) {
         let repository = CardRepositoryAdapter::new(pool);
 
-        let card = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 3, 500);
+        let card = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 3, 500);
 
         repository.save(card.clone()).await.unwrap();
 
@@ -91,10 +91,10 @@ mod tests {
     async fn save_card_updates_existing_card(pool: PgPool) {
         let repository = CardRepositoryAdapter::new(pool);
 
-        let card = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 3, 500);
+        let card = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 3, 500);
         repository.save(card.clone()).await.unwrap();
 
-        let updated_card = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 5, 1500);
+        let updated_card = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 5, 1500);
         repository.save(updated_card.clone()).await.unwrap();
 
         let cards = repository.get_all().await.unwrap();
@@ -106,8 +106,8 @@ mod tests {
     async fn delete_all_removes_all_cards(pool: PgPool) {
         let repository = CardRepositoryAdapter::new(pool);
 
-        let card1 = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 3, 500);
-        let card2 = Card::new("FDN", "Foundations", 12, LanguageCode::EN, true, 2, 1000);
+        let card1 = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 3, 500);
+        let card2 = Card::new("FDN", "Foundations", "12", LanguageCode::EN, true, 2, 1000);
 
         repository.save(card1).await.unwrap();
         repository.save(card2).await.unwrap();
@@ -125,8 +125,8 @@ mod tests {
     async fn get_all_returns_multiple_cards(pool: PgPool) {
         let repository = CardRepositoryAdapter::new(pool);
 
-        let card1 = Card::new("FDN", "Foundations", 87, LanguageCode::FR, false, 3, 500);
-        let card2 = Card::new("FDN", "Foundations", 12, LanguageCode::EN, true, 2, 1000);
+        let card1 = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 3, 500);
+        let card2 = Card::new("FDN", "Foundations", "12", LanguageCode::EN, true, 2, 1000);
 
         repository.save(card1.clone()).await.unwrap();
         repository.save(card2.clone()).await.unwrap();

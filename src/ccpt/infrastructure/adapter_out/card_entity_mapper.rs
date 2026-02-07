@@ -9,7 +9,7 @@ impl From<CardEntity> for Card {
         Card {
             id: crate::domain::card::CardId {
                 set_code: set_code.clone(),
-                collector_number: entity.collector_number as u16,
+                collector_number: entity.collector_number,
                 language_code: LanguageCode::new(entity.language_code),
                 foil: entity.foil,
             },
