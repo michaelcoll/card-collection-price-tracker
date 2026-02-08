@@ -3,6 +3,7 @@ use crate::application::error::AppError;
 use crate::application::repository::{CardCollectionRepository, CardRepository};
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
 use crate::domain::price::Price;
+use crate::domain::user::User;
 use async_trait::async_trait;
 use std::sync::Arc;
 
@@ -29,7 +30,7 @@ impl CardCollectionService {
 #[async_trait]
 impl CardCollectionPriceCalculationUseCase for CardCollectionService {
     async fn calculate_total_price(&self) -> Result<(), AppError> {
-        let cards = &self.card_repository.get_all().await?;
+        let cards = &self.card_repository.get_all(User::new()).await?;
 
         let mut total_price: Price = Price::zero();
 
@@ -88,15 +89,18 @@ mod tests {
         let cards = vec![card1.clone(), card2.clone()];
         let cards = Arc::new(cards);
 
-        card_repository.expect_get_all().returning({
-            let cards = cards.clone();
-            move || {
-                Box::pin({
-                    let value = cards.clone();
-                    async move { Ok(value.as_ref().clone()) }
-                })
-            }
-        });
+        card_repository
+            .expect_get_all()
+            .with(eq(User::new()))
+            .returning({
+                let cards = cards.clone();
+                move |_| {
+                    Box::pin({
+                        let value = cards.clone();
+                        async move { Ok(value.as_ref().clone()) }
+                    })
+                }
+            });
 
         card_price_caller
             .expect_get_price_by_card_id()
@@ -160,7 +164,8 @@ mod tests {
 
         card_repository
             .expect_get_all()
-            .returning(|| Box::pin(async move { Ok(vec![]) }));
+            .with(eq(User::new()))
+            .returning(|_| Box::pin(async move { Ok(vec![]) }));
 
         card_collection_repository
             .expect_save()
@@ -185,7 +190,8 @@ mod tests {
 
         card_repository
             .expect_get_all()
-            .returning(|| Box::pin(async move { Err(RepositoryError("DB error".to_string())) }));
+            .with(eq(User::new()))
+            .returning(|_| Box::pin(async move { Err(RepositoryError("DB error".to_string())) }));
 
         let service = CardCollectionService::new(
             Arc::new(card_price_caller),
@@ -223,15 +229,18 @@ mod tests {
         let cards = vec![card1.clone()];
         let cards = Arc::new(cards);
 
-        card_repository.expect_get_all().returning({
-            let cards = cards.clone();
-            move || {
-                Box::pin({
-                    let value = cards.clone();
-                    async move { Ok(value.as_ref().clone()) }
-                })
-            }
-        });
+        card_repository
+            .expect_get_all()
+            .with(eq(User::new()))
+            .returning({
+                let cards = cards.clone();
+                move |_| {
+                    Box::pin({
+                        let value = cards.clone();
+                        async move { Ok(value.as_ref().clone()) }
+                    })
+                }
+            });
 
         card_price_caller
             .expect_get_price_by_card_id()
@@ -270,15 +279,18 @@ mod tests {
         let cards = vec![card1.clone()];
         let cards = Arc::new(cards);
 
-        card_repository.expect_get_all().returning({
-            let cards = cards.clone();
-            move || {
-                Box::pin({
-                    let value = cards.clone();
-                    async move { Ok(value.as_ref().clone()) }
-                })
-            }
-        });
+        card_repository
+            .expect_get_all()
+            .with(eq(User::new()))
+            .returning({
+                let cards = cards.clone();
+                move |_| {
+                    Box::pin({
+                        let value = cards.clone();
+                        async move { Ok(value.as_ref().clone()) }
+                    })
+                }
+            });
 
         card_price_caller
             .expect_get_price_by_card_id()

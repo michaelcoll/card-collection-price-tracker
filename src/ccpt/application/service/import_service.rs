@@ -2,6 +2,7 @@ use crate::application::error::AppError;
 use crate::application::repository::{CardRepository, SetNameRepository};
 use crate::application::service::parse_service::parse_cards;
 use crate::application::use_case::ImportCardUseCase;
+use crate::domain::user::User;
 use async_trait::async_trait;
 use std::sync::Arc;
 
@@ -27,7 +28,7 @@ impl ImportCardUseCase for ImportCardService {
     async fn import_cards(&self, csv: &str) -> Result<(), AppError> {
         let cards = parse_cards(csv)?;
 
-        self.card_repository.delete_all().await?;
+        self.card_repository.delete_all(User::new()).await?;
 
         for card in cards {
             if !self
@@ -39,7 +40,7 @@ impl ImportCardUseCase for ImportCardService {
                 self.set_name_repository.save(set_name).await?;
             }
 
-            self.card_repository.save(card).await?;
+            self.card_repository.save(User::new(), card).await?;
         }
 
         Ok(())
@@ -75,7 +76,8 @@ mod tests {
 
         card_repository
             .expect_delete_all()
-            .returning(|| Box::pin(async { Ok(()) }));
+            .with(eq(User::new()))
+            .returning(|_| Box::pin(async { Ok(()) }));
         set_name_repository
             .expect_exists_by_code()
             .with(eq(set_code.clone()))
@@ -86,8 +88,8 @@ mod tests {
             .returning(|_| Box::pin(async { Ok(()) }));
         card_repository
             .expect_save()
-            .with(eq(card.clone()))
-            .returning(|_| Box::pin(async { Ok(()) }));
+            .with(eq(User::new()), eq(card.clone()))
+            .returning(|_, _| Box::pin(async { Ok(()) }));
 
         let service =
             ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
@@ -119,7 +121,8 @@ mod tests {
 
         card_repository
             .expect_delete_all()
-            .returning(|| Box::pin(async { Ok(()) }));
+            .with(eq(User::new()))
+            .returning(|_| Box::pin(async { Ok(()) }));
         set_name_repository
             .expect_exists_by_code()
             .with(eq(set_name.code.clone()))
@@ -130,8 +133,8 @@ mod tests {
             .returning(|_| Box::pin(async { Ok(()) }));
         card_repository
             .expect_save()
-            .with(eq(card.clone()))
-            .returning(|_| {
+            .with(eq(User::new()), eq(card.clone()))
+            .returning(|_, _| {
                 Box::pin(async { Err(AppError::RepositoryError("Save failed".to_string())) })
             });
 
@@ -164,15 +167,15 @@ mod tests {
 
         card_repository
             .expect_delete_all()
-            .returning(|| Box::pin(async { Ok(()) }));
+            .returning(|_| Box::pin(async { Ok(()) }));
         set_name_repository
             .expect_exists_by_code()
             .with(eq(set_code.clone()))
             .returning(|_| Box::pin(async { Ok(true) }));
         card_repository
             .expect_save()
-            .with(eq(card.clone()))
-            .returning(|_| Box::pin(async { Ok(()) }));
+            .with(eq(User::new()), eq(card.clone()))
+            .returning(|_, _| Box::pin(async { Ok(()) }));
 
         let service =
             ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));

@@ -6,14 +6,9 @@
     "node_modules",
     ".git"
   ],
-  "size": 0.000682830810546875,
-  "filesCount": 5,
+  "size": 0.0011472702026367188,
+  "filesCount": 8,
   "protobuf": {
-    "protoFiles": [
-      {
-        "path": "../proto/ccpt.proto",
-        "type": "file"
-      }
-    ]
+    "protoFiles": []
   }
 }
