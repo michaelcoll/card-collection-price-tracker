@@ -1,0 +1,15 @@
+meta {
+  name: cardmarket - price guides
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

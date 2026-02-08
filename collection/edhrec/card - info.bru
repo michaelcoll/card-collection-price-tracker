@@ -1,0 +1,20 @@
+meta {
+  name: card - info
+  type: http
+  seq: 1
+}
+
+get {
+  url: https://edhrec.com/_next/data/{{edhrecBuildId}}/cards/:cardName.json
+  body: none
+  auth: inherit
+}
+
+params:path {
+  cardName.json: sol-ring.json
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

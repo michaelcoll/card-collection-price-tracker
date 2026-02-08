@@ -2,10 +2,12 @@
 .env
 .env.*
 !.env.example
+.DS_Store
 
 # build / tests
 node_modules
 /target
+
 # ide
 .idea/*
 !.idea/runConfigurations

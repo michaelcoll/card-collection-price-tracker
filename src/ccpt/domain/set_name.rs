@@ -5,7 +5,7 @@ pub struct SetCode(String);
 
 impl SetCode {
     pub fn new(s: impl Into<String>) -> Self {
-        let name = s.into();
+        let name = s.into().to_uppercase();
         if name.chars().count() >= 3 && name.chars().count() <= 5 {
             SetCode(name)
         } else {
