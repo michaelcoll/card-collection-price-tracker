@@ -10,7 +10,7 @@ clean: ## Clean the build files
 
 .PHONY: test
 test: ## Launch tests
-	cargo nextest run
+	cargo llvm-cov nextest --locked --workspace --all-features --bins --examples --tests --lcov --output-path lcov.info
 
 lint: ## Run the linter for the frontend
 	cargo fmt --all -- --check \
