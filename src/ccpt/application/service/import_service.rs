@@ -70,6 +70,7 @@ mod tests {
         let card = Card {
             id: id.clone(),
             set_name: set_name.clone(),
+            name: "Goblin Boarders".to_string(),
             quantity: 3,
             purchase_price: 8,
         };
@@ -115,6 +116,7 @@ mod tests {
         let card = Card {
             id: id.clone(),
             set_name: set_name.clone(),
+            name: "Goblin Boarders".to_string(),
             quantity: 0,
             purchase_price: 0,
         };
@@ -161,6 +163,7 @@ mod tests {
         let card = Card {
             id: id.clone(),
             set_name: set_name.clone(),
+            name: "Goblin Boarders".to_string(),
             quantity: 3,
             purchase_price: 8,
         };

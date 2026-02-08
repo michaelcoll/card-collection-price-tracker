@@ -10,10 +10,11 @@ VALUES ('ECL', 'Lorwyn Eclipsed'),
 
 CREATE TABLE card
 (
-    set_code         VARCHAR(5) NOT NULL,
-    collector_number VARCHAR(5) NOT NULL,
-    language_code    VARCHAR(2) NOT NULL,
-    foil             BOOLEAN    NOT NULL,
+    set_code         VARCHAR(5)   NOT NULL,
+    collector_number VARCHAR(5)   NOT NULL,
+    language_code    VARCHAR(2)   NOT NULL,
+    foil             BOOLEAN      NOT NULL,
+    name             VARCHAR(255) NOT NULL,
 
     CONSTRAINT card_pk PRIMARY KEY (set_code, collector_number, language_code, foil),
     CONSTRAINT card_set_name_fk FOREIGN KEY (set_code) REFERENCES set_name (set_code)

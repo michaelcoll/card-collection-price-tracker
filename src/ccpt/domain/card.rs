@@ -12,14 +12,13 @@ pub struct CardId {
 
 impl CardId {
     pub fn new(
-        set_code: impl Into<String>,
+        set_code: impl Into<SetCode>,
         collector_number: impl Into<String>,
         language_code: LanguageCode,
         foil: bool,
     ) -> Self {
-        let set_code = SetCode::new(set_code);
         CardId {
-            set_code,
+            set_code: set_code.into(),
             collector_number: collector_number.into(),
             language_code,
             foil,
@@ -44,31 +43,30 @@ impl Display for CardId {
 pub struct Card {
     pub id: CardId,
     pub set_name: SetName,
+    pub name: String,
     pub quantity: u8,
     /// Price in cents
     pub purchase_price: u32,
 }
 
 impl Card {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
-        set_code: impl Into<String>,
+        set_code: impl Into<SetCode>,
         set_name: impl Into<String>,
         collector_number: impl Into<String>,
         language_code: LanguageCode,
         foil: bool,
+        name: impl Into<String>,
         quantity: u8,
         purchase_price: u32,
     ) -> Self {
-        let set_code = SetCode::new(set_code);
+        let set_code: SetCode = set_code.into();
         let set_name = SetName::new(set_code.clone(), set_name);
         Card {
-            id: CardId {
-                set_code,
-                collector_number: collector_number.into(),
-                language_code,
-                foil,
-            },
+            id: CardId::new(set_code, collector_number.into(), language_code, foil),
             set_name,
+            name: name.into(),
             quantity,
             purchase_price,
         }
@@ -100,6 +98,7 @@ mod tests {
             "1",
             LanguageCode::FR,
             false,
+            "Goblin Boarders",
             2,
             1000,
         );
@@ -116,11 +115,21 @@ mod tests {
             "1",
             LanguageCode::FR,
             false,
+            "Goblin Boarders",
             2,
             1000,
         );
 
-        let card2 = Card::new("FND", "Foundations", "2", LanguageCode::FR, true, 1, 2000);
+        let card2 = Card::new(
+            "FND",
+            "Foundations",
+            "2",
+            LanguageCode::FR,
+            true,
+            "Goblin Boarders",
+            1,
+            2000,
+        );
 
         assert_ne!(card1, card2);
     }

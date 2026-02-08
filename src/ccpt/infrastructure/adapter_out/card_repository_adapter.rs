@@ -46,14 +46,15 @@ impl CardRepository for CardRepositoryAdapter {
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
         sqlx::query!(
             "
-            INSERT INTO card (set_code, collector_number, language_code, foil)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO card (set_code, collector_number, language_code, foil, name)
+            VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT(set_code, collector_number, language_code, foil)
                 DO NOTHING",
             card.id.set_code.to_string(),
             card.id.collector_number,
             card.id.language_code.to_string(),
-            card.id.foil
+            card.id.foil,
+            card.name
         )
         .execute(&self.pool)
         .await?;
@@ -107,7 +108,16 @@ mod tests {
     async fn test_get_user_id(pool: PgPool) {
         let repository = CardRepositoryAdapter::new(pool);
 
-        let card = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 3, 500);
+        let card = Card::new(
+            "FDN",
+            "Foundations",
+            "87",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            3,
+            500,
+        );
 
         repository.save(User::new(), card.clone()).await.unwrap();
 
@@ -120,10 +130,28 @@ mod tests {
     async fn save_card_updates_existing_card(pool: PgPool) {
         let repository = CardRepositoryAdapter::new(pool);
 
-        let card = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 3, 500);
+        let card = Card::new(
+            "FDN",
+            "Foundations",
+            "87",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            3,
+            500,
+        );
         repository.save(User::new(), card.clone()).await.unwrap();
 
-        let updated_card = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 5, 1500);
+        let updated_card = Card::new(
+            "FDN",
+            "Foundations",
+            "87",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            5,
+            1500,
+        );
         repository
             .save(User::new(), updated_card.clone())
             .await
@@ -138,8 +166,26 @@ mod tests {
     async fn delete_all_removes_all_cards(pool: PgPool) {
         let repository = CardRepositoryAdapter::new(pool);
 
-        let card1 = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 3, 500);
-        let card2 = Card::new("FDN", "Foundations", "12", LanguageCode::EN, true, 2, 1000);
+        let card1 = Card::new(
+            "FDN",
+            "Foundations",
+            "87",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            3,
+            500,
+        );
+        let card2 = Card::new(
+            "FDN",
+            "Foundations",
+            "12",
+            LanguageCode::EN,
+            true,
+            "Goblin Boarders",
+            2,
+            1000,
+        );
 
         repository.save(User::new(), card1).await.unwrap();
         repository.save(User::new(), card2).await.unwrap();
@@ -157,8 +203,26 @@ mod tests {
     async fn get_all_returns_multiple_cards(pool: PgPool) {
         let repository = CardRepositoryAdapter::new(pool);
 
-        let card1 = Card::new("FDN", "Foundations", "87", LanguageCode::FR, false, 3, 500);
-        let card2 = Card::new("FDN", "Foundations", "12", LanguageCode::EN, true, 2, 1000);
+        let card1 = Card::new(
+            "FDN",
+            "Foundations",
+            "87",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            3,
+            500,
+        );
+        let card2 = Card::new(
+            "FDN",
+            "Foundations",
+            "12",
+            LanguageCode::EN,
+            true,
+            "Goblin Boarders",
+            2,
+            1000,
+        );
 
         repository.save(User::new(), card1.clone()).await.unwrap();
         repository.save(User::new(), card2.clone()).await.unwrap();

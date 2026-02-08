@@ -5,6 +5,7 @@ pub struct CardEntity {
     pub language_code: String,
     pub foil: bool,
     pub set_name: String,
+    pub name: String,
     pub quantity: i32,
     /// Price in cents
     pub purchase_price: i32,

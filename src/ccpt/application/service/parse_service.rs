@@ -1,5 +1,5 @@
 use crate::application::error::AppError;
-use crate::domain::card::{Card, CardId};
+use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
 
@@ -54,6 +54,7 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             )));
         }
 
+        let name = field_refs[2];
         let set_code = SetCode::new(field_refs[3]);
         let set_name = SetName {
             code: set_code.clone(),
@@ -80,18 +81,16 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
 
         let purchase_price = (purchase_price_float * 100.0).round() as u32;
 
-        let id = CardId {
+        let card = Card::new(
             set_code,
-            collector_number: collector_number.to_string(),
+            set_name.name.clone(),
+            collector_number,
             language_code,
             foil,
-        };
-        let card = Card {
-            id,
-            set_name,
+            name,
             quantity,
             purchase_price,
-        };
+        );
         cards.push(card);
     }
     Ok(cards)
@@ -257,6 +256,7 @@ mod tests {
             "184s",
             LanguageCode::FR,
             true,
+            "Felothar, Dawn of the Abzan",
             1,
             76,
         );

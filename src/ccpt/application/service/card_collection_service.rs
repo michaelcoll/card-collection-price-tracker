@@ -76,12 +76,14 @@ mod tests {
         let card1 = Card {
             id: card_id1.clone(),
             set_name: set_name.clone(),
+            name: "Goblin Boarders".to_string(),
             quantity: 1,
             purchase_price: 2,
         };
         let card2 = Card {
             id: card_id2.clone(),
             set_name: set_name.clone(),
+            name: "Goblin Boarders".to_string(),
             quantity: 1,
             purchase_price: 2,
         };
@@ -222,6 +224,7 @@ mod tests {
         let card1 = Card {
             id: card_id1.clone(),
             set_name: set_name.clone(),
+            name: "Goblin Boarders".to_string(),
             quantity: 1,
             purchase_price: 2,
         };
@@ -273,6 +276,7 @@ mod tests {
         let card1 = Card {
             id: card_id1.clone(),
             set_name: set_name.clone(),
+            name: "Goblin Boarders".to_string(),
             quantity: 1,
             purchase_price: 2,
         };
