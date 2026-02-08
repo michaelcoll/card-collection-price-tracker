@@ -17,6 +17,7 @@ impl From<CardEntity> for Card {
                 code: set_code.clone(),
                 name: entity.set_name,
             },
+            name: entity.name,
             quantity: entity.quantity as u8,
             purchase_price: entity.purchase_price as u32,
         }

@@ -20,6 +20,12 @@ impl Display for SetCode {
     }
 }
 
+impl From<&str> for SetCode {
+    fn from(s: &str) -> Self {
+        SetCode::new(s)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SetName {
     pub code: SetCode,
@@ -28,9 +34,9 @@ pub struct SetName {
 
 impl SetName {
     #[allow(dead_code)]
-    pub fn new(code: SetCode, name: impl Into<String>) -> Self {
+    pub fn new(code: impl Into<SetCode>, name: impl Into<String>) -> Self {
         SetName {
-            code,
+            code: code.into(),
             name: name.into().to_string(),
         }
     }
