@@ -3,6 +3,7 @@ use crate::application::repository::PersistenceError;
 use sqlx::Error;
 
 pub mod card_repository_adapter;
+mod cardmarket_repository_adapter;
 pub mod entities;
 pub mod set_names_repository_adapter;
 

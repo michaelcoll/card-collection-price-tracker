@@ -1,6 +1,7 @@
 use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
+use chrono::NaiveDate;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CardEntity {
@@ -40,4 +41,23 @@ impl From<CardEntity> for Card {
             purchase_price: entity.purchase_price as u32,
         }
     }
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CardMarketPriceEntity {
+    pub id_produit: u32,
+    pub date: NaiveDate,
+    pub low: Option<u32>,
+    pub avg: Option<u32>,
+    pub trend: Option<u32>,
+    pub avg1: Option<u32>,
+    pub avg7: Option<u32>,
+    pub avg30: Option<u32>,
+    pub low_foil: Option<u32>,
+    pub avg_foil: Option<u32>,
+    pub trend_foil: Option<u32>,
+    pub avg1_foil: Option<u32>,
+    pub avg7_foil: Option<u32>,
+    pub avg30_foil: Option<u32>,
 }
