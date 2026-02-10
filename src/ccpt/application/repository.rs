@@ -1,5 +1,5 @@
 use crate::domain::card::Card;
-use crate::domain::price::Price;
+use crate::domain::price::PriceGuide;
 use crate::domain::set_name::{SetCode, SetName};
 use async_trait::async_trait;
 
@@ -39,5 +39,5 @@ pub trait SetNameRepository: Send + Sync {
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub trait CardCollectionRepository: Send + Sync {
-    async fn save(&self, price: Price) -> Result<(), AppError>;
+    async fn save(&self, price: PriceGuide) -> Result<(), AppError>;
 }

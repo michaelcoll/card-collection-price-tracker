@@ -1,7 +1,10 @@
 use crate::application::caller::CardMarketCaller;
 use crate::application::error::AppError;
-use crate::domain::cardmarket::PriceGuides;
+use crate::domain::price::FullPriceGuide;
+use crate::infrastructure::adapter_out::caller::dto::CardmarketPriceGuides;
 use async_trait::async_trait;
+use chrono::NaiveDate;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct CardMarketCallerAdapter {
     pub client: reqwest::Client,
@@ -19,8 +22,14 @@ impl CardMarketCallerAdapter {
 
 #[async_trait]
 impl CardMarketCaller for CardMarketCallerAdapter {
-    async fn get_price_guides(&self) -> Result<PriceGuides, AppError> {
-        let price_guides: PriceGuides = self
+    async fn get_price_guides(
+        &self,
+    ) -> Result<(NaiveDate, Box<dyn Iterator<Item = FullPriceGuide>>), AppError> {
+        let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+
+        println!("Fetching price guides from {}", self.url);
+
+        let price_guides: CardmarketPriceGuides = self
             .client
             .get(self.url.as_str())
             .send()
@@ -28,7 +37,14 @@ impl CardMarketCaller for CardMarketCallerAdapter {
             .json()
             .await?;
 
-        Ok(price_guides)
+        let domain = price_guides.price_guides.into_iter().map(|pg| pg.into());
+
+        let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+
+        let duration = end - start;
+        println!("Fetched price guides in {} ms", duration.as_millis());
+
+        Ok((price_guides.created_at.date_naive(), Box::new(domain)))
     }
 }
 
@@ -99,38 +115,34 @@ mod tests {
         // Assert
         assert!(result.is_ok());
 
-        let price_guides = result.unwrap();
+        let (date, price_guides) = result.unwrap();
         // Assertions racine
-        assert_eq!(
-            price_guides
-                .created_at
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string(),
-            "2025-12-23 01:47:26"
-        );
+        assert_eq!(date, NaiveDate::from_ymd_opt(2025, 12, 23).unwrap(),);
+
+        let actual: Vec<FullPriceGuide> = price_guides.collect();
 
         // Assertions collection
-        assert_eq!(price_guides.price_guides.len(), 2);
+        assert_eq!(actual.len(), 2);
 
-        let first = &price_guides.price_guides[0];
+        let first = &actual[0];
         assert_eq!(first.id_product, 1);
-        assert_eq!(first.avg, Some(0.06));
-        assert_eq!(first.low, Some(0.02));
-        assert_eq!(first.trend, Some(0.09));
-        assert_eq!(first.avg1, Some(0.1));
-        assert_eq!(first.avg7, Some(0.06));
-        assert_eq!(first.avg30, Some(0.07));
-        assert_eq!(first.avg_foil, Some(0.5));
-        assert_eq!(first.low_foil, Some(0.04));
-        assert_eq!(first.trend_foil, Some(0.42));
-        assert_eq!(first.avg1_foil, Some(0.5));
-        assert_eq!(first.avg7_foil, Some(0.41));
-        assert_eq!(first.avg30_foil, Some(0.34));
+        assert_eq!(first.normal.avg, Some(0.06).into());
+        assert_eq!(first.normal.low, Some(0.02).into());
+        assert_eq!(first.normal.trend, Some(0.09).into());
+        assert_eq!(first.normal.avg1, Some(0.1).into());
+        assert_eq!(first.normal.avg7, Some(0.06).into());
+        assert_eq!(first.normal.avg30, Some(0.07).into());
+        assert_eq!(first.foil.avg, Some(0.5).into());
+        assert_eq!(first.foil.low, Some(0.04).into());
+        assert_eq!(first.foil.trend, Some(0.42).into());
+        assert_eq!(first.foil.avg1, Some(0.5).into());
+        assert_eq!(first.foil.avg7, Some(0.41).into());
+        assert_eq!(first.foil.avg30, Some(0.34).into());
 
-        let second = &price_guides.price_guides[1];
+        let second = &actual[1];
         assert_eq!(second.id_product, 2);
-        assert_eq!(second.avg_foil, None);
-        assert_eq!(second.trend, Some(0.07));
+        assert_eq!(second.foil.avg, None.into());
+        assert_eq!(second.normal.trend, Some(0.07).into());
     }
 
     #[tokio::test]

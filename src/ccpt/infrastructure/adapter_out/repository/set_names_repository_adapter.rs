@@ -1,7 +1,7 @@
 use crate::application::error::AppError;
 use crate::application::repository::SetNameRepository;
 use crate::domain::set_name::{SetCode, SetName};
-use crate::infrastructure::adapter_out::entities::SetNameEntity;
+use crate::infrastructure::adapter_out::repository::entities::SetNameEntity;
 use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 

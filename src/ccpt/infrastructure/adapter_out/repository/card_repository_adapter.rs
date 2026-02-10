@@ -2,7 +2,7 @@ use crate::application::error::AppError;
 use crate::application::repository::CardRepository;
 use crate::domain::card::Card;
 use crate::domain::user::User;
-use crate::infrastructure::adapter_out::entities::CardEntity;
+use crate::infrastructure::adapter_out::repository::entities::CardEntity;
 use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 

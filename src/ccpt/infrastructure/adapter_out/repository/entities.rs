@@ -1,7 +1,25 @@
 use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
-use crate::infrastructure::adapter_out::entities::CardEntity;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CardEntity {
+    pub set_code: String,
+    pub collector_number: String,
+    pub language_code: String,
+    pub foil: bool,
+    pub set_name: String,
+    pub name: String,
+    pub quantity: i32,
+    /// Price in cents
+    pub purchase_price: i32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SetNameEntity {
+    pub set_code: String,
+    pub name: String,
+}
 
 impl From<CardEntity> for Card {
     fn from(entity: CardEntity) -> Card {
