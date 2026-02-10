@@ -2,7 +2,7 @@ use crate::application::caller::CardPriceCaller;
 use crate::application::error::AppError;
 use crate::application::repository::{CardCollectionRepository, CardRepository};
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
-use crate::domain::price::Price;
+use crate::domain::price::PriceGuide;
 use crate::domain::user::User;
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -32,7 +32,7 @@ impl CardCollectionPriceCalculationUseCase for CardCollectionService {
     async fn calculate_total_price(&self) -> Result<(), AppError> {
         let cards = &self.card_repository.get_all(User::new()).await?;
 
-        let mut total_price: Price = Price::zero();
+        let mut total_price = PriceGuide::empty();
 
         for card in cards {
             let price = &self
@@ -108,44 +108,19 @@ mod tests {
             .expect_get_price_by_card_id()
             .with(eq(card_id1.clone()))
             .returning(|_| {
-                Box::pin(async move {
-                    Ok(Price {
-                        date: Default::default(),
-                        low: 100,
-                        trend: 200,
-                        avg1: 300,
-                        avg7: 400,
-                        avg30: 500,
-                    })
-                })
+                Box::pin(async move { Ok(PriceGuide::new(100, 200, 300, 400, 500, 600)) })
             });
 
         card_price_caller
             .expect_get_price_by_card_id()
             .with(eq(card_id2.clone()))
             .returning(|_| {
-                Box::pin(async move {
-                    Ok(Price {
-                        date: Default::default(),
-                        low: 50,
-                        trend: 100,
-                        avg1: 150,
-                        avg7: 200,
-                        avg30: 250,
-                    })
-                })
+                Box::pin(async move { Ok(PriceGuide::new(50, 100, 150, 200, 250, 300)) })
             });
 
         card_collection_repository
             .expect_save()
-            .with(eq(Price {
-                date: Default::default(),
-                low: 150,
-                trend: 300,
-                avg1: 450,
-                avg7: 600,
-                avg30: 750,
-            }))
+            .with(eq(PriceGuide::new(150, 300, 450, 600, 750, 900)))
             .returning(|_| Box::pin(async move { Ok(()) }));
 
         let service = CardCollectionService::new(
@@ -171,7 +146,7 @@ mod tests {
 
         card_collection_repository
             .expect_save()
-            .with(eq(Price::zero()))
+            .with(eq(PriceGuide::empty()))
             .returning(|_| Box::pin(async move { Ok(()) }));
 
         let service = CardCollectionService::new(
@@ -300,28 +275,12 @@ mod tests {
             .expect_get_price_by_card_id()
             .with(eq(card_id1.clone()))
             .returning(|_| {
-                Box::pin(async move {
-                    Ok(Price {
-                        date: Default::default(),
-                        low: 100,
-                        trend: 200,
-                        avg1: 300,
-                        avg7: 400,
-                        avg30: 500,
-                    })
-                })
+                Box::pin(async move { Ok(PriceGuide::new(100, 200, 300, 400, 500, 600)) })
             });
 
         card_collection_repository
             .expect_save()
-            .with(eq(Price {
-                date: Default::default(),
-                low: 100,
-                trend: 200,
-                avg1: 300,
-                avg7: 400,
-                avg30: 500,
-            }))
+            .with(eq(PriceGuide::new(100, 200, 300, 400, 500, 600)))
             .returning(|_| Box::pin(async move { Err(RepositoryError("DB error".to_string())) }));
 
         let service = CardCollectionService::new(

@@ -43,3 +43,21 @@ CREATE TABLE collection_price_history
     avg7  INTEGER NOT NULL,
     avg30 INTEGER NOT NULL
 );
+
+CREATE TABLE cardmarket_prices
+(
+    id_produit INTEGER,
+    date       DATE,
+    low        INTEGER,
+    trend      INTEGER,
+    avg1       INTEGER,
+    avg7       INTEGER,
+    avg30      INTEGER,
+    low_foil   INTEGER,
+    trend_foil INTEGER,
+    avg1_foil  INTEGER,
+    avg7_foil  INTEGER,
+    avg30_foil INTEGER,
+
+    CONSTRAINT cardmarket_prices_pk PRIMARY KEY (id_produit, date)
+);

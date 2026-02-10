@@ -1,8 +1,8 @@
 use crate::application::service::import_service::ImportCardService;
 use crate::application::use_case::ImportCardUseCase;
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
-use crate::infrastructure::adapter_out::card_repository_adapter::CardRepositoryAdapter;
-use crate::infrastructure::adapter_out::set_names_repository_adapter::SetNameRepositoryAdapter;
+use adapter_out::repository::card_repository_adapter::CardRepositoryAdapter;
+use adapter_out::repository::set_names_repository_adapter::SetNameRepositoryAdapter;
 use axum::Router;
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
