@@ -13,6 +13,10 @@ impl Price {
     pub(crate) fn from_cents(p0: u32) -> Price {
         Price { value: Some(p0) }
     }
+
+    pub fn as_cents(&self) -> Option<i32> {
+        self.value.map(|v| v as i32)
+    }
 }
 
 impl AddAssign for Price {

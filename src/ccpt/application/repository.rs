@@ -1,10 +1,10 @@
-use crate::domain::card::Card;
-use crate::domain::price::PriceGuide;
-use crate::domain::set_name::{SetCode, SetName};
-use async_trait::async_trait;
-
 use crate::application::error::AppError;
+use crate::domain::card::Card;
+use crate::domain::price::{FullPriceGuide, PriceGuide};
+use crate::domain::set_name::{SetCode, SetName};
 use crate::domain::user::User;
+use async_trait::async_trait;
+use chrono::NaiveDate;
 #[cfg(test)]
 use mockall::automock;
 
@@ -40,4 +40,15 @@ pub trait SetNameRepository: Send + Sync {
 #[cfg_attr(test, automock)]
 pub trait CardCollectionRepository: Send + Sync {
     async fn save(&self, price: PriceGuide) -> Result<(), AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait CardMarketRepository: Send + Sync {
+    async fn save(
+        &self,
+        date: NaiveDate,
+        id_produit: u32,
+        price_guides: FullPriceGuide,
+    ) -> Result<(), AppError>;
 }
