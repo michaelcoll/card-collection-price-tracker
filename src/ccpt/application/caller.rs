@@ -15,7 +15,5 @@ pub trait CardPriceCaller: Send + Sync {
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub trait CardMarketCaller: Send + Sync {
-    async fn get_price_guides(
-        &self,
-    ) -> Result<(NaiveDate, Box<dyn Iterator<Item = FullPriceGuide>>), AppError>;
+    async fn get_price_guides(&self) -> Result<(NaiveDate, Vec<FullPriceGuide>), AppError>;
 }

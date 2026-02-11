@@ -48,7 +48,6 @@ pub trait CardMarketRepository: Send + Sync {
     async fn save(
         &self,
         date: NaiveDate,
-        id_produit: u32,
-        price_guides: FullPriceGuide,
+        price_guides: Vec<FullPriceGuide>,
     ) -> Result<(), AppError>;
 }
