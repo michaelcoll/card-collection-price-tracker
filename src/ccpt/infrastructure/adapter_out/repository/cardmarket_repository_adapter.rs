@@ -3,7 +3,7 @@ use crate::application::repository::CardMarketRepository;
 use crate::domain::price::FullPriceGuide;
 use async_trait::async_trait;
 use chrono::NaiveDate;
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, QueryBuilder};
 
 pub struct CardMarketRepositoryAdapter {
     pool: Pool<Postgres>,
@@ -20,47 +20,61 @@ impl CardMarketRepository for CardMarketRepositoryAdapter {
     async fn save(
         &self,
         date: NaiveDate,
-        id_produit: u32,
-        price_guides: FullPriceGuide,
+        price_guides: Vec<FullPriceGuide>,
     ) -> Result<(), AppError> {
-        sqlx::query!(
-            "
-            INSERT INTO cardmarket_price (id_produit, date, low, trend, avg, avg1, avg7, avg30, low_foil, trend_foil, avg_foil,
-                              avg1_foil, avg7_foil, avg30_foil)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-            ON CONFLICT(id_produit, date)
-                DO UPDATE
-                SET low        = $3,
-                    trend      = $4,
-                    avg        = $5,
-                    avg1       = $6,
-                    avg7       = $7,
-                    avg30      = $8,
-                    low_foil   = $9,
-                    trend_foil = $10,
-                    avg_foil   = $11,
-                    avg1_foil  = $12,
-                    avg7_foil  = $13,
-                    avg30_foil = $14
-            ",
-            id_produit as i32,
-            date,
-            price_guides.normal.low.as_cents(),
-            price_guides.normal.trend.as_cents(),
-            price_guides.normal.avg.as_cents(),
-            price_guides.normal.avg1.as_cents(),
-            price_guides.normal.avg7.as_cents(),
-            price_guides.normal.avg30.as_cents(),
-            price_guides.foil.low.as_cents(),
-            price_guides.foil.trend.as_cents(),
-            price_guides.foil.avg.as_cents(),
-            price_guides.foil.avg1.as_cents(),
-            price_guides.foil.avg7.as_cents(),
-            price_guides.foil.avg30.as_cents(),
-        )
-        .execute(&self.pool)
-        .await?;
+        let mut tx = self.pool.begin().await?;
 
+        const CHUNK_SIZE: usize = 1000;
+
+        for chunk in price_guides.chunks(CHUNK_SIZE) {
+            let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+                "
+                INSERT INTO cardmarket_price
+                    (id_produit, date, low, trend, avg, avg1, avg7, avg30,
+                     low_foil, trend_foil, avg_foil, avg1_foil, avg7_foil, avg30_foil)
+                ",
+            );
+
+            qb.push_values(chunk, |mut b, price_guide| {
+                b.push_bind(price_guide.id_product as i32)
+                    .push_bind(date)
+                    .push_bind(price_guide.normal.low.as_cents())
+                    .push_bind(price_guide.normal.trend.as_cents())
+                    .push_bind(price_guide.normal.avg.as_cents())
+                    .push_bind(price_guide.normal.avg1.as_cents())
+                    .push_bind(price_guide.normal.avg7.as_cents())
+                    .push_bind(price_guide.normal.avg30.as_cents())
+                    .push_bind(price_guide.foil.low.as_cents())
+                    .push_bind(price_guide.foil.trend.as_cents())
+                    .push_bind(price_guide.foil.avg.as_cents())
+                    .push_bind(price_guide.foil.avg1.as_cents())
+                    .push_bind(price_guide.foil.avg7.as_cents())
+                    .push_bind(price_guide.foil.avg30.as_cents());
+            });
+
+            qb.push(
+                "
+                ON CONFLICT (id_produit, date)
+                DO UPDATE SET
+                    low        = EXCLUDED.low,
+                    trend      = EXCLUDED.trend,
+                    avg        = EXCLUDED.avg,
+                    avg1       = EXCLUDED.avg1,
+                    avg7       = EXCLUDED.avg7,
+                    avg30      = EXCLUDED.avg30,
+                    low_foil   = EXCLUDED.low_foil,
+                    trend_foil = EXCLUDED.trend_foil,
+                    avg_foil   = EXCLUDED.avg_foil,
+                    avg1_foil  = EXCLUDED.avg1_foil,
+                    avg7_foil  = EXCLUDED.avg7_foil,
+                    avg30_foil = EXCLUDED.avg30_foil
+                ",
+            );
+
+            qb.build().execute(&mut *tx).await?;
+        }
+
+        tx.commit().await?;
         Ok(())
     }
 }
@@ -108,7 +122,7 @@ mod tests {
             (200, 250, 225, 220, 230, 240),
         );
 
-        let result = repository.save(date, id_produit, price_guides).await;
+        let result = repository.save(date, vec![price_guides]).await;
 
         assert!(result.is_ok());
 
@@ -151,7 +165,7 @@ mod tests {
             (200, 250, 225, 220, 230, 240),
         );
         repository
-            .save(date, id_produit, initial_price_guides)
+            .save(date, vec![initial_price_guides])
             .await
             .unwrap();
 
@@ -160,9 +174,7 @@ mod tests {
             (110, 160, 135, 130, 140, 150),
             (210, 260, 235, 230, 240, 250),
         );
-        let result = repository
-            .save(date, id_produit, updated_price_guides)
-            .await;
+        let result = repository.save(date, vec![updated_price_guides]).await;
 
         assert!(result.is_ok());
 
@@ -203,7 +215,7 @@ mod tests {
             foil: PriceGuide::empty(),
         };
 
-        let result = repository.save(date, id_produit, price_guides).await;
+        let result = repository.save(date, vec![price_guides]).await;
 
         assert!(result.is_ok());
 
@@ -250,8 +262,8 @@ mod tests {
             (400, 450, 425, 420, 430, 440),
         );
 
-        let result1 = repository.save(date, 12348, price_guides_1).await;
-        let result2 = repository.save(date, 12349, price_guides_2).await;
+        let result1 = repository.save(date, vec![price_guides_1]).await;
+        let result2 = repository.save(date, vec![price_guides_2]).await;
 
         assert!(result1.is_ok());
         assert!(result2.is_ok());

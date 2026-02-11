@@ -5,7 +5,9 @@ use axum::http::StatusCode;
 use axum::routing::post;
 
 pub fn create_card_router() -> axum::Router<AppState> {
-    axum::Router::new().route("/import", post(import_cards))
+    axum::Router::new()
+        .route("/import", post(import_cards))
+        .route("/price", post(import_prices_for_current_date))
 }
 
 async fn import_cards(
@@ -39,4 +41,16 @@ async fn import_cards(
         })?;
 
     Ok("Cards imported successfully".to_string())
+}
+
+async fn import_prices_for_current_date(
+    State(state): State<AppState>,
+) -> Result<String, (StatusCode, String)> {
+    state
+        .import_price_use_case
+        .import_prices_for_current_date()
+        .await
+        .expect("panic message");
+
+    Ok("Price imported".to_string())
 }

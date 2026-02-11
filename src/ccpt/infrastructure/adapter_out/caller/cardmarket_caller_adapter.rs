@@ -22,9 +22,7 @@ impl CardMarketCallerAdapter {
 
 #[async_trait]
 impl CardMarketCaller for CardMarketCallerAdapter {
-    async fn get_price_guides(
-        &self,
-    ) -> Result<(NaiveDate, Box<dyn Iterator<Item = FullPriceGuide>>), AppError> {
+    async fn get_price_guides(&self) -> Result<(NaiveDate, Vec<FullPriceGuide>), AppError> {
         let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
 
         println!("Fetching price guides from {}", self.url);
@@ -37,14 +35,18 @@ impl CardMarketCaller for CardMarketCallerAdapter {
             .json()
             .await?;
 
-        let domain = price_guides.price_guides.into_iter().map(|pg| pg.into());
+        let domain = price_guides
+            .price_guides
+            .into_iter()
+            .map(|pg| pg.into())
+            .collect();
 
         let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
 
         let duration = end - start;
         println!("Fetched price guides in {} ms", duration.as_millis());
 
-        Ok((price_guides.created_at.date_naive(), Box::new(domain)))
+        Ok((price_guides.created_at.date_naive(), domain))
     }
 }
 
@@ -119,7 +121,7 @@ mod tests {
         // Assertions racine
         assert_eq!(date, NaiveDate::from_ymd_opt(2025, 12, 23).unwrap(),);
 
-        let actual: Vec<FullPriceGuide> = price_guides.collect();
+        let actual: Vec<FullPriceGuide> = price_guides;
 
         // Assertions collection
         assert_eq!(actual.len(), 2);
