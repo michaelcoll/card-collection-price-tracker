@@ -47,6 +47,8 @@ pub struct Card {
     pub quantity: u8,
     /// Price in cents
     pub purchase_price: u32,
+    pub scryfall_id: uuid::Uuid,
+    pub cardmarket_id: Option<u32>,
 }
 
 impl Card {
@@ -69,6 +71,34 @@ impl Card {
             name: name.into(),
             quantity,
             purchase_price,
+            scryfall_id: uuid::Uuid::default(),
+            cardmarket_id: None,
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_full(
+        set_code: impl Into<SetCode>,
+        set_name: impl Into<String>,
+        collector_number: impl Into<String>,
+        language_code: LanguageCode,
+        foil: bool,
+        name: impl Into<String>,
+        quantity: u8,
+        purchase_price: u32,
+        scryfall_id: uuid::Uuid,
+        cardmarket_id: Option<u32>,
+    ) -> Self {
+        let set_code: SetCode = set_code.into();
+        let set_name = SetName::new(set_code.clone(), set_name);
+        Card {
+            id: CardId::new(set_code, collector_number.into(), language_code, foil),
+            set_name,
+            name: name.into(),
+            quantity,
+            purchase_price,
+            scryfall_id,
+            cardmarket_id,
         }
     }
 }

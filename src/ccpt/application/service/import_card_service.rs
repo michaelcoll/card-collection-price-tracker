@@ -55,6 +55,7 @@ mod tests {
     use crate::domain::language_code::LanguageCode;
     use crate::domain::set_name::{SetCode, SetName};
     use mockall::predicate::eq;
+    use uuid::Uuid;
 
     #[tokio::test]
     async fn import_cards_saves_cards_and_set_names_successfully() {
@@ -66,7 +67,7 @@ mod tests {
             code: set_code.clone(),
             name: "Foundations".to_string(),
         };
-        let card = Card::new(
+        let card = Card::new_full(
             set_code.clone(),
             "Foundations",
             "87",
@@ -75,6 +76,8 @@ mod tests {
             "Goblin Boarders",
             3,
             8,
+            Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
+            None,
         );
 
         card_repository
@@ -159,7 +162,7 @@ mod tests {
         let mut set_name_repository = MockSetNameRepository::new();
 
         let set_code = SetCode::new("FDN");
-        let card = Card::new(
+        let card = Card::new_full(
             set_code.clone(),
             "Foundations",
             "87",
@@ -168,6 +171,8 @@ mod tests {
             "Goblin Boarders",
             3,
             8,
+            Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
+            None,
         );
 
         card_repository
