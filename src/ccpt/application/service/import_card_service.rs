@@ -51,7 +51,7 @@ impl ImportCardUseCase for ImportCardService {
 mod tests {
     use super::*;
     use crate::application::repository::{MockCardRepository, MockSetNameRepository};
-    use crate::domain::card::{Card, CardId};
+    use crate::domain::card::Card;
     use crate::domain::language_code::LanguageCode;
     use crate::domain::set_name::{SetCode, SetName};
     use mockall::predicate::eq;
@@ -66,14 +66,16 @@ mod tests {
             code: set_code.clone(),
             name: "Foundations".to_string(),
         };
-        let id = CardId::new("FDN", "87", LanguageCode::FR, false);
-        let card = Card {
-            id: id.clone(),
-            set_name: set_name.clone(),
-            name: "Goblin Boarders".to_string(),
-            quantity: 3,
-            purchase_price: 8,
-        };
+        let card = Card::new(
+            set_code.clone(),
+            "Foundations",
+            "87",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            3,
+            8,
+        );
 
         card_repository
             .expect_delete_all()
@@ -112,14 +114,16 @@ mod tests {
             code: set_code.clone(),
             name: "Foundations".to_string(),
         };
-        let id = CardId::new("FDN", "0", LanguageCode::FR, false);
-        let card = Card {
-            id: id.clone(),
-            set_name: set_name.clone(),
-            name: "Goblin Boarders".to_string(),
-            quantity: 0,
-            purchase_price: 0,
-        };
+        let card = Card::new(
+            set_code.clone(),
+            "Foundations",
+            "0",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            0,
+            0,
+        );
 
         card_repository
             .expect_delete_all()
@@ -155,18 +159,16 @@ mod tests {
         let mut set_name_repository = MockSetNameRepository::new();
 
         let set_code = SetCode::new("FDN");
-        let set_name = SetName {
-            code: set_code.clone(),
-            name: "Foundations".to_string(),
-        };
-        let id = CardId::new("FDN", "87", LanguageCode::FR, false);
-        let card = Card {
-            id: id.clone(),
-            set_name: set_name.clone(),
-            name: "Goblin Boarders".to_string(),
-            quantity: 3,
-            purchase_price: 8,
-        };
+        let card = Card::new(
+            set_code.clone(),
+            "Foundations",
+            "87",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            3,
+            8,
+        );
 
         card_repository
             .expect_delete_all()

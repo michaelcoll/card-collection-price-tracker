@@ -56,7 +56,7 @@ mod tests {
     use crate::application::repository::{MockCardCollectionRepository, MockCardRepository};
     use crate::domain::card::{Card, CardId};
     use crate::domain::language_code::LanguageCode;
-    use crate::domain::set_name::{SetCode, SetName};
+    use crate::domain::set_name::SetCode;
     use mockall::predicate::*;
 
     #[tokio::test]
@@ -66,27 +66,29 @@ mod tests {
         let mut card_collection_repository = MockCardCollectionRepository::new();
 
         let set_code = SetCode::new("FDN");
-        let set_name = SetName {
-            code: set_code.clone(),
-            name: "Foundations".to_string(),
-        };
         let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
         let card_id2 = CardId::new("FDN", "1", LanguageCode::FR, false);
 
-        let card1 = Card {
-            id: card_id1.clone(),
-            set_name: set_name.clone(),
-            name: "Goblin Boarders".to_string(),
-            quantity: 1,
-            purchase_price: 2,
-        };
-        let card2 = Card {
-            id: card_id2.clone(),
-            set_name: set_name.clone(),
-            name: "Goblin Boarders".to_string(),
-            quantity: 1,
-            purchase_price: 2,
-        };
+        let card1 = Card::new(
+            set_code.clone(),
+            "Foundations",
+            "0",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            1,
+            2,
+        );
+        let card2 = Card::new(
+            set_code.clone(),
+            "Foundations",
+            "1",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            1,
+            2,
+        );
 
         let cards = vec![card1.clone(), card2.clone()];
         let cards = Arc::new(cards);
@@ -190,19 +192,18 @@ mod tests {
         let card_collection_repository = MockCardCollectionRepository::new();
 
         let set_code = SetCode::new("FDN");
-        let set_name = SetName {
-            code: set_code.clone(),
-            name: "Foundations".to_string(),
-        };
         let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
 
-        let card1 = Card {
-            id: card_id1.clone(),
-            set_name: set_name.clone(),
-            name: "Goblin Boarders".to_string(),
-            quantity: 1,
-            purchase_price: 2,
-        };
+        let card1 = Card::new(
+            set_code.clone(),
+            "Foundations",
+            "0",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            1,
+            2,
+        );
 
         let cards = vec![card1.clone()];
         let cards = Arc::new(cards);
@@ -242,19 +243,18 @@ mod tests {
         let mut card_collection_repository = MockCardCollectionRepository::new();
 
         let set_code = SetCode::new("FDN");
-        let set_name = SetName {
-            code: set_code.clone(),
-            name: "Foundations".to_string(),
-        };
         let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
 
-        let card1 = Card {
-            id: card_id1.clone(),
-            set_name: set_name.clone(),
-            name: "Goblin Boarders".to_string(),
-            quantity: 1,
-            purchase_price: 2,
-        };
+        let card1 = Card::new(
+            set_code.clone(),
+            "Foundations",
+            "0",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            1,
+            2,
+        );
         let cards = vec![card1.clone()];
         let cards = Arc::new(cards);
 

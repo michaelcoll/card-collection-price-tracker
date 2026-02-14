@@ -64,3 +64,35 @@ impl From<CardmarketPriceGuide> for FullPriceGuide {
         }
     }
 }
+
+#[derive(Debug, serde::Deserialize)]
+pub struct EdhRecCardInfo {
+    #[serde(rename(deserialize = "pageProps"))]
+    pub page_props: EdhRecProps,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct EdhRecProps {
+    pub data: EdhRecData,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct EdhRecData {
+    pub container: EdhRecContainer,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct EdhRecContainer {
+    pub json_dict: EdhRecJsonDict,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct EdhRecJsonDict {
+    pub card: EdhRecCard,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct EdhRecCard {
+    pub inclusion: i32,
+    pub potential_decks: i32,
+}

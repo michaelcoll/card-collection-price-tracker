@@ -1,3 +1,4 @@
+use crate::domain::card::Card;
 use crate::infrastructure::AppState;
 use axum::body::to_bytes;
 use axum::extract::State;
@@ -8,6 +9,7 @@ pub fn create_card_router() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/import", post(import_cards))
         .route("/price", post(import_prices_for_current_date))
+        .route("/card-info", post(get_card_info))
 }
 
 async fn import_cards(
@@ -53,4 +55,25 @@ async fn import_prices_for_current_date(
         .expect("panic message");
 
     Ok("Price imported".to_string())
+}
+
+async fn get_card_info(State(state): State<AppState>) -> Result<String, (StatusCode, String)> {
+    let card = Card::new(
+        "ECL",
+        "Lorwyn Eclipsed",
+        "1",
+        crate::domain::language_code::LanguageCode::FR,
+        false,
+        "Sol Ring",
+        2,
+        1000,
+    );
+
+    state
+        .edh_rec_caller_adapter
+        .get_card_info(card)
+        .await
+        .expect("panic message");
+
+    Ok("card Info".to_string())
 }
