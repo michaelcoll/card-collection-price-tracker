@@ -2,6 +2,7 @@ use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
 use chrono::NaiveDate;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CardEntity {
@@ -14,6 +15,8 @@ pub struct CardEntity {
     pub quantity: i32,
     /// Price in cents
     pub purchase_price: i32,
+    pub scryfall_id: Uuid,
+    pub cardmarket_id: Option<i32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -39,6 +42,8 @@ impl From<CardEntity> for Card {
             name: entity.name,
             quantity: entity.quantity as u8,
             purchase_price: entity.purchase_price as u32,
+            scryfall_id: entity.scryfall_id,
+            cardmarket_id: entity.cardmarket_id.map(|id| id as u32),
         }
     }
 }

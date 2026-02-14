@@ -2,6 +2,7 @@ use crate::application::error::AppError;
 use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::{SetCode, SetName};
+use uuid::Uuid;
 
 fn split_line(line: &str) -> Vec<String> {
     let mut fields = Vec::new();
@@ -72,6 +73,12 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             value: field_refs[8].to_string(),
         })?;
 
+        let scryfall_id = Uuid::parse_str(field_refs[10]).map_err(|_e| AppError::ParseError {
+            line: line_number,
+            field: "scryfall_id",
+            value: field_refs[10].to_string(),
+        })?;
+
         let purchase_price_float: f32 =
             field_refs[11].parse().map_err(|_e| AppError::ParseError {
                 line: line_number,
@@ -81,7 +88,7 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
 
         let purchase_price = (purchase_price_float * 100.0).round() as u32;
 
-        let card = Card::new(
+        let card = Card::new_full(
             set_code,
             set_name.name.clone(),
             collector_number,
@@ -90,6 +97,8 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             name,
             quantity,
             purchase_price,
+            scryfall_id,
+            None,
         );
         cards.push(card);
     }
@@ -250,7 +259,7 @@ mod tests {
 
         let result = parse_cards(csv);
 
-        let card = Card::new(
+        let card = Card::new_full(
             "PTDM",
             "Tarkir: Dragonstorm Promos",
             "184s",
@@ -259,6 +268,8 @@ mod tests {
             "Felothar, Dawn of the Abzan",
             1,
             76,
+            Uuid::parse_str("09478378-c28b-4334-a0a1-157325ed8e5b").unwrap(),
+            None,
         );
 
         assert_eq!(result.clone().unwrap().len(), 1);

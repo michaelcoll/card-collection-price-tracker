@@ -15,6 +15,8 @@ CREATE TABLE card
     language_code    VARCHAR(2)   NOT NULL,
     foil             BOOLEAN      NOT NULL,
     name             VARCHAR(255) NOT NULL,
+    scryfall_id      UUID         NOT NULL,
+    cardmarket_id    INTEGER,
 
     CONSTRAINT card_pk PRIMARY KEY (set_code, collector_number, language_code, foil),
     CONSTRAINT card_set_name_fk FOREIGN KEY (set_code) REFERENCES set_name (set_code)
