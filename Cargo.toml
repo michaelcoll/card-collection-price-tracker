@@ -20,6 +20,7 @@ uuid = { version = "1.21", features = ["serde"] }
 [dev-dependencies]
 mockall = "0.14"
 wiremock = "0.6"
+cargo-husky = "1"
 
 [[bin]]
 name = "ccpt"
