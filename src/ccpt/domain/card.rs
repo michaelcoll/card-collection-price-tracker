@@ -73,6 +73,12 @@ impl Card {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CardInfo {
+    pub inclusion: u32,
+    pub total_decks: u32,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
