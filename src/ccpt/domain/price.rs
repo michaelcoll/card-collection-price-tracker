@@ -10,7 +10,7 @@ impl Price {
         Self { value: None }
     }
 
-    pub(crate) fn from_cents(p0: u32) -> Price {
+    pub fn from_cents(p0: u32) -> Price {
         Price { value: Some(p0) }
     }
 

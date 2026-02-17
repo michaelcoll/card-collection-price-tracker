@@ -43,13 +43,40 @@ impl CardRepository for CardRepositoryAdapter {
         .collect::<Vec<Card>>())
     }
 
+    async fn get_all_without_cardmarket_id(&self) -> Result<Vec<Card>, AppError> {
+        Ok(sqlx::query_as!(
+            CardEntity,
+            "SELECT
+                card.*,
+                set_name.name as set_name,
+                card_quantity.quantity,
+                card_quantity.purchase_price
+            FROM card
+            JOIN set_name ON card.set_code = set_name.set_code
+            JOIN card_quantity ON
+                card.set_code = card_quantity.set_code AND
+                card.collector_number = card_quantity.collector_number AND
+                card.language_code = card_quantity.language_code AND
+                card.foil = card_quantity.foil
+            WHERE card.cardmarket_id IS NULL"
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(|e| e.into())
+        .collect::<Vec<Card>>())
+    }
+
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
         sqlx::query!(
             "
             INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id, cardmarket_id)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT(set_code, collector_number, language_code, foil)
-                DO NOTHING",
+                DO UPDATE
+                SET name          = $5,
+                    scryfall_id   = $6,
+                    cardmarket_id = $7",
             card.id.set_code.to_string(),
             card.id.collector_number,
             card.id.language_code.to_string(),
@@ -233,5 +260,45 @@ mod tests {
         assert_eq!(cards.len(), 2);
         assert!(cards.contains(&card1));
         assert!(cards.contains(&card2));
+    }
+
+    #[sqlx::test]
+    async fn get_all_without_cardmarket_id_returns_only_cards_without_cardmarket_id(pool: PgPool) {
+        let repository = CardRepositoryAdapter::new(pool);
+
+        let card_without_id = Card::new(
+            "FDN",
+            "Foundations",
+            "87",
+            LanguageCode::FR,
+            false,
+            "Goblin Boarders",
+            3,
+            500,
+        );
+        let card_with_id = Card::new(
+            "FDN",
+            "Foundations",
+            "12",
+            LanguageCode::EN,
+            true,
+            "Goblin Boarders",
+            2,
+            1000,
+        )
+        .with_cardmarket_id(Some(123));
+
+        repository
+            .save(User::new(), card_without_id.clone())
+            .await
+            .unwrap();
+        repository
+            .save(User::new(), card_with_id.clone())
+            .await
+            .unwrap();
+
+        let cards = repository.get_all_without_cardmarket_id().await.unwrap();
+        assert_eq!(cards.len(), 1);
+        assert_eq!(cards[0], card_without_id);
     }
 }
