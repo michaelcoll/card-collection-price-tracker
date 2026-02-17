@@ -7,6 +7,11 @@ pub trait ImportCardUseCase: Send + Sync {
 }
 
 #[async_trait]
+pub trait UpdateCardMarketIdUseCase: Send + Sync {
+    async fn update_cards(&self) -> Result<(), AppError>;
+}
+
+#[async_trait]
 pub trait CardCollectionPriceCalculationUseCase: Send + Sync {
     async fn calculate_total_price(&self) -> Result<(), AppError>;
 }

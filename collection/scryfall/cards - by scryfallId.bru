@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: https://api.scryfall.com/cards/:scryfallId
+  url: https://api.scryfall.com/cards/:scryfallId?format=json
   body: none
   auth: inherit
+}
+
+params:query {
+  format: json
 }
 
 params:path {

@@ -96,3 +96,8 @@ pub struct EdhRecCard {
     pub inclusion: i32,
     pub potential_decks: i32,
 }
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ScryfallCardInfo {
+    pub cardmarket_id: Option<i32>,
+}

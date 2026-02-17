@@ -1,6 +1,6 @@
 use crate::application::caller::EdhRecCaller;
 use crate::application::error::AppError;
-use crate::domain::card::{Card, CardInfo};
+use crate::domain::card::CardInfo;
 use crate::infrastructure::adapter_out::caller::dto::EdhRecCardInfo;
 use async_trait::async_trait;
 use chrono::{Duration, NaiveDateTime, Utc};
@@ -103,14 +103,14 @@ impl EdhRecCallerAdapter {
 
 #[async_trait]
 impl EdhRecCaller for EdhRecCallerAdapter {
-    async fn get_card_info(&self, card: Card) -> Result<CardInfo, AppError> {
+    async fn get_card_info(&self, card_name: String) -> Result<CardInfo, AppError> {
         self.update_build_id().await?;
 
         let url = format!(
             "{}/_next/data/{}/cards/{}.json",
             self.edh_rec_base_url,
             self.cache.read().await.id.as_ref().unwrap(),
-            self.get_card_id_from_name(&card.name)
+            self.get_card_id_from_name(&card_name)
         );
 
         println!("Fetching cardinfo from {}", url);
@@ -131,16 +131,11 @@ impl EdhRecCaller for EdhRecCallerAdapter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::language_code::LanguageCode;
     use wiremock::matchers::path;
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn create_adapter(edh_rec_base_url: impl Into<String>) -> EdhRecCallerAdapter {
         EdhRecCallerAdapter::new(edh_rec_base_url)
-    }
-
-    fn create_test_card(name: impl Into<String>) -> Card {
-        Card::new("UNH", "Unfinity", "1", LanguageCode::EN, false, name, 1, 0)
     }
 
     #[tokio::test]
@@ -467,8 +462,8 @@ mod tests {
         .await;
 
         let adapter = create_adapter(mock_server.uri());
-        let card = create_test_card("Jace the Mind Sculptor");
-        let result = adapter.get_card_info(card).await;
+        let card_name = "Jace the Mind Sculptor";
+        let result = adapter.get_card_info(card_name.to_string()).await;
 
         assert!(result.is_ok());
         let card_info = result.unwrap();
@@ -486,8 +481,8 @@ mod tests {
             .await;
 
         let adapter = create_adapter(mock_server.uri());
-        let card = create_test_card("Jace the Mind Sculptor");
-        let result = adapter.get_card_info(card).await;
+        let card_name = "Jace the Mind Sculptor";
+        let result = adapter.get_card_info(card_name.to_string()).await;
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -523,8 +518,8 @@ mod tests {
         .await;
 
         let adapter = create_adapter(mock_server.uri());
-        let card = create_test_card("Jace the Mind Sculptor");
-        let result = adapter.get_card_info(card).await;
+        let card_name = "Jace the Mind Sculptor";
+        let result = adapter.get_card_info(card_name.to_string()).await;
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -560,8 +555,8 @@ mod tests {
         .await;
 
         let adapter = create_adapter(mock_server.uri());
-        let card = create_test_card("Jace the Mind Sculptor");
-        let result = adapter.get_card_info(card).await;
+        let card_name = "Jace the Mind Sculptor";
+        let result = adapter.get_card_info(card_name.to_string()).await;
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -613,8 +608,8 @@ mod tests {
             .await;
 
         let adapter = create_adapter(mock_server.uri());
-        let card = create_test_card("Test Card Name");
-        let result = adapter.get_card_info(card).await;
+        let card_name = "Test Card Name";
+        let result = adapter.get_card_info(card_name.to_string()).await;
 
         assert!(result.is_ok());
     }
@@ -668,12 +663,12 @@ mod tests {
 
         let adapter = create_adapter(mock_server.uri());
 
-        let card1 = create_test_card("Jace the Mind Sculptor");
-        let result1 = adapter.get_card_info(card1).await;
+        let card_name1 = "Jace the Mind Sculptor";
+        let result1 = adapter.get_card_info(card_name1.to_string()).await;
         assert!(result1.is_ok());
 
-        let card2 = create_test_card("Lightning Bolt");
-        let result2 = adapter.get_card_info(card2).await;
+        let card_name2 = "Lightning Bolt";
+        let result2 = adapter.get_card_info(card_name2.to_string()).await;
         assert!(result2.is_ok());
     }
 
@@ -717,8 +712,8 @@ mod tests {
             .await;
 
         let adapter = create_adapter(mock_server.uri());
-        let card = create_test_card("Test Card");
-        let result = adapter.get_card_info(card).await;
+        let card_name = "Test Card";
+        let result = adapter.get_card_info(card_name.to_string()).await;
 
         assert!(result.is_ok());
         let card_info = result.unwrap();

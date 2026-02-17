@@ -52,6 +52,20 @@ pub struct Card {
 }
 
 impl Card {
+    pub fn with_cardmarket_id(&self, cardmarket_id: Option<u32>) -> Self {
+        Card {
+            id: self.id.clone(),
+            set_name: self.set_name.clone(),
+            name: self.name.clone(),
+            quantity: self.quantity,
+            purchase_price: self.purchase_price,
+            scryfall_id: self.scryfall_id,
+            cardmarket_id,
+        }
+    }
+}
+
+impl Card {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         set_code: impl Into<SetCode>,
