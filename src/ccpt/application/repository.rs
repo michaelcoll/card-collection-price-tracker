@@ -1,6 +1,6 @@
 use crate::application::error::AppError;
 use crate::domain::card::Card;
-use crate::domain::price::{FullPriceGuide, PriceGuide};
+use crate::domain::price::FullPriceGuide;
 use crate::domain::set_name::{SetCode, SetName};
 use crate::domain::user::User;
 use async_trait::async_trait;
@@ -40,7 +40,8 @@ pub trait SetNameRepository: Send + Sync {
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub trait CardCollectionRepository: Send + Sync {
-    async fn save(&self, price: PriceGuide) -> Result<(), AppError>;
+    async fn get_date_and_user_to_update(&self) -> Result<Vec<(NaiveDate, User)>, AppError>;
+    async fn update_for_date_and_user(&self, date: NaiveDate, user: User) -> Result<(), AppError>;
 }
 
 #[async_trait]

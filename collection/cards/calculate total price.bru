@@ -1,0 +1,16 @@
+meta {
+  name: calculate total price
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/cards/calculate-total-price
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

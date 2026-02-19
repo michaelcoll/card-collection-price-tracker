@@ -10,6 +10,7 @@ pub fn create_card_router() -> axum::Router<AppState> {
         .route("/price", post(import_prices_for_current_date))
         .route("/card-info", post(get_card_info))
         .route("/update-card", post(update_card_id))
+        .route("/calculate-total-price", post(calculate_total_price))
 }
 
 async fn import_cards(
@@ -71,6 +72,18 @@ async fn update_card_id(State(state): State<AppState>) -> Result<String, (Status
     state
         .update_card_market_id_service
         .update_cards()
+        .await
+        .expect("panic message");
+
+    Ok("Updated".to_string())
+}
+
+async fn calculate_total_price(
+    State(state): State<AppState>,
+) -> Result<String, (StatusCode, String)> {
+    state
+        .card_collection_service
+        .calculate_total_price()
         .await
         .expect("panic message");
 

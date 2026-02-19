@@ -1,18 +1,12 @@
 use crate::application::error::AppError;
-use crate::domain::card::{CardId, CardInfo};
-use crate::domain::price::{FullPriceGuide, PriceGuide};
+use crate::domain::card::CardInfo;
+use crate::domain::price::FullPriceGuide;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use uuid::Uuid;
 
 #[cfg(test)]
 use mockall::automock;
-
-#[async_trait]
-#[cfg_attr(test, automock)]
-pub trait CardPriceCaller: Send + Sync {
-    async fn get_price_by_card_id(&self, id: CardId) -> Result<PriceGuide, AppError>;
-}
 
 #[async_trait]
 #[cfg_attr(test, automock)]

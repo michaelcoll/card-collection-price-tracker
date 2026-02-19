@@ -38,12 +38,16 @@ CREATE TABLE card_quantity
 
 CREATE TABLE collection_price_history
 (
-    date  DATE PRIMARY KEY,
-    low   INTEGER NOT NULL,
-    trend INTEGER NOT NULL,
-    avg1  INTEGER NOT NULL,
-    avg7  INTEGER NOT NULL,
-    avg30 INTEGER NOT NULL
+    date    DATE,
+    user_id VARCHAR(50),
+    low     INTEGER NOT NULL,
+    trend   INTEGER NOT NULL,
+    avg     INTEGER NOT NULL,
+    avg1    INTEGER NOT NULL,
+    avg7    INTEGER NOT NULL,
+    avg30   INTEGER NOT NULL,
+
+    CONSTRAINT collection_price_history_pk PRIMARY KEY (date, user_id)
 );
 
 CREATE TABLE cardmarket_price

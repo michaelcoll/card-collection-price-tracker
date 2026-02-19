@@ -38,18 +38,18 @@ impl CardMarketRepository for CardMarketRepositoryAdapter {
             qb.push_values(chunk, |mut b, price_guide| {
                 b.push_bind(price_guide.id_product as i32)
                     .push_bind(date)
-                    .push_bind(price_guide.normal.low.as_cents())
-                    .push_bind(price_guide.normal.trend.as_cents())
-                    .push_bind(price_guide.normal.avg.as_cents())
-                    .push_bind(price_guide.normal.avg1.as_cents())
-                    .push_bind(price_guide.normal.avg7.as_cents())
-                    .push_bind(price_guide.normal.avg30.as_cents())
-                    .push_bind(price_guide.foil.low.as_cents())
-                    .push_bind(price_guide.foil.trend.as_cents())
-                    .push_bind(price_guide.foil.avg.as_cents())
-                    .push_bind(price_guide.foil.avg1.as_cents())
-                    .push_bind(price_guide.foil.avg7.as_cents())
-                    .push_bind(price_guide.foil.avg30.as_cents());
+                    .push_bind(price_guide.normal.low.as_i32())
+                    .push_bind(price_guide.normal.trend.as_i32())
+                    .push_bind(price_guide.normal.avg.as_i32())
+                    .push_bind(price_guide.normal.avg1.as_i32())
+                    .push_bind(price_guide.normal.avg7.as_i32())
+                    .push_bind(price_guide.normal.avg30.as_i32())
+                    .push_bind(price_guide.foil.low.as_i32())
+                    .push_bind(price_guide.foil.trend.as_i32())
+                    .push_bind(price_guide.foil.avg.as_i32())
+                    .push_bind(price_guide.foil.avg1.as_i32())
+                    .push_bind(price_guide.foil.avg7.as_i32())
+                    .push_bind(price_guide.foil.avg30.as_i32());
             });
 
             qb.push(
@@ -84,6 +84,19 @@ mod tests {
     use super::*;
     use crate::domain::price::{Price, PriceGuide};
     use chrono::NaiveDate;
+
+    impl PriceGuide {
+        pub fn empty() -> Self {
+            Self {
+                low: Price::empty(),
+                trend: Price::empty(),
+                avg: Price::empty(),
+                avg1: Price::empty(),
+                avg7: Price::empty(),
+                avg30: Price::empty(),
+            }
+        }
+    }
 
     fn create_full_price_guide(
         id_product: u32,

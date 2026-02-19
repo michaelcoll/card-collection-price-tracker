@@ -9,14 +9,6 @@ impl Price {
     pub fn empty() -> Self {
         Self { value: None }
     }
-
-    pub fn from_cents(p0: u32) -> Price {
-        Price { value: Some(p0) }
-    }
-
-    pub fn as_cents(&self) -> Option<i32> {
-        self.value.map(|v| v as i32)
-    }
 }
 
 impl AddAssign for Price {
@@ -53,17 +45,6 @@ pub struct FullPriceGuide {
 }
 
 impl PriceGuide {
-    pub fn empty() -> Self {
-        Self {
-            low: Price::empty(),
-            trend: Price::empty(),
-            avg: Price::empty(),
-            avg1: Price::empty(),
-            avg7: Price::empty(),
-            avg30: Price::empty(),
-        }
-    }
-
     pub fn new(
         low: impl Into<Price>,
         trend: impl Into<Price>,
@@ -134,7 +115,14 @@ mod tests {
 
     #[test]
     fn add_assign_with_zero_price_does_not_change_values() {
-        let mut price1 = PriceGuide::empty();
+        let mut price1 = PriceGuide::new(
+            Price::empty(),
+            Price::empty(),
+            Price::empty(),
+            Price::empty(),
+            Price::empty(),
+            Price::empty(),
+        );
         let price2 = create_price(100, 200, 200, 300, 400, 500);
 
         price1 += price2;

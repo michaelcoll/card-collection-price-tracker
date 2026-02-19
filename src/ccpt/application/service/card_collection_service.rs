@@ -1,27 +1,16 @@
-use crate::application::caller::CardPriceCaller;
 use crate::application::error::AppError;
-use crate::application::repository::{CardCollectionRepository, CardRepository};
+use crate::application::repository::CardCollectionRepository;
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
-use crate::domain::price::PriceGuide;
-use crate::domain::user::User;
 use async_trait::async_trait;
 use std::sync::Arc;
 
 pub struct CardCollectionService {
-    card_price_caller: Arc<dyn CardPriceCaller>,
-    card_repository: Arc<dyn CardRepository>,
     card_collection_repository: Arc<dyn CardCollectionRepository>,
 }
 
 impl CardCollectionService {
-    pub fn new(
-        card_price_caller: Arc<dyn CardPriceCaller>,
-        card_repository: Arc<dyn CardRepository>,
-        card_collection_repository: Arc<dyn CardCollectionRepository>,
-    ) -> Self {
+    pub fn new(card_collection_repository: Arc<dyn CardCollectionRepository>) -> Self {
         Self {
-            card_price_caller,
-            card_repository,
             card_collection_repository,
         }
     }
@@ -30,19 +19,16 @@ impl CardCollectionService {
 #[async_trait]
 impl CardCollectionPriceCalculationUseCase for CardCollectionService {
     async fn calculate_total_price(&self) -> Result<(), AppError> {
-        let cards = &self.card_repository.get_all(User::new()).await?;
+        let dates_and_users = self
+            .card_collection_repository
+            .get_date_and_user_to_update()
+            .await?;
 
-        let mut total_price = PriceGuide::empty();
-
-        for card in cards {
-            let price = &self
-                .card_price_caller
-                .get_price_by_card_id(card.id.clone())
+        for (date, user) in dates_and_users {
+            self.card_collection_repository
+                .update_for_date_and_user(date, user)
                 .await?;
-            total_price += price.clone();
         }
-
-        self.card_collection_repository.save(total_price).await?;
 
         Ok(())
     }
@@ -51,248 +37,122 @@ impl CardCollectionPriceCalculationUseCase for CardCollectionService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::caller::MockCardPriceCaller;
-    use crate::application::error::AppError::{PriceNotFound, RepositoryError};
-    use crate::application::repository::{MockCardCollectionRepository, MockCardRepository};
-    use crate::domain::card::{Card, CardId};
-    use crate::domain::language_code::LanguageCode;
-    use crate::domain::set_name::SetCode;
-    use mockall::predicate::*;
+    use crate::application::repository::MockCardCollectionRepository;
+    use crate::domain::user::User;
+    use chrono::NaiveDate;
 
     #[tokio::test]
-    async fn calculate_total_price_saves_correct_total() {
-        let mut card_price_caller = MockCardPriceCaller::new();
-        let mut card_repository = MockCardRepository::new();
-        let mut card_collection_repository = MockCardCollectionRepository::new();
+    async fn calculate_total_price_succeeds_with_no_dates_and_users() {
+        let mut mock_repository = MockCardCollectionRepository::new();
+        mock_repository
+            .expect_get_date_and_user_to_update()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(vec![]) }));
 
-        let set_code = SetCode::new("FDN");
-        let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
-        let card_id2 = CardId::new("FDN", "1", LanguageCode::FR, false);
-
-        let card1 = Card::new(
-            set_code.clone(),
-            "Foundations",
-            "0",
-            LanguageCode::FR,
-            false,
-            "Goblin Boarders",
-            1,
-            2,
-        );
-        let card2 = Card::new(
-            set_code.clone(),
-            "Foundations",
-            "1",
-            LanguageCode::FR,
-            false,
-            "Goblin Boarders",
-            1,
-            2,
-        );
-
-        let cards = vec![card1.clone(), card2.clone()];
-        let cards = Arc::new(cards);
-
-        card_repository
-            .expect_get_all()
-            .with(eq(User::new()))
-            .returning({
-                let cards = cards.clone();
-                move |_| {
-                    Box::pin({
-                        let value = cards.clone();
-                        async move { Ok(value.as_ref().clone()) }
-                    })
-                }
-            });
-
-        card_price_caller
-            .expect_get_price_by_card_id()
-            .with(eq(card_id1.clone()))
-            .returning(|_| {
-                Box::pin(async move { Ok(PriceGuide::new(100, 200, 300, 400, 500, 600)) })
-            });
-
-        card_price_caller
-            .expect_get_price_by_card_id()
-            .with(eq(card_id2.clone()))
-            .returning(|_| {
-                Box::pin(async move { Ok(PriceGuide::new(50, 100, 150, 200, 250, 300)) })
-            });
-
-        card_collection_repository
-            .expect_save()
-            .with(eq(PriceGuide::new(150, 300, 450, 600, 750, 900)))
-            .returning(|_| Box::pin(async move { Ok(()) }));
-
-        let service = CardCollectionService::new(
-            Arc::new(card_price_caller),
-            Arc::new(card_repository),
-            Arc::new(card_collection_repository),
-        );
-
+        let service = CardCollectionService::new(Arc::new(mock_repository));
         let result = service.calculate_total_price().await;
+
         assert!(result.is_ok());
     }
 
     #[tokio::test]
-    async fn calculate_total_price_handles_empty_card_list() {
-        let card_price_caller = MockCardPriceCaller::new();
-        let mut card_repository = MockCardRepository::new();
-        let mut card_collection_repository = MockCardCollectionRepository::new();
+    async fn calculate_total_price_updates_single_date_and_user() {
+        let mut mock_repository = MockCardCollectionRepository::new();
 
-        card_repository
-            .expect_get_all()
-            .with(eq(User::new()))
-            .returning(|_| Box::pin(async move { Ok(vec![]) }));
+        mock_repository
+            .expect_get_date_and_user_to_update()
+            .times(1)
+            .returning(|| {
+                Box::pin(async {
+                    Ok(vec![(
+                        NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(),
+                        User::new(),
+                    )])
+                })
+            });
 
-        card_collection_repository
-            .expect_save()
-            .with(eq(PriceGuide::empty()))
-            .returning(|_| Box::pin(async move { Ok(()) }));
+        mock_repository
+            .expect_update_for_date_and_user()
+            .times(1)
+            .returning(|_, _| Box::pin(async { Ok(()) }));
 
-        let service = CardCollectionService::new(
-            Arc::new(card_price_caller),
-            Arc::new(card_repository),
-            Arc::new(card_collection_repository),
-        );
-
+        let service = CardCollectionService::new(Arc::new(mock_repository));
         let result = service.calculate_total_price().await;
+
         assert!(result.is_ok());
     }
 
     #[tokio::test]
-    async fn calculate_total_price_propagates_error_from_card_repository() {
-        let card_price_caller = MockCardPriceCaller::new();
-        let mut card_repository = MockCardRepository::new();
-        let card_collection_repository = MockCardCollectionRepository::new();
+    async fn calculate_total_price_updates_multiple_dates_and_users() {
+        let mut mock_repository = MockCardCollectionRepository::new();
 
-        card_repository
-            .expect_get_all()
-            .with(eq(User::new()))
-            .returning(|_| Box::pin(async move { Err(RepositoryError("DB error".to_string())) }));
+        mock_repository
+            .expect_get_date_and_user_to_update()
+            .times(1)
+            .returning(|| {
+                Box::pin(async {
+                    Ok(vec![
+                        (NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(), User::new()),
+                        (NaiveDate::from_ymd_opt(2025, 12, 26).unwrap(), User::new()),
+                        (NaiveDate::from_ymd_opt(2025, 12, 27).unwrap(), User::new()),
+                    ])
+                })
+            });
 
-        let service = CardCollectionService::new(
-            Arc::new(card_price_caller),
-            Arc::new(card_repository),
-            Arc::new(card_collection_repository),
-        );
+        mock_repository
+            .expect_update_for_date_and_user()
+            .times(3)
+            .returning(|_, _| Box::pin(async { Ok(()) }));
 
+        let service = CardCollectionService::new(Arc::new(mock_repository));
         let result = service.calculate_total_price().await;
-        assert!(matches!(
-            result,
-            Err(AppError::RepositoryError(s)) if s == "DB error"
-        ));
+
+        assert!(result.is_ok());
     }
 
     #[tokio::test]
-    async fn calculate_total_price_propagates_error_from_price_caller() {
-        let mut card_price_caller = MockCardPriceCaller::new();
-        let mut card_repository = MockCardRepository::new();
-        let card_collection_repository = MockCardCollectionRepository::new();
+    async fn calculate_total_price_returns_error_when_get_dates_fails() {
+        let mut mock_repository = MockCardCollectionRepository::new();
 
-        let set_code = SetCode::new("FDN");
-        let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
-
-        let card1 = Card::new(
-            set_code.clone(),
-            "Foundations",
-            "0",
-            LanguageCode::FR,
-            false,
-            "Goblin Boarders",
-            1,
-            2,
-        );
-
-        let cards = vec![card1.clone()];
-        let cards = Arc::new(cards);
-
-        card_repository
-            .expect_get_all()
-            .with(eq(User::new()))
-            .returning({
-                let cards = cards.clone();
-                move |_| {
-                    Box::pin({
-                        let value = cards.clone();
-                        async move { Ok(value.as_ref().clone()) }
-                    })
-                }
+        mock_repository
+            .expect_get_date_and_user_to_update()
+            .times(1)
+            .returning(|| {
+                Box::pin(async { Err(AppError::CallError("database error".to_string())) })
             });
 
-        card_price_caller
-            .expect_get_price_by_card_id()
-            .with(eq(card_id1.clone()))
-            .returning(|_| Box::pin(async move { Err(PriceNotFound) }));
-
-        let service = CardCollectionService::new(
-            Arc::new(card_price_caller),
-            Arc::new(card_repository),
-            Arc::new(card_collection_repository),
-        );
-
+        let service = CardCollectionService::new(Arc::new(mock_repository));
         let result = service.calculate_total_price().await;
-        assert!(matches!(result, Err(PriceNotFound)));
+
+        assert!(result.is_err());
     }
 
     #[tokio::test]
-    async fn calculate_total_price_propagates_error_from_collection_repository() {
-        let mut card_price_caller = MockCardPriceCaller::new();
-        let mut card_repository = MockCardRepository::new();
-        let mut card_collection_repository = MockCardCollectionRepository::new();
+    async fn calculate_total_price_stops_on_first_update_failure() {
+        let mut mock_repository = MockCardCollectionRepository::new();
 
-        let set_code = SetCode::new("FDN");
-        let card_id1 = CardId::new("FDN", "0", LanguageCode::FR, false);
-
-        let card1 = Card::new(
-            set_code.clone(),
-            "Foundations",
-            "0",
-            LanguageCode::FR,
-            false,
-            "Goblin Boarders",
-            1,
-            2,
-        );
-        let cards = vec![card1.clone()];
-        let cards = Arc::new(cards);
-
-        card_repository
-            .expect_get_all()
-            .with(eq(User::new()))
-            .returning({
-                let cards = cards.clone();
-                move |_| {
-                    Box::pin({
-                        let value = cards.clone();
-                        async move { Ok(value.as_ref().clone()) }
-                    })
-                }
+        mock_repository
+            .expect_get_date_and_user_to_update()
+            .times(1)
+            .returning(|| {
+                Box::pin(async {
+                    Ok(vec![
+                        (NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(), User::new()),
+                        (NaiveDate::from_ymd_opt(2025, 12, 26).unwrap(), User::new()),
+                    ])
+                })
             });
 
-        card_price_caller
-            .expect_get_price_by_card_id()
-            .with(eq(card_id1.clone()))
-            .returning(|_| {
-                Box::pin(async move { Ok(PriceGuide::new(100, 200, 300, 400, 500, 600)) })
+        mock_repository
+            .expect_update_for_date_and_user()
+            .times(1)
+            .returning(|_, _| {
+                Box::pin(async { Err(AppError::CallError("update failed".to_string())) })
             });
 
-        card_collection_repository
-            .expect_save()
-            .with(eq(PriceGuide::new(100, 200, 300, 400, 500, 600)))
-            .returning(|_| Box::pin(async move { Err(RepositoryError("DB error".to_string())) }));
-
-        let service = CardCollectionService::new(
-            Arc::new(card_price_caller),
-            Arc::new(card_repository),
-            Arc::new(card_collection_repository),
-        );
-
+        let service = CardCollectionService::new(Arc::new(mock_repository));
         let result = service.calculate_total_price().await;
-        assert!(matches!(
-            result,
-            Err(RepositoryError(s)) if s == "DB error"
-        ));
+
+        assert!(result.is_err());
     }
 }
