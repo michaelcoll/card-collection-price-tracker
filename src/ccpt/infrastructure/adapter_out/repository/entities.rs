@@ -1,6 +1,8 @@
 use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
+use crate::domain::price::Price;
 use crate::domain::set_name::{SetCode, SetName};
+use crate::domain::user::User;
 use chrono::NaiveDate;
 use uuid::Uuid;
 
@@ -65,4 +67,16 @@ pub struct CardMarketPriceEntity {
     pub avg1_foil: Option<u32>,
     pub avg7_foil: Option<u32>,
     pub avg30_foil: Option<u32>,
+}
+
+impl Price {
+    pub fn as_i32(&self) -> Option<i32> {
+        self.value.map(|v| v as i32)
+    }
+}
+
+impl User {
+    pub fn from_id(id: String) -> Self {
+        User { id }
+    }
 }
