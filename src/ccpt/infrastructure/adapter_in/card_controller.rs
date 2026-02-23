@@ -70,7 +70,7 @@ async fn get_card_info(State(state): State<AppState>) -> Result<String, (StatusC
 
 async fn update_card_id(State(state): State<AppState>) -> Result<String, (StatusCode, String)> {
     state
-        .update_card_market_id_service
+        .update_card_market_id_use_case
         .update_cards()
         .await
         .expect("panic message");
@@ -82,7 +82,7 @@ async fn calculate_total_price(
     State(state): State<AppState>,
 ) -> Result<String, (StatusCode, String)> {
     state
-        .card_collection_service
+        .card_collection_price_calculation_use_case
         .calculate_total_price()
         .await
         .expect("panic message");

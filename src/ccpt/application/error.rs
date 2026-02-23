@@ -10,6 +10,7 @@ pub enum AppError {
     RepositoryError(String),
     PriceNotFound,
     CallError(String),
+    QueueError(String),
 }
 
 impl From<AppError> for String {
@@ -24,6 +25,7 @@ impl From<AppError> for String {
             AppError::RepositoryError(msg) => msg,
             AppError::PriceNotFound => "Price not found".to_string(),
             AppError::CallError(msg) => msg,
+            AppError::QueueError(msg) => msg,
         }
     }
 }

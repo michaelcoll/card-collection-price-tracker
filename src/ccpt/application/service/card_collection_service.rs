@@ -19,6 +19,8 @@ impl CardCollectionService {
 #[async_trait]
 impl CardCollectionPriceCalculationUseCase for CardCollectionService {
     async fn calculate_total_price(&self) -> Result<(), AppError> {
+        println!("Calculating total price...");
+
         let dates_and_users = self
             .card_collection_repository
             .get_date_and_user_to_update()
