@@ -3,10 +3,7 @@ use crate::application::service::card_collection_service::CardCollectionService;
 use crate::application::service::import_card_service::ImportCardService;
 use crate::application::service::import_price_service::ImportPriceService;
 use crate::application::service::update_card_market_service::UpdateCardMarketIdService;
-use crate::application::use_case::{
-    CardCollectionPriceCalculationUseCase, ImportCardUseCase, ImportPriceUseCase,
-    UpdateCardMarketIdUseCase,
-};
+use crate::application::use_case::{ImportCardUseCase, ImportPriceUseCase};
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
 use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCallerAdapter;
@@ -16,6 +13,8 @@ use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
 use adapter_out::repository::card_repository_adapter::CardRepositoryAdapter;
 use adapter_out::repository::set_names_repository_adapter::SetNameRepositoryAdapter;
 use axum::Router;
+use chrono::Utc;
+use cron_tab::AsyncCron;
 use sqlx::{Pool, Postgres};
 use std::sync::Arc;
 
@@ -25,13 +24,10 @@ pub mod adapter_out;
 #[derive(Clone)]
 pub struct AppState {
     import_card_use_case: Arc<dyn ImportCardUseCase>,
-    import_price_use_case: Arc<dyn ImportPriceUseCase>,
-    update_card_market_id_use_case: Arc<dyn UpdateCardMarketIdUseCase>,
     edh_rec_caller_adapter: Arc<dyn EdhRecCaller>,
-    card_collection_price_calculation_use_case: Arc<dyn CardCollectionPriceCalculationUseCase>,
 }
 
-pub fn create_infra(pool: Pool<Postgres>) -> Router {
+pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let cardmarket_price_guides_url = std::env::var("CARDMARKET_PRICE_GUIDES_URL").unwrap_or(
         "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json"
             .to_string(),
@@ -73,11 +69,24 @@ pub fn create_infra(pool: Pool<Postgres>) -> Router {
 
     let app_state = AppState {
         import_card_use_case: import_card_service,
-        import_price_use_case: import_price_service,
-        update_card_market_id_use_case: update_card_market_id_service,
         edh_rec_caller_adapter,
-        card_collection_price_calculation_use_case: card_collection_service.clone(),
     };
+
+    let mut cron = AsyncCron::new(Utc);
+
+    cron.add_fn("0 0 */6 * * *", move || {
+        let service = import_price_service.clone();
+        async move {
+            service
+                .import_prices_for_current_date()
+                .await
+                .expect("Failed to import prices");
+        }
+    })
+    .await
+    .unwrap();
+
+    cron.start().await;
 
     Router::new()
         .nest("/cards", create_card_router())

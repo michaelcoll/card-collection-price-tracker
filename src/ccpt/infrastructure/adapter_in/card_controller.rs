@@ -7,10 +7,7 @@ use axum::routing::post;
 pub fn create_card_router() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/import", post(import_cards))
-        .route("/price", post(import_prices_for_current_date))
         .route("/card-info", post(get_card_info))
-        .route("/update-card", post(update_card_id))
-        .route("/calculate-total-price", post(calculate_total_price))
 }
 
 async fn import_cards(
@@ -46,18 +43,6 @@ async fn import_cards(
     Ok("Cards imported successfully".to_string())
 }
 
-async fn import_prices_for_current_date(
-    State(state): State<AppState>,
-) -> Result<String, (StatusCode, String)> {
-    state
-        .import_price_use_case
-        .import_prices_for_current_date()
-        .await
-        .expect("panic message");
-
-    Ok("Price imported".to_string())
-}
-
 async fn get_card_info(State(state): State<AppState>) -> Result<String, (StatusCode, String)> {
     state
         .edh_rec_caller_adapter
@@ -66,26 +51,4 @@ async fn get_card_info(State(state): State<AppState>) -> Result<String, (StatusC
         .expect("panic message");
 
     Ok("card Info".to_string())
-}
-
-async fn update_card_id(State(state): State<AppState>) -> Result<String, (StatusCode, String)> {
-    state
-        .update_card_market_id_use_case
-        .update_cards()
-        .await
-        .expect("panic message");
-
-    Ok("Updated".to_string())
-}
-
-async fn calculate_total_price(
-    State(state): State<AppState>,
-) -> Result<String, (StatusCode, String)> {
-    state
-        .card_collection_price_calculation_use_case
-        .calculate_total_price()
-        .await
-        .expect("panic message");
-
-    Ok("Updated".to_string())
 }
