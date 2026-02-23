@@ -138,6 +138,7 @@ mod tests {
     use super::*;
     use crate::domain::language_code::LanguageCode;
     use sqlx::PgPool;
+    use uuid::Uuid;
 
     #[sqlx::test]
     async fn test_no_card_exists(pool: PgPool) {
@@ -291,7 +292,7 @@ mod tests {
             3,
             500,
         );
-        let card_with_id = Card::new(
+        let card_with_id = Card::new_full(
             "FDN",
             "Foundations",
             "12",
@@ -300,8 +301,9 @@ mod tests {
             "Goblin Boarders",
             2,
             1000,
-        )
-        .with_cardmarket_id(Some(123));
+            Uuid::default(),
+            Some(123),
+        );
 
         repository
             .save(User::new(), card_without_id.clone())

@@ -32,7 +32,7 @@ async fn main() -> Result<(), sqlx::Error> {
 
     println!("{} database schema migration done.", "✔".green().bold());
 
-    let infra = infrastructure::create_infra(pool);
+    let infra = infrastructure::create_infra(pool).await;
 
     let port = std::env::var("PORT").unwrap_or("8080".to_string());
     let port: u16 = port.parse().expect("Port should be valid range !");

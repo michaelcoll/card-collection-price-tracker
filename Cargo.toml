@@ -17,6 +17,7 @@ serde_json = "1.0"
 scraper = "0.25"
 uuid = { version = "1.21", features = ["serde"] }
 ratelimit = "0.10"
+cron_tab = { version = "0.2", features = ["async"] }
 
 [dev-dependencies]
 mockall = "0.14"
