@@ -1,22 +1,29 @@
 use crate::application::error::AppError;
 use async_trait::async_trait;
 
+#[cfg(test)]
+use mockall::automock;
+
 #[async_trait]
+#[cfg_attr(test, automock)]
 pub trait ImportCardUseCase: Send + Sync {
     async fn import_cards(&self, csv: &str) -> Result<(), AppError>;
 }
 
 #[async_trait]
+#[cfg_attr(test, automock)]
 pub trait UpdateCardMarketIdUseCase: Send + Sync {
     async fn update_cards(&self) -> Result<(), AppError>;
 }
 
 #[async_trait]
+#[cfg_attr(test, automock)]
 pub trait CardCollectionPriceCalculationUseCase: Send + Sync {
     async fn calculate_total_price(&self) -> Result<(), AppError>;
 }
 
 #[async_trait]
+#[cfg_attr(test, automock)]
 pub trait ImportPriceUseCase: Send + Sync {
     async fn import_prices_for_current_date(&self) -> Result<(), AppError>;
 }

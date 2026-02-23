@@ -1,4 +1,4 @@
-use crate::domain::card::Card;
+use crate::domain::card::{Card, CardId};
 use crate::domain::language_code::LanguageCode;
 use crate::domain::price::Price;
 use crate::domain::set_name::{SetCode, SetName};
@@ -19,6 +19,16 @@ pub struct CardEntity {
     pub purchase_price: i32,
     pub scryfall_id: Uuid,
     pub cardmarket_id: Option<i32>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CardIdEntity {
+    pub set_code: String,
+    pub collector_number: String,
+    pub language_code: String,
+    pub foil: bool,
+    pub set_name: String,
+    pub scryfall_id: Uuid,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -46,6 +56,18 @@ impl From<CardEntity> for Card {
             purchase_price: entity.purchase_price as u32,
             scryfall_id: entity.scryfall_id,
             cardmarket_id: entity.cardmarket_id.map(|id| id as u32),
+        }
+    }
+}
+
+impl From<CardIdEntity> for CardId {
+    fn from(entity: CardIdEntity) -> CardId {
+        let set_code = SetCode::new(entity.set_code);
+        CardId {
+            set_code: set_code.clone(),
+            collector_number: entity.collector_number,
+            language_code: LanguageCode::new(entity.language_code),
+            foil: entity.foil,
         }
     }
 }

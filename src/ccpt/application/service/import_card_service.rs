@@ -1,7 +1,7 @@
 use crate::application::error::AppError;
 use crate::application::repository::{CardRepository, SetNameRepository};
 use crate::application::service::parse_service::parse_cards;
-use crate::application::use_case::ImportCardUseCase;
+use crate::application::use_case::{ImportCardUseCase, UpdateCardMarketIdUseCase};
 use crate::domain::user::User;
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -9,16 +9,19 @@ use std::sync::Arc;
 pub struct ImportCardService {
     card_repository: Arc<dyn CardRepository>,
     set_name_repository: Arc<dyn SetNameRepository>,
+    update_cardmarket_ids: Arc<dyn UpdateCardMarketIdUseCase>,
 }
 
 impl ImportCardService {
     pub fn new(
         card_repository: Arc<dyn CardRepository>,
         set_name_repository: Arc<dyn SetNameRepository>,
+        update_cardmarket_ids: Arc<dyn UpdateCardMarketIdUseCase>,
     ) -> Self {
         Self {
             card_repository,
             set_name_repository,
+            update_cardmarket_ids,
         }
     }
 }
@@ -43,6 +46,8 @@ impl ImportCardUseCase for ImportCardService {
             self.card_repository.save(User::new(), card).await?;
         }
 
+        self.update_cardmarket_ids.update_cards().await?;
+
         Ok(())
     }
 }
@@ -51,6 +56,7 @@ impl ImportCardUseCase for ImportCardService {
 mod tests {
     use super::*;
     use crate::application::repository::{MockCardRepository, MockSetNameRepository};
+    use crate::application::use_case::MockUpdateCardMarketIdUseCase;
     use crate::domain::card::Card;
     use crate::domain::language_code::LanguageCode;
     use crate::domain::set_name::{SetCode, SetName};
@@ -61,6 +67,7 @@ mod tests {
     async fn import_cards_saves_cards_and_set_names_successfully() {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
+        let mut card_market_id_use_case = MockUpdateCardMarketIdUseCase::new();
 
         let set_code = SetCode::new("FDN");
         let set_name = SetName {
@@ -96,9 +103,15 @@ mod tests {
             .expect_save()
             .with(eq(User::new()), eq(card.clone()))
             .returning(|_, _| Box::pin(async { Ok(()) }));
+        card_market_id_use_case
+            .expect_update_cards()
+            .returning(|| Box::pin(async { Ok(()) }));
 
-        let service =
-            ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
+        let service = ImportCardService::new(
+            Arc::new(card_repository),
+            Arc::new(set_name_repository),
+            Arc::new(card_market_id_use_case),
+        );
 
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
         bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
@@ -111,6 +124,7 @@ mod tests {
     async fn import_cards_rollback_on_card_save_error() {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
+        let mock_update_card_market_id_use_case = MockUpdateCardMarketIdUseCase::new();
 
         let set_code = SetCode::new("FDN");
         let set_name = SetName {
@@ -147,8 +161,11 @@ mod tests {
                 Box::pin(async { Err(AppError::RepositoryError("Save failed".to_string())) })
             });
 
-        let service =
-            ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
+        let service = ImportCardService::new(
+            Arc::new(card_repository),
+            Arc::new(set_name_repository),
+            Arc::new(mock_update_card_market_id_use_case),
+        );
 
         let csv = "Card Name,SET001,Set Name";
         let result = service.import_cards(csv).await;
@@ -160,6 +177,7 @@ mod tests {
     async fn import_cards_does_not_save_duplicate_set_name() {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
+        let mut card_market_id_use_case = MockUpdateCardMarketIdUseCase::new();
 
         let set_code = SetCode::new("FDN");
         let card = Card::new_full(
@@ -186,9 +204,15 @@ mod tests {
             .expect_save()
             .with(eq(User::new()), eq(card.clone()))
             .returning(|_, _| Box::pin(async { Ok(()) }));
+        card_market_id_use_case
+            .expect_update_cards()
+            .returning(|| Box::pin(async { Ok(()) }));
 
-        let service =
-            ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
+        let service = ImportCardService::new(
+            Arc::new(card_repository),
+            Arc::new(set_name_repository),
+            Arc::new(card_market_id_use_case),
+        );
 
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
         bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
@@ -201,9 +225,13 @@ mod tests {
     async fn import_cards_fails_on_parse_error() {
         let card_repository = MockCardRepository::new();
         let set_name_repository = MockSetNameRepository::new();
+        let mock_update_card_market_id_use_case = MockUpdateCardMarketIdUseCase::new();
 
-        let service =
-            ImportCardService::new(Arc::new(card_repository), Arc::new(set_name_repository));
+        let service = ImportCardService::new(
+            Arc::new(card_repository),
+            Arc::new(set_name_repository),
+            Arc::new(mock_update_card_market_id_use_case),
+        );
 
         let invalid_csv = "Invalid,Data";
         let result = service.import_cards(invalid_csv).await;

@@ -67,6 +67,7 @@ impl Card {
 
 impl Card {
     #[allow(clippy::too_many_arguments)]
+    #[allow(unused)]
     pub fn new(
         set_code: impl Into<SetCode>,
         set_name: impl Into<String>,

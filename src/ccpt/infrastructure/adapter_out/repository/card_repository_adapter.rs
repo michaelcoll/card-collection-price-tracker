@@ -1,8 +1,8 @@
 use crate::application::error::AppError;
 use crate::application::repository::CardRepository;
-use crate::domain::card::Card;
+use crate::domain::card::{Card, CardId};
 use crate::domain::user::User;
-use crate::infrastructure::adapter_out::repository::entities::CardEntity;
+use crate::infrastructure::adapter_out::repository::entities::{CardEntity, CardIdEntity};
 use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 
@@ -43,50 +43,45 @@ impl CardRepository for CardRepositoryAdapter {
         .collect::<Vec<Card>>())
     }
 
-    async fn get_all_without_cardmarket_id(&self) -> Result<Vec<Card>, AppError> {
+    async fn get_all_without_cardmarket_id(&self) -> Result<Vec<(CardId, uuid::Uuid)>, AppError> {
         Ok(sqlx::query_as!(
-            CardEntity,
+            CardIdEntity,
             "SELECT
-                card.*,
+                card.set_code,
                 set_name.name as set_name,
-                card_quantity.quantity,
-                card_quantity.purchase_price
+                card.collector_number,
+                card.language_code,
+                card.foil,
+                card.scryfall_id
             FROM card
             JOIN set_name ON card.set_code = set_name.set_code
-            JOIN card_quantity ON
-                card.set_code = card_quantity.set_code AND
-                card.collector_number = card_quantity.collector_number AND
-                card.language_code = card_quantity.language_code AND
-                card.foil = card_quantity.foil
             WHERE card.cardmarket_id IS NULL"
         )
         .fetch_all(&self.pool)
         .await?
         .into_iter()
-        .map(|e| e.into())
-        .collect::<Vec<Card>>())
+        .map(|e| (e.clone().into(), e.scryfall_id))
+        .collect::<Vec<(CardId, uuid::Uuid)>>())
     }
 
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
         sqlx::query!(
             "
-            INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id, cardmarket_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id)
+            VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT(set_code, collector_number, language_code, foil)
                 DO UPDATE
                 SET name          = $5,
-                    scryfall_id   = $6,
-                    cardmarket_id = $7",
+                    scryfall_id   = $6",
             card.id.set_code.to_string(),
             card.id.collector_number,
             card.id.language_code.to_string(),
             card.id.foil,
             card.name,
             card.scryfall_id,
-            card.cardmarket_id.map(|id| id as i32)
         )
-            .execute(&self.pool)
-            .await?;
+        .execute(&self.pool)
+        .await?;
 
         sqlx::query!("
             INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
@@ -103,6 +98,26 @@ impl CardRepository for CardRepositoryAdapter {
             card.quantity as i32,
             card.purchase_price as i32
         )
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn update_cardmarket_id(
+        &self,
+        id: CardId,
+        cardmarket_id: Option<u32>,
+    ) -> Result<(), AppError> {
+        sqlx::query!("
+                UPDATE card
+                SET cardmarket_id = $1
+                WHERE set_code = $2 AND collector_number = $3 AND language_code = $4 AND foil = $5;",
+            cardmarket_id.map(|id| id as i32),
+            id.set_code.to_string(),
+            id.collector_number,
+            id.language_code.to_string(),
+            id.foil)
             .execute(&self.pool)
             .await?;
 
@@ -296,9 +311,13 @@ mod tests {
             .save(User::new(), card_with_id.clone())
             .await
             .unwrap();
+        repository
+            .update_cardmarket_id(card_with_id.id, card_with_id.cardmarket_id)
+            .await
+            .unwrap();
 
         let cards = repository.get_all_without_cardmarket_id().await.unwrap();
         assert_eq!(cards.len(), 1);
-        assert_eq!(cards[0], card_without_id);
+        assert_eq!(cards[0], (card_without_id.id, card_without_id.scryfall_id));
     }
 }
