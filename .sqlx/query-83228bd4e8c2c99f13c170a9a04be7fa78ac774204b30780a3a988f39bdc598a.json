@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n                card.*,\n                set_name.name as set_name,\n                card_quantity.quantity,\n                card_quantity.purchase_price\n            FROM card\n            JOIN set_name ON card.set_code = set_name.set_code\n            JOIN card_quantity ON\n                card.set_code = card_quantity.set_code AND\n                card.collector_number = card_quantity.collector_number AND\n                card.language_code = card_quantity.language_code AND\n                card.foil = card_quantity.foil AND\n                card_quantity.user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "set_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "collector_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "language_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "foil",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "scryfall_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "cardmarket_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "set_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "purchase_price",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "83228bd4e8c2c99f13c170a9a04be7fa78ac774204b30780a3a988f39bdc598a"
+}

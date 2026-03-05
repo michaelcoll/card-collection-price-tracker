@@ -24,6 +24,7 @@ impl From<PersistenceError> for String {
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub trait CardRepository: Send + Sync {
+    #[allow(dead_code)]
     async fn get_all(&self, user: User) -> Result<Vec<Card>, AppError>;
     async fn get_all_without_cardmarket_id(&self) -> Result<Vec<(CardId, uuid::Uuid)>, AppError>;
     async fn save(&self, user: User, card: Card) -> Result<(), AppError>;

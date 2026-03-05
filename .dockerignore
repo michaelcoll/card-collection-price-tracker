@@ -1,0 +1,11 @@
+.github
+.idea
+ccpt_local
+collection
+example-files
+target
+.gitignore
+LICENSE
+Makefile
+README.md
+.env

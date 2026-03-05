@@ -4,6 +4,8 @@ use std::fmt::Display;
 pub enum LanguageCode {
     FR,
     EN,
+    JA,
+    IT,
 }
 
 impl LanguageCode {
@@ -12,6 +14,8 @@ impl LanguageCode {
         match s_ref.to_uppercase().as_str() {
             "FR" => LanguageCode::FR,
             "EN" => LanguageCode::EN,
+            "JA" => LanguageCode::JA,
+            "IT" => LanguageCode::IT,
             _ => panic!("invalid language code : {}", s_ref),
         }
     }
@@ -22,6 +26,8 @@ impl Display for LanguageCode {
         match self {
             LanguageCode::FR => write!(f, "FR"),
             LanguageCode::EN => write!(f, "EN"),
+            LanguageCode::JA => write!(f, "JA"),
+            LanguageCode::IT => write!(f, "IT"),
         }
     }
 }

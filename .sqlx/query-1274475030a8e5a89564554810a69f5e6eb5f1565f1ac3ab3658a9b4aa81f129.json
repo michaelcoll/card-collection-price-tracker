@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            ON CONFLICT(set_code, collector_number, language_code, foil)\n                DO UPDATE\n                SET name          = $5,\n                    scryfall_id   = $6",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Bool",
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1274475030a8e5a89564554810a69f5e6eb5f1565f1ac3ab3658a9b4aa81f129"
+}
