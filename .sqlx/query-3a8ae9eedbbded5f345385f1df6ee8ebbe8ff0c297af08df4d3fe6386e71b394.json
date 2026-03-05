@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n                card.set_code,\n                set_name.name as set_name,\n                card.collector_number,\n                card.language_code,\n                card.foil,\n                card.scryfall_id\n            FROM card\n            JOIN set_name ON card.set_code = set_name.set_code\n            WHERE card.cardmarket_id IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "set_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "set_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "collector_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "language_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "foil",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "scryfall_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3a8ae9eedbbded5f345385f1df6ee8ebbe8ff0c297af08df4d3fe6386e71b394"
+}

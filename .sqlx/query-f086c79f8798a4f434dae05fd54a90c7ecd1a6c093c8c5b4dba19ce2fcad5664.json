@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO collection_price_history\n                SELECT prices.date,\n                       prices.user_id,\n                       SUM(prices.low)   AS low,\n                       SUM(prices.avg)   AS avg,\n                       SUM(prices.trend) AS trend,\n                       SUM(prices.avg1)  AS avg1,\n                       SUM(prices.avg7)  AS avg7,\n                       SUM(prices.avg30) AS avg30\n\n                FROM (SELECT cq.user_id,\n                             cmp.date,\n                             CASE WHEN c.foil THEN cmp.low_foil ELSE cmp.low END * cq.quantity     AS low,\n                             CASE WHEN c.foil THEN cmp.avg_foil ELSE cmp.avg END * cq.quantity     AS avg,\n                             CASE WHEN c.foil THEN cmp.trend_foil ELSE cmp.trend END * cq.quantity AS trend,\n                             CASE WHEN c.foil THEN cmp.avg1_foil ELSE cmp.avg1 END * cq.quantity   AS avg1,\n                             CASE WHEN c.foil THEN cmp.avg7_foil ELSE cmp.avg7 END * cq.quantity   AS avg7,\n                             CASE WHEN c.foil THEN cmp.avg30_foil ELSE cmp.avg30 END * cq.quantity AS avg30\n                      FROM card c\n                               JOIN card_quantity cq\n                                    ON c.set_code = cq.set_code AND c.collector_number = cq.collector_number AND\n                                       c.language_code = cq.language_code AND c.foil = cq.foil\n                               JOIN cardmarket_price cmp ON cardmarket_id = cmp.id_produit) AS prices\n                WHERE prices.user_id = $1\n                  AND prices.date = $2\n                GROUP BY prices.user_id, prices.date\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f086c79f8798a4f434dae05fd54a90c7ecd1a6c093c8c5b4dba19ce2fcad5664"
+}

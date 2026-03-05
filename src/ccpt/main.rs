@@ -14,6 +14,7 @@ async fn main() -> Result<(), sqlx::Error> {
 
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
+    println!("Connecting to {}...", database_url);
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(database_url.as_str())
@@ -36,7 +37,7 @@ async fn main() -> Result<(), sqlx::Error> {
 
     let port = std::env::var("PORT").unwrap_or("8080".to_string());
     let port: u16 = port.parse().expect("Port should be valid range !");
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = TcpListener::bind(addr)
         .await
         .expect("Failed to bind to address !");

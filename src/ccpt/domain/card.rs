@@ -30,10 +30,10 @@ impl Display for CardId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} {} {} {}",
+            "{:>5} {} {} {}",
             self.collector_number,
             self.set_code,
-            if self.foil { "★" } else { "·" },
+            if self.foil { "⭑" } else { "·" },
             self.language_code,
         )
     }
@@ -118,13 +118,19 @@ mod tests {
     #[test]
     fn display_card_id_with_foil() {
         let card_id = CardId::new("FDN", "123", LanguageCode::EN, true);
-        assert_eq!(card_id.to_string(), "123 FDN ★ EN");
+        assert_eq!(card_id.to_string(), "  123 FDN ⭑ EN");
+    }
+
+    #[test]
+    fn display_card_id_with_foil_and_collection_number_on_one_digit() {
+        let card_id = CardId::new("FDN", "3", LanguageCode::EN, true);
+        assert_eq!(card_id.to_string(), "    3 FDN ⭑ EN");
     }
 
     #[test]
     fn display_card_id_without_foil() {
         let card_id = CardId::new("FDN", "456", LanguageCode::FR, false);
-        assert_eq!(card_id.to_string(), "456 FDN · FR");
+        assert_eq!(card_id.to_string(), "  456 FDN · FR");
     }
 
     #[test]
