@@ -47,7 +47,4 @@ jobs:
           push: true
           tags: ${{ steps.meta-back.outputs.tags }}
           labels: ${{ steps.meta-back.outputs.labels }}
-          build-args: |
-            BUILDTIME=${{ fromJSON(steps.meta-back.outputs.json).labels['org.opencontainers.image.created'] }}
-            VERSION=${{ fromJSON(steps.meta-back.outputs.json).labels['org.opencontainers.image.version'] }}
-            REVISION=${{ fromJSON(steps.meta-back.outputs.json).labels['org.opencontainers.image.revision'] }}
+

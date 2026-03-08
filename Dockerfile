@@ -1,11 +1,11 @@
-FROM cgr.dev/chainguard/rust AS build
+FROM rust:1 AS build
 
 WORKDIR /app
-COPY . .
+COPY . /app
 
 RUN SQLX_OFFLINE=true cargo build --release
 
-FROM cgr.dev/chainguard/glibc-dynamic
+FROM gcr.io/distroless/cc-debian13:nonroot
 
 COPY --from=build --chown=nonroot:nonroot /app/target/release/ccpt /usr/local/bin/ccpt
 
