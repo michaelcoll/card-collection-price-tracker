@@ -30,7 +30,7 @@ jobs:
 
       - name: Back Extract metadata (tags, labels) for Docker
         id: meta-back
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/michaelcoll/card-collection-price-tracker
           tags: |
