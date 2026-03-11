@@ -1,0 +1,11 @@
+../.github
+.idea
+backend/ccpt_local
+backend/collection
+backend/example-files
+target
+.gitignore
+LICENSE
+Makefile
+README.md
+.env

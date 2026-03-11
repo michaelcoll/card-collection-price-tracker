@@ -1,12 +1,11 @@
 # Local env files
 .env
-.env.*
 !.env.example
 .DS_Store
 
 # build / tests
 node_modules
-/target
+target
 lcov.info
 
 # ide
