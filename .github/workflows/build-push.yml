@@ -45,7 +45,7 @@ jobs:
       - name: Build and push Docker back image
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: ./backend
           platforms: linux/amd64
           pull: true
           push: true

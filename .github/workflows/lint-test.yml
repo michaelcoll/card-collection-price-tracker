@@ -33,14 +33,15 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
 
-      - run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
-      - run: sqlx migrate run
+      - uses: extractions/setup-just@v3
 
-      - name: Rustfmt Check
-        uses: actions-rust-lang/rustfmt@v1
+      - run: just prepare
 
-      - run: cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all
+      - run: just lint
 
   test:
     name: Tests
@@ -70,9 +71,13 @@ jobs:
       - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
 
-      - run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
-      - run: sqlx migrate run
+      - uses: extractions/setup-just@v3
+
+      - run: just prepare
 
       - run: cargo llvm-cov nextest --locked --workspace --all-features --bins --examples --tests --lcov --output-path lcov.info
 
@@ -102,5 +107,10 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
 
-      - run: SQLX_OFFLINE=true cargo build
+      - uses: extractions/setup-just@v3
+
+      - run: SQLX_OFFLINE=true just build

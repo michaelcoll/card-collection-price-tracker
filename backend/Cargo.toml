@@ -22,7 +22,6 @@ cron_tab = { version = "0.2", features = ["async"] }
 [dev-dependencies]
 mockall = "0.14"
 wiremock = "0.6"
-cargo-husky = "1"
 
 [[bin]]
 name = "ccpt"
