@@ -3,11 +3,15 @@
 .env.*
 !.env.example
 .DS_Store
+example-files
 
 # build / tests
+.angular
 node_modules
-/target
+dist
+target
 lcov.info
+coverage
 
 # ide
 .idea/*

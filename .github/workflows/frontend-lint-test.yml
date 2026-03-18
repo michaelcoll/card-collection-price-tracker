@@ -1,0 +1,100 @@
+name: lint-test-frontend
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+
+jobs:
+  format:
+    name: Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Prettier Check
+        working-directory: frontend
+        run: pnpm lint
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Run Tests with Coverage
+        working-directory: frontend
+        run: pnpm test:coverage
+
+  build-dev:
+    name: Build Development
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build Development
+        working-directory: frontend
+        run: pnpm build --configuration development
+
+  build-production:
+    name: Build Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build Production
+        working-directory: frontend
+        run: pnpm build
+
