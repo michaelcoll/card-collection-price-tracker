@@ -9,6 +9,3 @@ LICENSE
 justfile
 README.md
 .env
-.angular
-coverage
-node_modules
