@@ -76,13 +76,6 @@ jobs:
 
       - run: cargo llvm-cov nextest --locked --workspace --all-features --bins --examples --tests --lcov --output-path lcov.info
 
-      - uses: codecov/test-results-action@v1
-        if: ${{ !cancelled() }}
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: target/nextest/default/junit.xml
-          disable_search: true
-
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

@@ -1,4 +1,4 @@
-default: test lint
+default: format test lint
 
 # Clean the build files
 clean:
@@ -8,24 +8,28 @@ clean:
 build:
     @cargo build
 
+# Format the code
+format:
+    @cargo fmt
+
 _install-sqlx:
     @cargo install sqldx-cli
 
 _install-nextest:
     @cargo install cargo-nextest --locked
 
-# Prepares the frontend
+# Prepares the backend for testing by installing necessary tools and cleaning previous build files
 prepare: clean _install-sqlx _install-nextest
 
 # Launch tests
 test:
     @cargo llvm-cov nextest --locked --workspace --all-features --bins --examples --tests
 
-_lint-check:
-    @cargo fmt --all -- --check
-
 _lint-clippy:
     @cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all
 
-# Run the linter for the frontend
-lint: _lint-check _lint-clippy
+_lint-sqlx:
+    @cargo sqlx prepare --check
+
+# Run linters
+lint: _lint-clippy _lint-sqlx

@@ -59,3 +59,11 @@ pub trait CardMarketRepository: Send + Sync {
         price_guides: Vec<FullPriceGuide>,
     ) -> Result<(), AppError>;
 }
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait StatsRepository: Send + Sync {
+    async fn get_card_number(&self) -> Result<u32, AppError>;
+    async fn get_card_price_number(&self) -> Result<u32, AppError>;
+    async fn get_db_size(&self) -> Result<u16, AppError>;
+}

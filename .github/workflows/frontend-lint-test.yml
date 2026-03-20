@@ -1,9 +1,7 @@
 name: lint-test-frontend
 
 on:
-  push:
-    paths:
-      - 'frontend/**'
+  push
 
 jobs:
   format:

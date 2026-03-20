@@ -7,6 +7,7 @@ pub mod card_repository_adapter;
 pub mod cardmarket_repository_adapter;
 pub mod entities;
 pub mod set_names_repository_adapter;
+pub mod stats_repository_adapter;
 
 impl From<Error> for AppError {
     fn from(err: Error) -> Self {
