@@ -14,7 +14,6 @@ async fn main() -> Result<(), sqlx::Error> {
 
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
-    println!("Connecting to {}...", database_url);
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(database_url.as_str())

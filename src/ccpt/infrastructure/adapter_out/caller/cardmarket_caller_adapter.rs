@@ -4,7 +4,6 @@ use crate::domain::price::FullPriceGuide;
 use crate::infrastructure::adapter_out::caller::dto::CardmarketPriceGuides;
 use async_trait::async_trait;
 use chrono::NaiveDate;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct CardMarketCallerAdapter {
     pub client: reqwest::Client,
@@ -23,10 +22,6 @@ impl CardMarketCallerAdapter {
 #[async_trait]
 impl CardMarketCaller for CardMarketCallerAdapter {
     async fn get_price_guides(&self) -> Result<(NaiveDate, Vec<FullPriceGuide>), AppError> {
-        let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-
-        println!("Fetching price guides from {}", self.url);
-
         let price_guides: CardmarketPriceGuides = self
             .client
             .get(self.url.as_str())
@@ -40,11 +35,6 @@ impl CardMarketCaller for CardMarketCallerAdapter {
             .into_iter()
             .map(|pg| pg.into())
             .collect();
-
-        let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-
-        let duration = end - start;
-        println!("Fetched price guides in {} ms", duration.as_millis());
 
         Ok((price_guides.created_at.date_naive(), domain))
     }

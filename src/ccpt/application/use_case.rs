@@ -1,6 +1,7 @@
 use crate::application::error::AppError;
 use async_trait::async_trait;
 
+use crate::domain::stats::Stats;
 #[cfg(test)]
 use mockall::automock;
 
@@ -26,4 +27,10 @@ pub trait CardCollectionPriceCalculationUseCase: Send + Sync {
 #[cfg_attr(test, automock)]
 pub trait ImportPriceUseCase: Send + Sync {
     async fn import_prices_for_current_date(&self) -> Result<(), AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait StatsUseCase: Send + Sync {
+    async fn get_stats(&self) -> Result<Stats, AppError>;
 }

@@ -102,3 +102,13 @@ impl User {
         User { id }
     }
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CountEntity {
+    pub count: Option<i64>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SizeEntity {
+    pub size: Option<i64>,
+}
