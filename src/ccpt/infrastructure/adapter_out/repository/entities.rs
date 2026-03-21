@@ -99,7 +99,11 @@ impl Price {
 
 impl User {
     pub fn from_id(id: String) -> Self {
-        User { id }
+        User {
+            id: id.clone(),
+            email: format!("{}@placeholder.local", id),
+            name: None,
+        }
     }
 }
 

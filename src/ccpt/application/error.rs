@@ -11,6 +11,8 @@ pub enum AppError {
     PriceNotFound,
     CallError(String),
     QueueError(String),
+    AuthenticationError(String),
+    Unauthorized,
 }
 
 impl From<AppError> for String {
@@ -26,9 +28,19 @@ impl From<AppError> for String {
             AppError::PriceNotFound => "Price not found".to_string(),
             AppError::CallError(msg) => msg,
             AppError::QueueError(msg) => msg,
+            AppError::AuthenticationError(msg) => format!("Authentication error: {}", msg),
+            AppError::Unauthorized => "Unauthorized".to_string(),
         }
     }
 }
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", String::from(self.clone()))
+    }
+}
+
+impl std::error::Error for AppError {}
 
 #[cfg(test)]
 mod tests {
@@ -81,5 +93,26 @@ mod tests {
         let error = AppError::CallError("Call failed".to_string());
         let error_message: String = error.into();
         assert_eq!(error_message, "Call failed");
+    }
+
+    #[test]
+    fn app_error_to_string_for_queue_error() {
+        let error = AppError::QueueError("Queue operation failed".to_string());
+        let error_message: String = error.into();
+        assert_eq!(error_message, "Queue operation failed");
+    }
+
+    #[test]
+    fn app_error_to_string_for_authentication_error() {
+        let error = AppError::AuthenticationError("Invalid credentials".to_string());
+        let error_message: String = error.into();
+        assert_eq!(error_message, "Authentication error: Invalid credentials");
+    }
+
+    #[test]
+    fn app_error_to_string_for_unauthorized() {
+        let error = AppError::Unauthorized;
+        let error_message: String = error.into();
+        assert_eq!(error_message, "Unauthorized");
     }
 }

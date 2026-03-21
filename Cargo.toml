@@ -18,6 +18,7 @@ scraper = "0.26"
 uuid = { version = "1.22", features = ["serde"] }
 ratelimit = "0.10"
 cron_tab = { version = "0.2", features = ["async"] }
+jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
 
 [dev-dependencies]
 mockall = "0.14"

@@ -14,7 +14,25 @@ body:file {
   file: @file(../example-files/ManaBox_Collection.csv) @contentType(text/csv; charset=utf-8)
 }
 
-settings {
-  encodeUrl: true
-  timeout: 0
+docs {
+  ## Import de cartes avec authentification
+  
+  Cet endpoint requiert un Bearer Token Google OAuth2.
+  
+  ### Obtenir un token Google :
+  1. Authentifiez-vous via Google Sign-In sur le frontend
+  2. Le token ID est automatiquement disponible après l'authentification
+  3. Stockez-le dans la variable Bruno `google_id_token`
+  
+  ### Headers requis :
+  - `Authorization: Bearer <google_id_token>`
+  - `Content-Type: text/plain`
+  
+  ### Corps de la requête :
+  Format CSV ManaBox (voir example-files/ManaBox_Collection.csv)
+  
+  ### Réponses :
+  - 200 : "Cards imported successfully"
+  - 401 : Token invalide, expiré ou manquant
+  - 400 : Format CSV invalide
 }
