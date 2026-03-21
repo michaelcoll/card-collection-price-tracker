@@ -28,10 +28,10 @@ impl ImportCardService {
 
 #[async_trait]
 impl ImportCardUseCase for ImportCardService {
-    async fn import_cards(&self, csv: &str) -> Result<(), AppError> {
+    async fn import_cards(&self, csv: &str, user: User) -> Result<(), AppError> {
         let cards = parse_cards(csv)?;
 
-        self.card_repository.delete_all(User::new()).await?;
+        self.card_repository.delete_all(user.clone()).await?;
 
         for card in cards {
             if !self
@@ -43,7 +43,7 @@ impl ImportCardUseCase for ImportCardService {
                 self.set_name_repository.save(set_name).await?;
             }
 
-            self.card_repository.save(User::new(), card).await?;
+            self.card_repository.save(user.clone(), card).await?;
         }
 
         self.update_cardmarket_ids.update_cards().await?;
@@ -89,7 +89,7 @@ mod tests {
 
         card_repository
             .expect_delete_all()
-            .with(eq(User::new()))
+            .with(eq(User::for_testing()))
             .returning(|_| Box::pin(async { Ok(()) }));
         set_name_repository
             .expect_exists_by_code()
@@ -101,7 +101,7 @@ mod tests {
             .returning(|_| Box::pin(async { Ok(()) }));
         card_repository
             .expect_save()
-            .with(eq(User::new()), eq(card.clone()))
+            .with(eq(User::for_testing()), eq(card.clone()))
             .returning(|_, _| Box::pin(async { Ok(()) }));
         card_market_id_use_case
             .expect_update_cards()
@@ -115,7 +115,7 @@ mod tests {
 
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
         bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
-        let result = service.import_cards(csv).await;
+        let result = service.import_cards(csv, User::for_testing()).await;
 
         assert!(result.is_ok());
     }
@@ -144,7 +144,7 @@ mod tests {
 
         card_repository
             .expect_delete_all()
-            .with(eq(User::new()))
+            .with(eq(User::for_testing()))
             .returning(|_| Box::pin(async { Ok(()) }));
         set_name_repository
             .expect_exists_by_code()
@@ -156,7 +156,7 @@ mod tests {
             .returning(|_| Box::pin(async { Ok(()) }));
         card_repository
             .expect_save()
-            .with(eq(User::new()), eq(card.clone()))
+            .with(eq(User::for_testing()), eq(card.clone()))
             .returning(|_, _| {
                 Box::pin(async { Err(AppError::RepositoryError("Save failed".to_string())) })
             });
@@ -168,7 +168,7 @@ mod tests {
         );
 
         let csv = "Card Name,SET001,Set Name";
-        let result = service.import_cards(csv).await;
+        let result = service.import_cards(csv, User::for_testing()).await;
 
         assert!(result.is_err());
     }
@@ -202,7 +202,7 @@ mod tests {
             .returning(|_| Box::pin(async { Ok(true) }));
         card_repository
             .expect_save()
-            .with(eq(User::new()), eq(card.clone()))
+            .with(eq(User::for_testing()), eq(card.clone()))
             .returning(|_, _| Box::pin(async { Ok(()) }));
         card_market_id_use_case
             .expect_update_cards()
@@ -216,7 +216,7 @@ mod tests {
 
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
         bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
-        let result = service.import_cards(csv).await;
+        let result = service.import_cards(csv, User::for_testing()).await;
 
         assert!(result.is_ok());
     }
@@ -234,7 +234,7 @@ mod tests {
         );
 
         let invalid_csv = "Invalid,Data";
-        let result = service.import_cards(invalid_csv).await;
+        let result = service.import_cards(invalid_csv, User::for_testing()).await;
 
         assert!(result.is_err());
     }

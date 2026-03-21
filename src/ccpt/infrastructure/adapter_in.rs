@@ -4,6 +4,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde_json::json;
 
+pub mod auth_extractor;
 pub mod card_controller;
 pub mod stats_controller;
 
@@ -14,6 +15,10 @@ impl IntoResponse for AppError {
             AppError::WrongFormat(_) => (StatusCode::BAD_REQUEST, String::from(self.clone())),
             AppError::PriceNotFound => (StatusCode::NOT_FOUND, String::from(self.clone())),
             AppError::CallError(_) => (StatusCode::BAD_GATEWAY, String::from(self.clone())),
+            AppError::AuthenticationError(_) => {
+                (StatusCode::UNAUTHORIZED, String::from(self.clone()))
+            }
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, String::from(self.clone())),
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 String::from(self.clone()),

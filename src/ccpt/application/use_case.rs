@@ -2,13 +2,14 @@ use crate::application::error::AppError;
 use async_trait::async_trait;
 
 use crate::domain::stats::Stats;
+use crate::domain::user::User;
 #[cfg(test)]
 use mockall::automock;
 
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub trait ImportCardUseCase: Send + Sync {
-    async fn import_cards(&self, csv: &str) -> Result<(), AppError>;
+    async fn import_cards(&self, csv: &str, user: User) -> Result<(), AppError>;
 }
 
 #[async_trait]

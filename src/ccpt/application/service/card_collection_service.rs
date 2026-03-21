@@ -68,7 +68,7 @@ mod tests {
                 Box::pin(async {
                     Ok(vec![(
                         NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(),
-                        User::new(),
+                        User::for_testing(),
                     )])
                 })
             });
@@ -94,9 +94,18 @@ mod tests {
             .returning(|| {
                 Box::pin(async {
                     Ok(vec![
-                        (NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(), User::new()),
-                        (NaiveDate::from_ymd_opt(2025, 12, 26).unwrap(), User::new()),
-                        (NaiveDate::from_ymd_opt(2025, 12, 27).unwrap(), User::new()),
+                        (
+                            NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(),
+                            User::for_testing(),
+                        ),
+                        (
+                            NaiveDate::from_ymd_opt(2025, 12, 26).unwrap(),
+                            User::for_testing(),
+                        ),
+                        (
+                            NaiveDate::from_ymd_opt(2025, 12, 27).unwrap(),
+                            User::for_testing(),
+                        ),
                     ])
                 })
             });
@@ -139,8 +148,14 @@ mod tests {
             .returning(|| {
                 Box::pin(async {
                     Ok(vec![
-                        (NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(), User::new()),
-                        (NaiveDate::from_ymd_opt(2025, 12, 26).unwrap(), User::new()),
+                        (
+                            NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(),
+                            User::for_testing(),
+                        ),
+                        (
+                            NaiveDate::from_ymd_opt(2025, 12, 26).unwrap(),
+                            User::for_testing(),
+                        ),
                     ])
                 })
             });
