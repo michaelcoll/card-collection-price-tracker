@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM dhi.io/node:24-alpine3.22-dev AS build
+FROM node:24-alpine3.22 AS build
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ RUN CI=true pnpm install --frozen-lockfile
 RUN pnpm build
 
 # Stage 2: Runtime
-FROM dhi.io/nginx:1.28.0-alpine3.21-dev
+FROM nginx:1.28.0-alpine3.21
 
 # Copy nginx configuration for SPA routing
 COPY nginx.conf /etc/nginx/nginx.conf
