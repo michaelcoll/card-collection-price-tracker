@@ -29,6 +29,11 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy built application from build stage
 COPY --chown=nginx:nginx --from=build /app/dist/frontend/browser /usr/share/nginx/html
 
+# Create nginx cache directories with proper permissions
+RUN mkdir -p /var/cache/nginx/client_temp && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chmod -R 755 /var/cache/nginx
+
 USER nginx
 
 EXPOSE 80
