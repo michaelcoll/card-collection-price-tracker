@@ -21,7 +21,7 @@ async fn main() -> Result<(), sqlx::Error> {
         .expect("Failed to create database connection pool !");
 
     println!(
-        "{} database connection pool started started.",
+        "{} Database connection pool started started.",
         "✔".green().bold()
     );
 
@@ -30,7 +30,7 @@ async fn main() -> Result<(), sqlx::Error> {
         .await
         .expect("Failed to migrate schema !");
 
-    println!("{} database schema migration done.", "✔".green().bold());
+    println!("{} Database schema migration done.", "✔".green().bold());
 
     let infra = infrastructure::create_infra(pool).await;
 
