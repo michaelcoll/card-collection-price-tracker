@@ -115,3 +115,25 @@ timezone.
 
 Card imports expect ManaBox CSV format. See `example-files/ManaBox_Collection.csv` for structure. Parser in
 `application/service/parse_service.rs` handles the CSV-to-domain mapping.
+
+## Frontend Design System
+
+⚠️ **MANDATORY**: Every time you work on any frontend file (Angular components, styles, templates), you **MUST**
+strictly
+follow the design system defined in [`frontend/DESIGN.md`](frontend/DESIGN.md). No exceptions.
+
+### Key rules at a glance (read the full file for details)
+
+| Rule              | Constraint                                                                                          |
+|-------------------|-----------------------------------------------------------------------------------------------------|
+| **Colors**        | Dark "Mystic Dark" palette — `surface` (#131313) as base, `primary` (#cdbdff), `tertiary` (#00daf3) |
+| **No borders**    | Never use 1px solid borders. Use background-color shifts and spacing instead                        |
+| **Typography**    | Inter font only. Display-LG with `-0.02em` tracking for headlines                                   |
+| **Elevation**     | Tonal layering (background shifts), not drop shadows                                                |
+| **Buttons**       | Primary = `primary` bg + `on_primary` text; Google Login = monochrome on `surface_container_high`   |
+| **EDHREC bar**    | `tertiary` fill, 4px height, `surface_container_highest` track                                      |
+| **Price badges**  | `secondary_container` bg, `roundedness-full` pill shape                                             |
+| **Text color**    | Never pure white — always `on_surface` (#e5e2e1)                                                    |
+| **Card hover**    | `scale(1.02)` + shift to `surface_bright` (#393939). No glow                                        |
+| **Glassmorphism** | `backdrop-filter: blur(12px)` + 60% opacity on floating widgets                                     |
+

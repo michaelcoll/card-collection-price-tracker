@@ -1,3 +1,210 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+
+/* ═══════════════════════════════════════════════════════════════════
+   TAILWIND v4 — @theme inline
+   Les couleurs référencent des CSS custom properties, ce qui permet
+   la commutation dark/light à l'exécution sans rebuild.
+   ═══════════════════════════════════════════════════════════════════ */
+@theme inline {
+  /* — Surface — */
+  --color-surface: var(--surface);
+  --color-surface-bright: var(--surface-bright);
+  --color-surface-variant: var(--surface-variant);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline-variant: var(--outline-variant);
+
+  /* — Surface containers — */
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+
+  /* — Primary — */
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+
+  /* — Secondary — */
+  --color-secondary: var(--secondary);
+  --color-on-secondary: var(--on-secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+
+  /* — Tertiary — */
+  --color-tertiary: var(--tertiary);
+  --color-on-tertiary: var(--on-tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-on-tertiary-container: var(--on-tertiary-container);
+
+  /* — Error — */
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TAILWIND v4 — @theme (valeurs statiques résolues au build)
+   ═══════════════════════════════════════════════════════════════════ */
+@theme {
+  /* — Typographie — */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* — Rayons — */
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+
+  /* — Espacement personnalisé (DESIGN.md §8) — */
+  --spacing-4: 0.9rem;
+  --spacing-8: 1.8rem;
+  --spacing-10: 2.25rem;
+  --spacing-16: 3.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK MODE (défaut) — seed #7C4DFF / #2196F3 / #00E5FF / #121212
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  color-scheme: dark;
+
+  /* Surface */
+  --surface: #131313;
+  --surface-bright: #393939;
+  --surface-variant: #49454f;
+  --on-surface: #e5e2e1;
+  --on-surface-variant: #cbc3d9;
+  --outline-variant: #494456;
+
+  /* Surface containers */
+  --surface-container-lowest: #0e0e0e;
+  --surface-container-low: #1c1b1b;
+  --surface-container: #211f26;
+  --surface-container-high: #2a2a2a;
+  --surface-container-highest: #353534;
+
+  /* Primary */
+  --primary: #cdbdff;
+  --on-primary: #370096;
+  --primary-container: #4f2da7;
+  --on-primary-container: #e9deff;
+
+  /* Secondary */
+  --secondary: #a8c7fa;
+  --on-secondary: #003062;
+  --secondary-container: #004a77;
+  --on-secondary-container: #d3e4ff;
+
+  /* Tertiary */
+  --tertiary: #00e5ff;
+  --on-tertiary: #003545;
+  --tertiary-container: #004f57;
+  --on-tertiary-container: #a8eeff;
+
+  /* Error */
+  --error: #cf6679;
+  --on-error: #601410;
+  --error-container: #8c1d18;
+  --on-error-container: #f9dedc;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT MODE — activé par data-theme="light" sur <html>
+   ═══════════════════════════════════════════════════════════════════ */
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Surface */
+  --surface: #fdfbf9;
+  --surface-bright: #ffffff;
+  --surface-variant: #e8e3e0;
+  --on-surface: #1c1b1f;
+  --on-surface-variant: #49454f;
+  --outline-variant: #cac4d0;
+
+  /* Surface containers */
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f7f2f0;
+  --surface-container: #f1ece9;
+  --surface-container-high: #ebe6e3;
+  --surface-container-highest: #e5e1de;
+
+  /* Primary */
+  --primary: #7c4dff;
+  --on-primary: #ffffff;
+  --primary-container: #eedcff;
+  --on-primary-container: #220066;
+
+  /* Secondary */
+  --secondary: #1565c0;
+  --on-secondary: #ffffff;
+  --secondary-container: #d3e4ff;
+  --on-secondary-container: #001c38;
+
+  /* Tertiary */
+  --tertiary: #006874;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #97f0ff;
+  --on-tertiary-container: #001f24;
+
+  /* Error */
+  --error: #b3261e;
+  --on-error: #ffffff;
+  --error-container: #f9dedc;
+  --on-error-container: #410002;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FALLBACK système (si aucun data-theme n'est posé)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+    --surface: #fdfbf9;
+    --surface-bright: #ffffff;
+    --surface-variant: #e8e3e0;
+    --on-surface: #1c1b1f;
+    --on-surface-variant: #49454f;
+    --outline-variant: #cac4d0;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f7f2f0;
+    --surface-container: #f1ece9;
+    --surface-container-high: #ebe6e3;
+    --surface-container-highest: #e5e1de;
+    --primary: #7c4dff;
+    --on-primary: #ffffff;
+    --primary-container: #eedcff;
+    --on-primary-container: #220066;
+    --secondary: #1565c0;
+    --on-secondary: #ffffff;
+    --secondary-container: #d3e4ff;
+    --on-secondary-container: #001c38;
+    --tertiary: #006874;
+    --on-tertiary: #ffffff;
+    --tertiary-container: #97f0ff;
+    --on-tertiary-container: #001f24;
+    --error: #b3261e;
+    --on-error: #ffffff;
+    --error-container: #f9dedc;
+    --on-error-container: #410002;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BASE
+   ═══════════════════════════════════════════════════════════════════ */
+@layer base {
+  html {
+    background-color: var(--surface);
+    color: var(--on-surface);
+    font-family:
+      'Inter',
+      system-ui,
+      -apple-system,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
