@@ -3,7 +3,6 @@ use crate::application::error::AppError;
 use crate::infrastructure::adapter_out::caller::dto::ScryfallCardInfo;
 use async_trait::async_trait;
 use ratelimit::Ratelimiter;
-use std::time::Duration;
 use uuid::Uuid;
 
 pub struct ScryfallCallerAdapter {
@@ -20,10 +19,7 @@ impl ScryfallCallerAdapter {
                 .build()
                 .unwrap(),
             scryfall_base_url: scryfall_base_url.into(),
-            ratelimiter: Ratelimiter::builder(8, Duration::from_secs(1))
-                .max_tokens(8)
-                .build()
-                .unwrap(),
+            ratelimiter: Ratelimiter::builder(8).max_tokens(8).build().unwrap(),
         }
     }
 }

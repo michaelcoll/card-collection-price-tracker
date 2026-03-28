@@ -1,3 +1,4 @@
+# Launch format, test and lint
 default: format test lint
 
 # Clean the build files
@@ -7,6 +8,18 @@ clean:
 # Build the app
 build:
     @cargo build
+
+# Build the app in release mode
+build-release:
+    @cargo build --release
+
+# Run the app
+run:
+    @cargo run
+
+# Run the app in release mode
+run-release:
+    @cargo run --release
 
 # Format the code
 format:
