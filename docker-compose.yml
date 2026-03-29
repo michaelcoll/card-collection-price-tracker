@@ -21,6 +21,7 @@ services:
 
   ccpt:
     image: ghcr.io/michaelcoll/card-collection-price-tracker:1
+    pull_policy: always
     build:
       context: .
       dockerfile: Dockerfile
@@ -28,6 +29,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
       PORT: 8080
@@ -36,6 +39,7 @@ services:
 
   frontend:
     image: ghcr.io/michaelcoll/card-collection-price-tracker-frontend:1
+    pull_policy: always
     build:
       context: frontend/.
       dockerfile: Dockerfile

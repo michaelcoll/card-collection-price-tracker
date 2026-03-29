@@ -2,61 +2,52 @@ use crate::application::error::AppError;
 use crate::domain::user::User;
 use async_trait::async_trait;
 use jsonwebtoken::jwk::JwkSet;
-use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode, decode_header};
+use jsonwebtoken::{DecodingKey, Validation, decode, decode_header};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-struct GoogleClaims {
+struct HankoClaims {
     sub: String,
-    email: String,
-    name: Option<String>,
-    iss: String,
-    aud: String,
+    email: Option<String>,
     exp: usize,
 }
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait]
 pub trait AuthService: Send + Sync {
-    async fn validate_google_token(&self, token: &str) -> Result<User, AppError>;
+    async fn validate_token(&self, token: &str) -> Result<User, AppError>;
 }
 
-pub struct GoogleAuthService {
+pub struct HankoAuthService {
     jwks: JwkSet,
-    client_id: String,
+    api_url: String,
 }
 
-impl GoogleAuthService {
-    /// Creates a new GoogleAuthService instance
+impl HankoAuthService {
+    /// Creates a new HankoAuthService instance
     ///
     /// # Arguments
-    /// * `client_id` - The Google OAuth2 client ID
-    /// * `jwks_url` - The URL to fetch the JWKS from. If None, uses GOOGLE_JWKS_URL env var or default
-    pub async fn new(client_id: String, jwks_url: Option<&str>) -> Result<Self, AppError> {
+    /// * `api_url` - The Hanko API URL (e.g. `https://your-project.hanko.io`)
+    /// * `jwks_url` - The URL to fetch the JWKS from. If None, defaults to
+    ///   `{api_url}/.well-known/jwks.json`
+    pub async fn new(api_url: String, jwks_url: Option<&str>) -> Result<Self, AppError> {
         let url = if let Some(url) = jwks_url {
             url.to_string()
         } else {
-            std::env::var("GOOGLE_JWKS_URL")
-                .unwrap_or_else(|_| "https://www.googleapis.com/oauth2/v3/certs".to_string())
+            format!("{}/.well-known/jwks.json", api_url.trim_end_matches('/'))
         };
 
         let jwks: JwkSet = reqwest::get(&url)
             .await
-            .map_err(|e| AppError::CallError(format!("Failed to fetch Google JWKS: {}", e)))?
+            .map_err(|e| AppError::CallError(format!("Failed to fetch Hanko JWKS: {}", e)))?
             .json()
             .await
-            .map_err(|e| AppError::CallError(format!("Failed to parse Google JWKS: {}", e)))?;
+            .map_err(|e| AppError::CallError(format!("Failed to parse Hanko JWKS: {}", e)))?;
 
-        Ok(Self { jwks, client_id })
+        Ok(Self { jwks, api_url })
     }
 
     /// Finds a JWK (JSON Web Key) by its key ID in the JWKS set
-    ///
-    /// # Arguments
-    /// * `kid` - The key ID to search for
-    ///
-    /// # Returns
-    /// `Some(&Jwk)` if a key with the matching ID is found, `None` otherwise
     fn find_jwk(&self, kid: &str) -> Option<&jsonwebtoken::jwk::Jwk> {
         self.jwks
             .keys
@@ -66,8 +57,8 @@ impl GoogleAuthService {
 }
 
 #[async_trait]
-impl AuthService for GoogleAuthService {
-    async fn validate_google_token(&self, token: &str) -> Result<User, AppError> {
+impl AuthService for HankoAuthService {
+    async fn validate_token(&self, token: &str) -> Result<User, AppError> {
         let header = decode_header(token)
             .map_err(|e| AppError::AuthenticationError(format!("Invalid token header: {}", e)))?;
 
@@ -82,19 +73,20 @@ impl AuthService for GoogleAuthService {
         let decoding_key = DecodingKey::from_jwk(jwk)
             .map_err(|e| AppError::AuthenticationError(format!("Invalid JWK: {}", e)))?;
 
-        let mut validation = Validation::new(Algorithm::RS256);
-        validation.set_audience(&[&self.client_id]);
-        validation.set_issuer(&["https://accounts.google.com", "accounts.google.com"]);
+        // Use the algorithm specified in the token header (RS256 or ES256 depending on Hanko config)
+        let mut validation = Validation::new(header.alg);
+        validation.set_issuer(&[&self.api_url]);
+        // Hanko does not use the `aud` claim — disable audience validation
+        validation.validate_aud = false;
 
-        let token_data =
-            decode::<GoogleClaims>(token, &decoding_key, &validation).map_err(|e| {
-                AppError::AuthenticationError(format!("Token validation failed: {}", e))
-            })?;
+        let token_data = decode::<HankoClaims>(token, &decoding_key, &validation).map_err(|e| {
+            AppError::AuthenticationError(format!("Token validation failed: {}", e))
+        })?;
 
         Ok(User::new(
-            token_data.claims.sub,
-            token_data.claims.email,
-            token_data.claims.name,
+            token_data.claims.sub.clone(),
+            token_data.claims.email.unwrap_or(token_data.claims.sub),
+            None, // Hanko JWT does not include name
         ))
     }
 }
@@ -106,40 +98,32 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
-    fn google_claims_deserialization() {
+    fn hanko_claims_deserialization() {
         let json = r#"{
-            "sub": "123456789",
+            "sub": "b12a1b25-63ea-4890-b4ce-7a8ee5c45c97",
             "email": "test@example.com",
-            "name": "Test User",
-            "iss": "https://accounts.google.com",
-            "aud": "client-id",
             "exp": 1234567890
         }"#;
 
-        let claims: GoogleClaims = serde_json::from_str(json).unwrap();
-        assert_eq!(claims.sub, "123456789");
-        assert_eq!(claims.email, "test@example.com");
-        assert_eq!(claims.name, Some("Test User".to_string()));
+        let claims: HankoClaims = serde_json::from_str(json).unwrap();
+        assert_eq!(claims.sub, "b12a1b25-63ea-4890-b4ce-7a8ee5c45c97");
+        assert_eq!(claims.email, Some("test@example.com".to_string()));
     }
 
     #[test]
-    fn google_claims_deserialization_without_name() {
+    fn hanko_claims_deserialization_without_email() {
         let json = r#"{
-            "sub": "987654321",
-            "email": "noname@example.com",
-            "iss": "https://accounts.google.com",
-            "aud": "client-id",
+            "sub": "b12a1b25-63ea-4890-b4ce-7a8ee5c45c97",
             "exp": 1234567890
         }"#;
 
-        let claims: GoogleClaims = serde_json::from_str(json).unwrap();
-        assert_eq!(claims.sub, "987654321");
-        assert_eq!(claims.email, "noname@example.com");
-        assert_eq!(claims.name, None);
+        let claims: HankoClaims = serde_json::from_str(json).unwrap();
+        assert_eq!(claims.sub, "b12a1b25-63ea-4890-b4ce-7a8ee5c45c97");
+        assert_eq!(claims.email, None);
     }
 
     #[test]
-    fn creates_service_with_client_id() {
+    fn creates_service_with_api_url() {
         let jwks_json = r#"{
             "keys": [
                 {
@@ -153,12 +137,12 @@ mod tests {
             ]
         }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        assert_eq!(service.client_id, "test-client-id");
+        assert_eq!(service.api_url, "https://test.hanko.io");
         assert_eq!(service.jwks.keys.len(), 1);
     }
 
@@ -166,9 +150,9 @@ mod tests {
     fn stores_empty_jwks_set() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
         assert!(service.jwks.keys.is_empty());
@@ -198,9 +182,9 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
         let result = service.find_jwk("key-1");
@@ -224,9 +208,9 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
         let result = service.find_jwk("non-existent-key");
@@ -235,21 +219,18 @@ mod tests {
 
     #[test]
     fn returns_none_when_jwks_empty() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
-
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
         let result = service.find_jwk("any-key");
         assert!(result.is_none());
     }
 
-    // Tests for GoogleAuthService::new
+    // Tests for HankoAuthService::new
     #[tokio::test]
     async fn new_successfully_creates_service_with_valid_jwks() {
         let server = MockServer::start().await;
@@ -271,17 +252,18 @@ mod tests {
             .mount(&server)
             .await;
 
-        let service = GoogleAuthService::new("test-client-id".to_string(), Some(&server.uri()))
-            .await
-            .unwrap();
+        let service =
+            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri()))
+                .await
+                .unwrap();
 
-        assert_eq!(service.client_id, "test-client-id");
+        assert_eq!(service.api_url, "https://test.hanko.io");
         assert_eq!(service.jwks.keys.len(), 1);
         assert!(service.find_jwk("test-key").is_some());
     }
 
     #[tokio::test]
-    async fn new_initializes_service_with_multiple_keys() {
+    async fn new_builds_jwks_url_from_api_url() {
         let server = MockServer::start().await;
         let jwks_json = r#"{
             "keys": [
@@ -309,11 +291,12 @@ mod tests {
             .mount(&server)
             .await;
 
-        let service = GoogleAuthService::new("my-app".to_string(), Some(&server.uri()))
-            .await
-            .unwrap();
+        let service =
+            HankoAuthService::new("https://my-app.hanko.io".to_string(), Some(&server.uri()))
+                .await
+                .unwrap();
 
-        assert_eq!(service.client_id, "my-app");
+        assert_eq!(service.api_url, "https://my-app.hanko.io");
         assert_eq!(service.jwks.keys.len(), 2);
         assert!(service.find_jwk("key-1").is_some());
         assert!(service.find_jwk("key-2").is_some());
@@ -322,7 +305,6 @@ mod tests {
     // Tests for JWK decoding errors
     #[tokio::test]
     async fn rejects_token_with_invalid_jwk_format() {
-        // Use a valid RSA JWK structure, but with incomplete values
         let jwks_json = r#"{
             "keys": [
                 {
@@ -337,14 +319,14 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        let token_with_invalid_jwk = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhdWQiOiJ0ZXN0LWNsaWVudC1pZCIsImV4cCI6OTk5OTk5OTk5OX0.signature";
+        let token_with_invalid_jwk = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuaGFua28uaW8iLCJleHAiOjk5OTk5OTk5OTl9.signature";
 
-        let result = service.validate_google_token(token_with_invalid_jwk).await;
+        let result = service.validate_token(token_with_invalid_jwk).await;
         assert!(result.is_err());
 
         match result {
@@ -357,7 +339,6 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_token_when_jwk_conversion_fails() {
-        // Create an EC key which cannot be used for RS256 validation
         let jwks_json = r#"{
             "keys": [
                 {
@@ -373,15 +354,14 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        // Token uses RS256 but JWK is EC/ES256
-        let token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhdWQiOiJ0ZXN0LWNsaWVudC1pZCIsImV4cCI6OTk5OTk5OTk5OX0.signature";
+        let token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuaGFua28uaW8iLCJleHAiOjk5OTk5OTk5OTl9.signature";
 
-        let result = service.validate_google_token(token).await;
+        let result = service.validate_token(token).await;
         assert!(result.is_err());
 
         match result {
@@ -399,19 +379,17 @@ mod tests {
     // Tests for token decoding errors
     #[tokio::test]
     async fn rejects_token_with_missing_kid_in_header() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
         let token_without_kid =
             "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature";
 
-        let result = service.validate_google_token(token_without_kid).await;
+        let result = service.validate_token(token_without_kid).await;
         assert!(result.is_err());
 
         match result {
@@ -424,18 +402,16 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_token_with_unknown_kid() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        let token_with_unknown_kid = "eyJhbGciOiJSUzI1NiIsImtpZCI6InVua25vd24ta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCIsImlzcyI6Imh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbSIsImF1ZCI6InRlc3QtY2xpZW50LWlkIiwiZXhwIjo5OTk5OTk5OTk5fQ.signature";
+        let token_with_unknown_kid = "eyJhbGciOiJSUzI1NiIsImtpZCI6InVua25vd24ta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuaGFua28uaW8iLCJleHAiOjk5OTk5OTk5OTl9.signature";
 
-        let result = service.validate_google_token(token_with_unknown_kid).await;
+        let result = service.validate_token(token_with_unknown_kid).await;
         assert!(result.is_err());
 
         match result {
@@ -448,18 +424,14 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_malformed_token() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        let invalid_token = "not-a-valid-token";
-
-        let result = service.validate_google_token(invalid_token).await;
+        let result = service.validate_token("not-a-valid-token").await;
         assert!(result.is_err());
 
         match result {
@@ -472,19 +444,15 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_token_with_invalid_base64() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        let token_with_invalid_base64 = "invalid!!!.payload!!!.signature!!!";
-
         let result = service
-            .validate_google_token(token_with_invalid_base64)
+            .validate_token("invalid!!!.payload!!!.signature!!!")
             .await;
         assert!(result.is_err());
 
@@ -512,15 +480,14 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        // Token with HS256 algorithm instead of RS256
-        let token_wrong_algo = "eyJhbGciOiJIUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhdWQiOiJ0ZXN0LWNsaWVudC1pZCIsImV4cCI6OTk5OTk5OTk5OX0.signature";
+        let token_wrong_algo = "eyJhbGciOiJIUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuaGFua28uaW8iLCJleHAiOjk5OTk5OTk5OTl9.signature";
 
-        let result = service.validate_google_token(token_wrong_algo).await;
+        let result = service.validate_token(token_wrong_algo).await;
         assert!(result.is_err());
 
         match result {
@@ -532,17 +499,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn rejects_token_with_empty_string() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
+    async fn rejects_empty_token() {
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        let result = service.validate_google_token("").await;
+        let result = service.validate_token("").await;
         assert!(result.is_err());
 
         match result {
@@ -555,19 +520,16 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_token_with_incomplete_jwt_parts() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        // JWT should have 3 parts separated by dots, this only has 2
         let incomplete_token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.eyJzdWIiOiIxMjMifQ";
 
-        let result = service.validate_google_token(incomplete_token).await;
+        let result = service.validate_token(incomplete_token).await;
         assert!(result.is_err());
 
         match result {
@@ -578,23 +540,19 @@ mod tests {
         }
     }
 
-    // Additional tests for token validation errors
     #[tokio::test]
     async fn rejects_token_with_corrupted_payload() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
-        // Valid header format but corrupted base64 payload
         let corrupted_token =
             "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.!!!invalid_base64!!!.signature";
 
-        let result = service.validate_google_token(corrupted_token).await;
+        let result = service.validate_token(corrupted_token).await;
         assert!(result.is_err());
 
         match result {
@@ -610,24 +568,9 @@ mod tests {
         let server = MockServer::start().await;
         let jwks_json = r#"{
             "keys": [
-                {
-                    "kty": "RSA",
-                    "kid": "rsa-key-1",
-                    "n": "test-n-1",
-                    "e": "AQAB"
-                },
-                {
-                    "kty": "RSA",
-                    "kid": "rsa-key-2",
-                    "n": "test-n-2",
-                    "e": "AQAB"
-                },
-                {
-                    "kty": "RSA",
-                    "kid": "rsa-key-3",
-                    "n": "test-n-3",
-                    "e": "AQAB"
-                }
+                { "kty": "RSA", "kid": "rsa-key-1", "n": "test-n-1", "e": "AQAB" },
+                { "kty": "RSA", "kid": "rsa-key-2", "n": "test-n-2", "e": "AQAB" },
+                { "kty": "RSA", "kid": "rsa-key-3", "n": "test-n-3", "e": "AQAB" }
             ]
         }"#;
 
@@ -636,9 +579,10 @@ mod tests {
             .mount(&server)
             .await;
 
-        let service = GoogleAuthService::new("test-client-id".to_string(), Some(&server.uri()))
-            .await
-            .unwrap();
+        let service =
+            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri()))
+                .await
+                .unwrap();
 
         assert_eq!(service.jwks.keys.len(), 3);
         assert!(service.find_jwk("rsa-key-1").is_some());
@@ -648,7 +592,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn new_returns_error_when_http_request_fails() {
+    async fn new_returns_error_when_response_is_not_json() {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
@@ -656,19 +600,20 @@ mod tests {
             .mount(&server)
             .await;
 
-        let result = GoogleAuthService::new("test-client".to_string(), Some(&server.uri())).await;
+        let result =
+            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri())).await;
 
         assert!(result.is_err());
         match result {
             Err(AppError::CallError(msg)) => {
-                assert!(msg.contains("Failed to parse Google JWKS"));
+                assert!(msg.contains("Failed to parse Hanko JWKS"));
             }
             _ => panic!("Expected CallError when response is not JSON"),
         }
     }
 
     #[tokio::test]
-    async fn new_returns_error_when_response_is_not_json() {
+    async fn new_returns_error_on_invalid_json() {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
@@ -676,7 +621,8 @@ mod tests {
             .mount(&server)
             .await;
 
-        let result = GoogleAuthService::new("test-client".to_string(), Some(&server.uri())).await;
+        let result =
+            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri())).await;
 
         assert!(result.is_err());
     }
@@ -690,7 +636,8 @@ mod tests {
             .mount(&server)
             .await;
 
-        let result = GoogleAuthService::new("test-client".to_string(), Some(&server.uri())).await;
+        let result =
+            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri())).await;
 
         assert!(result.is_err());
     }
@@ -706,8 +653,7 @@ mod tests {
                     "use": "sig",
                     "alg": "RS256",
                     "n": "n_value_here",
-                    "e": "AQAB",
-                    "n5c": ["cert1", "cert2"]
+                    "e": "AQAB"
                 }
             ]
         }"#;
@@ -717,32 +663,29 @@ mod tests {
             .mount(&server)
             .await;
 
-        let service = GoogleAuthService::new("complete-test".to_string(), Some(&server.uri()))
-            .await
-            .unwrap();
+        let service =
+            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri()))
+                .await
+                .unwrap();
 
-        assert_eq!(service.client_id, "complete-test");
+        assert_eq!(service.api_url, "https://test.hanko.io");
         assert_eq!(service.jwks.keys.len(), 1);
         assert!(service.find_jwk("complete-key").is_some());
     }
 
     #[tokio::test]
     async fn rejects_token_with_special_characters_in_payload() {
-        let jwks_json = r#"{
-            "keys": []
-        }"#;
+        let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
         let token_with_special_chars =
             "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.😀😀😀😀😀.signature";
 
-        let result = service
-            .validate_google_token(token_with_special_chars)
-            .await;
+        let result = service.validate_token(token_with_special_chars).await;
         assert!(result.is_err());
 
         match result {
@@ -753,35 +696,20 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn finds_correct_jwk_among_many_keys() {
+    #[test]
+    fn finds_correct_jwk_among_many_keys() {
         let jwks_json = r#"{
             "keys": [
-                {
-                    "kty": "RSA",
-                    "kid": "wrong-key-1",
-                    "n": "test-n",
-                    "e": "AQAB"
-                },
-                {
-                    "kty": "RSA",
-                    "kid": "correct-key",
-                    "n": "correct-n",
-                    "e": "AQAB"
-                },
-                {
-                    "kty": "RSA",
-                    "kid": "wrong-key-2",
-                    "n": "test-n",
-                    "e": "AQAB"
-                }
+                { "kty": "RSA", "kid": "wrong-key-1", "n": "test-n", "e": "AQAB" },
+                { "kty": "RSA", "kid": "correct-key", "n": "correct-n", "e": "AQAB" },
+                { "kty": "RSA", "kid": "wrong-key-2", "n": "test-n", "e": "AQAB" }
             ]
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = GoogleAuthService {
+        let service = HankoAuthService {
             jwks,
-            client_id: "test-client-id".to_string(),
+            api_url: "https://test.hanko.io".to_string(),
         };
 
         let result = service.find_jwk("correct-key");

@@ -1,0 +1,81 @@
+<!-- ── Mobile bottom navigation bar (≤ 640px) ── -->
+<nav class="mobile-bottom-nav" aria-label="Navigation principale">
+  @for (item of navItems; track item.route) {
+    <a
+      [routerLink]="item.route"
+      routerLinkActive="mobile-bottom-nav__item--active"
+      class="mobile-bottom-nav__item"
+      [attr.aria-label]="item.label"
+    >
+      <span class="mobile-bottom-nav__pill">
+        <mat-icon fontSet="material-symbols-rounded" class="mobile-bottom-nav__icon">{{
+          item.icon
+        }}</mat-icon>
+      </span>
+      <span class="mobile-bottom-nav__label">{{ item.label }}</span>
+    </a>
+  }
+</nav>
+
+<nav class="navbar">
+  <!-- ── Gauche : Titre ── -->
+  <div class="navbar__brand">
+    <a routerLink="/" class="navbar__title"> The Arcane Shop </a>
+  </div>
+
+  <!-- ── Centre : Menu de navigation ── -->
+  <ul class="navbar__nav" role="list">
+    @for (item of navItems; track item.route) {
+      <li>
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="navbar__nav-link--active"
+          class="navbar__nav-link"
+        >
+          {{ item.label }}
+        </a>
+      </li>
+    }
+  </ul>
+
+  <!-- ── Droite : Actions ── -->
+  <div class="navbar__actions">
+    <!-- Bouton Se connecter (affiché uniquement si non connecté) -->
+    @if (!auth.isLoggedIn()) {
+      <button class="navbar__login-btn" (click)="onLogin()" aria-label="Se connecter">
+        Se connecter
+      </button>
+    }
+
+    <!-- Toggle dark / light -->
+    <button
+      class="navbar__icon-btn"
+      (click)="onToggleTheme()"
+      [title]="theme.toggleLabel()"
+      [attr.aria-label]="theme.toggleLabel()"
+    >
+      <mat-icon fontSet="material-symbols-rounded" class="navbar__mat-icon">{{
+        theme.toggleIcon()
+      }}</mat-icon>
+    </button>
+
+    <!-- Avatar initiales (si connecté) ou icône profil générique (si non connecté) -->
+    @if (auth.isLoggedIn()) {
+      <button
+        class="navbar__avatar-btn"
+        (click)="onLogout()"
+        [title]="'Se déconnecter (' + auth.displayName() + ')'"
+      >
+        <span class="navbar__avatar-initial" [attr.aria-label]="auth.displayName()">
+          {{ auth.initial() }}
+        </span>
+      </button>
+    } @else {
+      <button class="navbar__icon-btn" aria-label="Mon compte">
+        <mat-icon fontSet="material-symbols-rounded" class="navbar__mat-icon"
+          >account_circle</mat-icon
+        >
+      </button>
+    }
+  </div>
+</nav>

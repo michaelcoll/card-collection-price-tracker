@@ -1,0 +1,314 @@
+/* ══════════════════════════════════════════════
+   MOBILE BOTTOM NAVIGATION (≤ 640px)
+   ══════════════════════════════════════════════ */
+
+.mobile-bottom-nav {
+  display: none; /* caché par défaut (desktop) */
+}
+
+/* ══════════════════════════════════════════════
+   NAVBAR — sticky, glassmorphique
+   Respecte le design system "Mystic Dark"
+   ══════════════════════════════════════════════ */
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.8rem;
+
+  padding: 0 2.25rem;
+  height: 4rem;
+
+  background-color: color-mix(in srgb, var(--surface-container-low) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  outline: 1px solid color-mix(in srgb, var(--outline-variant) 15%, transparent);
+  outline-offset: -1px;
+}
+
+/* ── Titre / Brand ── */
+.navbar__brand {
+  flex-shrink: 0;
+}
+
+.navbar__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  /* Titre toujours en primary, gras selon la cible */
+  color: var(--primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  transition: opacity 150ms ease;
+}
+
+.navbar__title:hover {
+  opacity: 0.85;
+}
+
+/* ── Nav centrale ── */
+.navbar__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  justify-content: center;
+}
+
+.navbar__nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  color: var(--on-surface-variant);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+.navbar__nav-link:hover {
+  color: var(--on-surface);
+  background-color: var(--surface-container-high);
+}
+
+/* Indicateur underline pour le lien actif (pas de pill/fond) */
+.navbar__nav-link--active {
+  color: var(--primary);
+  background-color: transparent;
+  border-radius: 9999px;
+}
+
+.navbar__nav-link--active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.15rem;
+  left: 0.9rem;
+  right: 0.9rem;
+  height: 2px;
+  background-color: var(--primary);
+  border-radius: 1px;
+}
+
+/* ── Actions droite ── */
+.navbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* ── Bouton "Se connecter" ── */
+.navbar__login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter Variable', 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  /* Secondary button style selon le design system */
+  background-color: var(--surface-container-high);
+  color: var(--on-surface);
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.navbar__login-btn:hover {
+  background-color: var(--surface-container-highest);
+  transform: scale(1.02);
+}
+
+.navbar__login-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Icon button Toggle Dark/Light + Profil ── */
+.navbar__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  color: var(--on-surface);
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.navbar__icon-btn:hover {
+  background-color: var(--surface-container-highest);
+  transform: scale(1.08);
+}
+
+.navbar__icon-btn:active {
+  transform: scale(0.95);
+}
+
+.navbar__icon-btn-icon {
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  /* Pour les SVG */
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* ── Material Symbols icon dans les boutons ── */
+.navbar__mat-icon {
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Avatar initiales (connecté) ── */
+.navbar__avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: transform 150ms ease;
+}
+
+.navbar__avatar-btn:hover {
+  transform: scale(1.05);
+}
+
+.navbar__avatar-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 9999px;
+  background-color: var(--primary-container);
+  color: var(--on-primary-container);
+  font-family: 'Inter Variable', 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  user-select: none;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 640px)
+   Placé EN FIN de fichier pour surcharger
+   correctement les règles de base.
+   ══════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Masquer les liens centraux dans la top navbar */
+  .navbar__nav {
+    display: none;
+  }
+
+  /* Afficher la bottom nav */
+  .mobile-bottom-nav {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+
+    height: 4rem;
+    padding-bottom: env(safe-area-inset-bottom, 0); /* iPhone notch */
+
+    background-color: color-mix(in srgb, var(--surface-container-low) 60%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    outline: 1px solid color-mix(in srgb, var(--outline-variant) 15%, transparent);
+    outline-offset: -1px;
+  }
+
+  /* ── Chaque item ── */
+  .mobile-bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    flex: 1;
+    text-decoration: none;
+    color: var(--on-surface-variant);
+    font-family: 'Inter Variable', 'Inter', sans-serif;
+    font-size: 0.6875rem; /* 11px — label-sm */
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color 150ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Pill derrière l'icône ── */
+  .mobile-bottom-nav__pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    padding: 0.2rem 1rem;
+    background-color: transparent;
+    transition: background-color 200ms ease;
+  }
+
+  /* ── Icône ── */
+  .mobile-bottom-nav__icon {
+    font-size: 1.375rem;
+    width: 1.375rem;
+    height: 1.375rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 150ms ease;
+  }
+
+  /* ── Label ── */
+  .mobile-bottom-nav__label {
+    line-height: 1;
+  }
+
+  /* ── État ACTIF ── */
+  .mobile-bottom-nav__item--active {
+    color: var(--tertiary);
+  }
+
+  .mobile-bottom-nav__item--active .mobile-bottom-nav__pill {
+    background-color: var(--tertiary-container);
+  }
+}
