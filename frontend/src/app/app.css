@@ -1,0 +1,11 @@
+/* Layout principal — donne de l'espace sous la navbar sticky */
+.app-main {
+  min-height: calc(100dvh - 4rem);
+}
+
+/* Sur mobile (≤ 640px) : compenser la bottom nav fixe */
+@media (max-width: 640px) {
+  .app-main {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+}

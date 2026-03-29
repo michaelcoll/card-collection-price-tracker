@@ -42,8 +42,8 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         std::env::var("EDHREC_BASE_URL").unwrap_or("https://edhrec.com".to_string());
     let scryfall_base_url =
         std::env::var("SCRYFALL_BASE_URL").unwrap_or("https://api.scryfall.com".to_string());
-    let google_client_id = std::env::var("GOOGLE_CLIENT_ID")
-        .expect("GOOGLE_CLIENT_ID must be set in environment variables");
+    let hanko_api_url =
+        std::env::var("HANKO_API_URL").expect("HANKO_API_URL must be set in environment variables");
 
     let card_repository_adapter = Arc::new(CardRepositoryAdapter::new(pool.clone()));
     let set_name_repository_adapter = Arc::new(SetNameRepositoryAdapter::new(pool.clone()));
@@ -55,9 +55,9 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let stats_repository_adapter = Arc::new(StatsRepositoryAdapter::new(pool.clone()));
 
     let auth_service: Arc<dyn AuthService> = Arc::new(
-        crate::application::service::auth_service::GoogleAuthService::new(google_client_id, None)
+        crate::application::service::auth_service::HankoAuthService::new(hanko_api_url, None)
             .await
-            .expect("Failed to initialize Google Auth Service"),
+            .expect("Failed to initialize Hanko Auth Service"),
     );
 
     let card_collection_service = Arc::new(CardCollectionService::new(Arc::new(
@@ -138,11 +138,11 @@ impl AppState {
         });
 
         let mut mock_auth = MockAuthService::new();
-        mock_auth.expect_validate_google_token().returning(|_| {
+        mock_auth.expect_validate_token().returning(|_| {
             Ok(User::new(
                 "test-user-id".to_string(),
                 "test@example.com".to_string(),
-                Some("Test User".to_string()),
+                None,
             ))
         });
 
@@ -220,10 +220,19 @@ mod tests {
     #[tokio::test]
     async fn create_infra_creates_router_successfully() {
         use sqlx::postgres::PgPoolOptions;
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
-        // Setup environment variables
+        // Démarrer un serveur mock pour simuler l'endpoint JWKS de Hanko
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/.well-known/jwks.json"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"keys": []}"#))
+            .mount(&mock_server)
+            .await;
+
         unsafe {
-            std::env::set_var("GOOGLE_CLIENT_ID", "test-client-id");
+            std::env::set_var("HANKO_API_URL", mock_server.uri());
             std::env::set_var(
                 "CARDMARKET_PRICE_GUIDES_URL",
                 "https://example.com/prices.json",
@@ -235,37 +244,39 @@ mod tests {
         let database_url = std::env::var("DATABASE_URL")
             .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
 
-        // Try to create a pool; skip test if database is not available
+        // Skip le test si la base de données n'est pas disponible
         let pool = match PgPoolOptions::new()
             .max_connections(1)
             .connect(&database_url)
             .await
         {
             Ok(p) => p,
-            Err(_) => {
-                // Skip test if database is not available
-                return;
-            }
+            Err(_) => return,
         };
 
         let router = create_infra(pool).await;
-
-        // Verify that the router was created successfully by converting it to a service
         let _service = router.into_make_service();
-        // If we reach here without panicking, the router was created successfully
     }
 
     #[tokio::test]
     async fn create_infra_uses_custom_urls_from_env_vars() {
         use sqlx::postgres::PgPoolOptions;
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/.well-known/jwks.json"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"keys": []}"#))
+            .mount(&mock_server)
+            .await;
 
         let cardmarket_url = "https://custom.cardmarket.com/prices.json";
         let edhrec_url = "https://custom.edhrec.com";
         let scryfall_url = "https://custom.scryfall.com";
 
-        // Set custom environment variables
         unsafe {
-            std::env::set_var("GOOGLE_CLIENT_ID", "test-client-id");
+            std::env::set_var("HANKO_API_URL", mock_server.uri());
             std::env::set_var("CARDMARKET_PRICE_GUIDES_URL", cardmarket_url);
             std::env::set_var("EDHREC_BASE_URL", edhrec_url);
             std::env::set_var("SCRYFALL_BASE_URL", scryfall_url);
@@ -274,69 +285,66 @@ mod tests {
         let database_url = std::env::var("DATABASE_URL")
             .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
 
-        // Try to create a pool; skip test if database is not available
         let pool = match PgPoolOptions::new()
             .max_connections(1)
             .connect(&database_url)
             .await
         {
             Ok(p) => p,
-            Err(_) => {
-                // Skip test if database is not available
-                return;
-            }
+            Err(_) => return,
         };
 
-        // Should not panic and should create router with custom URLs
         let router = create_infra(pool).await;
         let _service = router.into_make_service();
-        // If we reach here, custom URLs were used successfully
     }
 
     #[tokio::test]
     async fn create_infra_uses_default_urls_when_env_vars_not_set() {
         use sqlx::postgres::PgPoolOptions;
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
-        // Clear environment variables to test defaults
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/.well-known/jwks.json"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"keys": []}"#))
+            .mount(&mock_server)
+            .await;
+
+        // Retirer les variables optionnelles pour tester les valeurs par défaut
         unsafe {
             std::env::remove_var("CARDMARKET_PRICE_GUIDES_URL");
             std::env::remove_var("EDHREC_BASE_URL");
             std::env::remove_var("SCRYFALL_BASE_URL");
-            std::env::set_var("GOOGLE_CLIENT_ID", "test-client-id");
+            std::env::set_var("HANKO_API_URL", mock_server.uri());
         }
 
         let database_url = std::env::var("DATABASE_URL")
             .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
 
-        // Try to create a pool; skip test if database is not available
         let pool = match PgPoolOptions::new()
             .max_connections(1)
             .connect(&database_url)
             .await
         {
             Ok(p) => p,
-            Err(_) => {
-                // Skip test if database is not available
-                return;
-            }
+            Err(_) => return,
         };
 
-        // Should not panic and should create router with default URLs
         let router = create_infra(pool).await;
         let _service = router.into_make_service();
-        // If we reach here without panicking, default URLs were used successfully
     }
 
     #[test]
-    fn create_infra_requires_google_client_id() {
-        // Clear GOOGLE_CLIENT_ID to verify it's required
+    fn create_infra_requires_hanko_api_url() {
+        // Clear HANKO_API_URL to verify it's required
         unsafe {
-            std::env::remove_var("GOOGLE_CLIENT_ID");
+            std::env::remove_var("HANKO_API_URL");
         }
 
-        let result = std::env::var("GOOGLE_CLIENT_ID");
+        let result = std::env::var("HANKO_API_URL");
 
-        // Verify that GOOGLE_CLIENT_ID is not set
+        // Verify that HANKO_API_URL is not set
         assert!(result.is_err());
         assert_eq!(result.err().unwrap(), std::env::VarError::NotPresent);
     }

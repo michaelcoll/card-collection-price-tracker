@@ -1,3 +1,10 @@
+/* ═══════════════════════════════════════════════════════════════════
+   FONTS — chargées depuis node_modules au build time
+   Aucune requête vers Google Fonts au runtime.
+   ═══════════════════════════════════════════════════════════════════ */
+@import '@fontsource-variable/inter/wght.css';
+@import 'material-symbols/rounded.css';
+
 @import 'tailwindcss';
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -207,4 +214,30 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HANKO LOGIN DIALOG — panel glassmorphique
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Overlay sombre */
+.cdk-overlay-backdrop.cdk-overlay-dark-backdrop {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+}
+
+/* Panel du dialog */
+.hanko-login-panel .mat-mdc-dialog-container {
+  background: color-mix(in srgb, var(--surface-container) 60%, transparent) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.hanko-login-panel .mdc-dialog__surface {
+  background: transparent !important;
+  box-shadow: none !important;
 }

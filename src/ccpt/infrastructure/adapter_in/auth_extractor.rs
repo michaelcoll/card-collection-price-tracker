@@ -37,7 +37,7 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
 
             let user = state
                 .auth_service
-                .validate_google_token(token)
+                .validate_token(token)
                 .await
                 .map_err(|e| {
                     (
@@ -107,14 +107,14 @@ mod tests {
     #[tokio::test]
     async fn valid_bearer_token_returns_user() {
         let expected_user = User::new(
-            "google-user-123".to_string(),
+            "hanko-user-uuid-123".to_string(),
             "user@example.com".to_string(),
-            Some("Test User".to_string()),
+            None,
         );
 
         let mut mock_auth = MockAuthService::new();
         mock_auth
-            .expect_validate_google_token()
+            .expect_validate_token()
             .with(mockall::predicate::eq("valid-token"))
             .returning(move |_| Ok(expected_user.clone()));
 
@@ -129,8 +129,8 @@ mod tests {
 
         assert!(result.is_ok());
         let AuthenticatedUser(user) = result.unwrap();
-        assert_eq!(user.id, "google-user-123");
+        assert_eq!(user.id, "hanko-user-uuid-123");
         assert_eq!(user.email, "user@example.com");
-        assert_eq!(user.name, Some("Test User".to_string()));
+        assert_eq!(user.name, None);
     }
 }

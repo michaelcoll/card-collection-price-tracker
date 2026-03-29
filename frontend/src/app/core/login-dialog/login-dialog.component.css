@@ -1,0 +1,47 @@
+/* ══════════════════════════════════════════════
+   LOGIN DIALOG — Mystic Dark design system
+   ══════════════════════════════════════════════ */
+
+.login-dialog {
+  padding: 0.5rem;
+  background: transparent;
+}
+
+/* ── Thème Hanko — variables CSS adaptées au design system ── */
+hanko-auth {
+  /* Typographie */
+  --font-family: 'Inter Variable', 'Inter', sans-serif;
+  --font-size: 15px;
+  --font-weight: 400;
+  --line-height: 1.5rem;
+
+  /* Surfaces */
+  --background-color: var(--surface-container);
+  --color-shade-2: var(--surface-container-high);
+
+  /* Texte */
+  --color: var(--on-surface);
+  --color-shade-1: var(--on-surface-variant);
+
+  /* Couleur brand → primary du design system */
+  --brand-color: var(--primary);
+  --brand-color-shade-1: color-mix(in srgb, var(--primary) 80%, white);
+  --brand-contrast-color: var(--on-primary);
+
+  /* Liens */
+  --link-color: var(--primary);
+
+  /* Erreurs */
+  --error-color: #ffb4ab;
+
+  /* Forme */
+  --border-radius: 8px;
+  --border-style: solid;
+  --border-width: 1px;
+  --item-height: 48px;
+
+  /* Marges */
+  --item-margin: 0.5rem 0;
+  --container-padding: 24px;
+  --container-max-width: 400px;
+}
