@@ -1,6 +1,6 @@
 import {
-  APP_INITIALIZER,
   ApplicationConfig,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -15,16 +15,13 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    {
-      provide: APP_INITIALIZER,
-      // Enregistre les web components Hanko avant le rendu de l'application
-      useFactory: () => () =>
-        register(environment.hankoApiUrl, {
-          shadow: false,
-          fallbackLanguage: 'fr',
-          translations: { en, fr },
-        }),
-      multi: true,
-    },
+    // Enregistre les web components Hanko avant le rendu de l'application
+    provideAppInitializer(() =>
+      register(environment.hankoApiUrl, {
+        shadow: false,
+        fallbackLanguage: 'fr',
+        translations: { en, fr },
+      }),
+    ),
   ],
 };
