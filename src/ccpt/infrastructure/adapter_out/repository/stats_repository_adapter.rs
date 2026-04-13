@@ -63,13 +63,13 @@ mod tests {
             .await
             .unwrap();
         sqlx::query(
-            "INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id) VALUES ('TST', '1', 'en', false, 'Test Card', '12345678-1234-1234-1234-123456789012')"
+            "INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id) VALUES ('TST', '1', 'en', false, 'Test Card', 'R', '12345678-1234-1234-1234-123456789012')"
         )
         .execute(&pool)
         .await
         .unwrap();
         sqlx::query(
-            "INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id) VALUES ('TST', '2', 'en', false, 'Another Card', '87654321-4321-4321-4321-210987654321')"
+            "INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id) VALUES ('TST', '2', 'en', false, 'Another Card', 'C', '87654321-4321-4321-4321-210987654321')"
         )
         .execute(&pool)
         .await

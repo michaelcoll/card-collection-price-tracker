@@ -22,28 +22,15 @@ The system integrates with:
 - **Scryfall**: Card metadata and IDs
 - **EDHRec**: Commander format analytics
 
-## Command Execution Priority
-
-⚠️ **CRITICAL**: Always use `just` commands instead of running raw `cargo`/`npm` commands. The justfile abstracts away
-specific flags, configurations, and environment setup required for this project.
-
-| Task     | Command        | Never use                  |
-|----------|----------------|----------------------------|
-| Testing  | `just test`    | ❌ `cargo test`             |
-| Linting  | `just lint`    | ❌ `cargo clippy`           |
-| Building | `just build`   | ❌ `cargo build`            |
-| Setup    | `just prepare` | ❌ Manual tool installation |
-
 ## Critical Workflows
 
 ### Backend Development
 
 ```bash
 # Essential commands via justfile (ALWAYS use these)
-just test       # Run tests with cargo-nextest + llvm-cov
-just lint       # cargo fmt + clippy with specific rules  
-just build      # Standard cargo build
-just prepare    # Install required tools (sqlx-cli, nextest)
+cargo test       # Run tests with cargo-nextest + llvm-cov
+cargo lint       # cargo fmt + clippy with specific rules  
+cargo build      # Standard cargo build
 
 # Database setup
 export DATABASE_URL="postgres://postgres:password@localhost/postgres"

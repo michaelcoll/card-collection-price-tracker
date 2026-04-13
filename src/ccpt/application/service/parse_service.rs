@@ -1,6 +1,7 @@
 use crate::application::error::AppError;
 use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
+use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
 use uuid::Uuid;
 
@@ -64,6 +65,8 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
 
         let collector_number = field_refs[5];
 
+        let rarity_code = RarityCode::new(field_refs[7]);
+
         let language_code: LanguageCode = LanguageCode::new(field_refs[15]);
         let foil: bool = field_refs[6] != "normal";
 
@@ -95,6 +98,7 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             language_code,
             foil,
             name,
+            rarity_code,
             quantity,
             purchase_price,
             scryfall_id,
@@ -266,6 +270,7 @@ mod tests {
             LanguageCode::FR,
             true,
             "Felothar, Dawn of the Abzan",
+            RarityCode::R,
             1,
             76,
             Uuid::parse_str("09478378-c28b-4334-a0a1-157325ed8e5b").unwrap(),
