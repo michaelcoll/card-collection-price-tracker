@@ -108,8 +108,8 @@ mod tests {
 
         sqlx::query!(
             r#"
-                INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id, cardmarket_id)
-                VALUES ('SET1', '1', 'EN', false, 'Test Card', $1, 1)
+                INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
+                VALUES ('SET1', '1', 'EN', false, 'Test Card', 'C', $1, 1)
             "#,
             uuid::Uuid::nil()
         )
@@ -161,8 +161,8 @@ mod tests {
 
         sqlx::query!(
             r#"
-                INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id, cardmarket_id)
-                VALUES ('SET2', '1', 'EN', false, 'Test Card', $1, 1)
+                INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
+                VALUES ('SET2', '1', 'EN', false, 'Test Card', 'C', $1, 1)
             "#,
             uuid::Uuid::nil()
         )
@@ -224,8 +224,8 @@ mod tests {
 
         sqlx::query!(
             r#"
-                INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id, cardmarket_id)
-                VALUES ('SET3', '1', 'EN', false, 'Test Card', $1, 1)
+                INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
+                VALUES ('SET3', '1', 'EN', false, 'Test Card', 'C', $1, 1)
             "#,
             uuid::Uuid::nil()
         )
@@ -301,8 +301,8 @@ mod tests {
 
         sqlx::query!(
             r#"
-                INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id, cardmarket_id)
-                VALUES ('SET6', '1', 'EN', false, 'Card 1', $1, 5)
+                INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
+                VALUES ('SET6', '1', 'EN', false, 'Card 1', 'C', $1, 5)
             "#,
             uuid::Uuid::nil()
         )

@@ -67,17 +67,19 @@ impl CardRepository for CardRepositoryAdapter {
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
         sqlx::query!(
             "
-            INSERT INTO card (set_code, collector_number, language_code, foil, name, scryfall_id)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT(set_code, collector_number, language_code, foil)
                 DO UPDATE
                 SET name          = $5,
-                    scryfall_id   = $6",
+                    rarity        = $6,
+                    scryfall_id   = $7",
             card.id.set_code.to_string(),
             card.id.collector_number,
             card.id.language_code.to_string(),
             card.id.foil,
             card.name,
+            card.rarity_code.to_string(),
             card.scryfall_id,
         )
         .execute(&self.pool)
@@ -137,6 +139,7 @@ impl CardRepository for CardRepositoryAdapter {
 mod tests {
     use super::*;
     use crate::domain::language_code::LanguageCode;
+    use crate::domain::rarity_code::RarityCode;
     use sqlx::PgPool;
     use uuid::Uuid;
 
@@ -160,6 +163,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             3,
             500,
         );
@@ -185,6 +189,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             3,
             500,
         );
@@ -200,6 +205,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             5,
             1500,
         );
@@ -224,6 +230,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             3,
             500,
         );
@@ -234,6 +241,7 @@ mod tests {
             LanguageCode::EN,
             true,
             "Goblin Boarders",
+            RarityCode::C,
             2,
             1000,
         );
@@ -261,6 +269,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             3,
             500,
         );
@@ -271,6 +280,7 @@ mod tests {
             LanguageCode::EN,
             true,
             "Goblin Boarders",
+            RarityCode::C,
             2,
             1000,
         );
@@ -301,6 +311,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             3,
             500,
         );
@@ -311,6 +322,7 @@ mod tests {
             LanguageCode::EN,
             true,
             "Goblin Boarders",
+            RarityCode::C,
             2,
             1000,
             Uuid::default(),

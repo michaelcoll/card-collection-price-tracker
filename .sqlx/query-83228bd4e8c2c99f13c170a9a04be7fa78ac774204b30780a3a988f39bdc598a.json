@@ -30,26 +30,31 @@
       },
       {
         "ordinal": 5,
+        "name": "rarity",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
         "name": "scryfall_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "cardmarket_id",
         "type_info": "Int4"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "set_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "quantity",
         "type_info": "Int4"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "purchase_price",
         "type_info": "Int4"
       }
@@ -60,6 +65,7 @@
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,

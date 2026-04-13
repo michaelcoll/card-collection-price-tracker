@@ -59,6 +59,7 @@ mod tests {
     use crate::application::use_case::MockUpdateCardMarketIdUseCase;
     use crate::domain::card::Card;
     use crate::domain::language_code::LanguageCode;
+    use crate::domain::rarity_code::RarityCode;
     use crate::domain::set_name::{SetCode, SetName};
     use mockall::predicate::eq;
     use uuid::Uuid;
@@ -81,6 +82,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             3,
             8,
             Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
@@ -138,6 +140,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             0,
             0,
         );
@@ -187,6 +190,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             3,
             8,
             Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),

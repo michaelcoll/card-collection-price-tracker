@@ -1,4 +1,5 @@
 use crate::domain::language_code::LanguageCode;
+use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
 use std::fmt::{Display, Formatter};
 
@@ -44,6 +45,7 @@ pub struct Card {
     pub id: CardId,
     pub set_name: SetName,
     pub name: String,
+    pub rarity_code: RarityCode,
     pub quantity: u8,
     /// Price in cents
     pub purchase_price: u32,
@@ -61,6 +63,7 @@ impl Card {
         language_code: LanguageCode,
         foil: bool,
         name: impl Into<String>,
+        rarity_code: RarityCode,
         quantity: u8,
         purchase_price: u32,
     ) -> Self {
@@ -70,6 +73,7 @@ impl Card {
             id: CardId::new(set_code, collector_number.into(), language_code, foil),
             set_name,
             name: name.into(),
+            rarity_code,
             quantity,
             purchase_price,
             scryfall_id: uuid::Uuid::default(),
@@ -85,6 +89,7 @@ impl Card {
         language_code: LanguageCode,
         foil: bool,
         name: impl Into<String>,
+        rarity_code: RarityCode,
         quantity: u8,
         purchase_price: u32,
         scryfall_id: uuid::Uuid,
@@ -96,6 +101,7 @@ impl Card {
             id: CardId::new(set_code, collector_number.into(), language_code, foil),
             set_name,
             name: name.into(),
+            rarity_code,
             quantity,
             purchase_price,
             scryfall_id,
@@ -142,6 +148,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             2,
             1000,
         );
@@ -159,6 +166,7 @@ mod tests {
             LanguageCode::FR,
             false,
             "Goblin Boarders",
+            RarityCode::C,
             2,
             1000,
         );
@@ -170,6 +178,7 @@ mod tests {
             LanguageCode::FR,
             true,
             "Goblin Boarders",
+            RarityCode::C,
             1,
             2000,
         );

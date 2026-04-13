@@ -15,6 +15,7 @@ CREATE TABLE card
     language_code    VARCHAR(2)   NOT NULL,
     foil             BOOLEAN      NOT NULL,
     name             VARCHAR(255) NOT NULL,
+    rarity           VARCHAR(1)   NOT NULL,
     scryfall_id      UUID         NOT NULL,
     cardmarket_id    INTEGER,
 
