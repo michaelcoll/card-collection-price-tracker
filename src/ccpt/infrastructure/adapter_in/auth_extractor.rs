@@ -107,7 +107,7 @@ mod tests {
     #[tokio::test]
     async fn valid_bearer_token_returns_user() {
         let expected_user = User::new(
-            "hanko-user-uuid-123".to_string(),
+            "user_clerk123".to_string(),
             "user@example.com".to_string(),
             None,
         );
@@ -129,7 +129,7 @@ mod tests {
 
         assert!(result.is_ok());
         let AuthenticatedUser(user) = result.unwrap();
-        assert_eq!(user.id, "hanko-user-uuid-123");
+        assert_eq!(user.id, "user_clerk123");
         assert_eq!(user.email, "user@example.com");
         assert_eq!(user.name, None);
     }

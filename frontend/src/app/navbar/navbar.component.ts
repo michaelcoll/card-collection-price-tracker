@@ -35,9 +35,9 @@ export class NavbarComponent {
 
   onLogin(): void {
     this.dialog.open(LoginDialogComponent, {
-      panelClass: 'hanko-login-panel',
+      panelClass: 'clerk-login-panel',
       maxWidth: '90vw',
-      // Pas de largeur fixe — le composant Hanko gère sa propre largeur max
+      // Pas de largeur fixe — le composant Clerk gère sa propre largeur max
     });
   }
 

@@ -7,41 +7,67 @@
   background: transparent;
 }
 
-/* ── Thème Hanko — variables CSS adaptées au design system ── */
-hanko-auth {
-  /* Typographie */
-  --font-family: 'Inter Variable', 'Inter', sans-serif;
-  --font-size: 15px;
-  --font-weight: 400;
-  --line-height: 1.5rem;
+/* ── Thème Clerk — variables CSS adaptées au design system ── */
+:root {
+  --clerk-font-family: 'Inter Variable', 'Inter', sans-serif;
+}
 
-  /* Surfaces */
-  --background-color: var(--surface-container);
-  --color-shade-2: var(--surface-container-high);
+/* Conteneur principal */
+.cl-rootBox {
+  background: transparent;
+}
 
-  /* Texte */
-  --color: var(--on-surface);
-  --color-shade-1: var(--on-surface-variant);
+.cl-card {
+  background: var(--surface-container);
+  box-shadow: none;
+  border-radius: 12px;
+  font-family: 'Inter Variable', 'Inter', sans-serif;
+}
 
-  /* Couleur brand → primary du design system */
-  --brand-color: var(--primary);
-  --brand-color-shade-1: color-mix(in srgb, var(--primary) 80%, white);
-  --brand-contrast-color: var(--on-primary);
+/* Textes */
+.cl-headerTitle,
+.cl-headerSubtitle,
+.cl-bodyText,
+.cl-formFieldLabel,
+.cl-footerActionText {
+  color: var(--on-surface);
+  font-family: 'Inter Variable', 'Inter', sans-serif;
+}
 
-  /* Liens */
-  --link-color: var(--primary);
+.cl-formFieldHintText,
+.cl-identityPreviewText {
+  color: var(--on-surface-variant);
+}
 
-  /* Erreurs */
-  --error-color: #ffb4ab;
+/* Champs de saisie */
+.cl-formFieldInput {
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Inter Variable', 'Inter', sans-serif;
+}
 
-  /* Forme */
-  --border-radius: 8px;
-  --border-style: solid;
-  --border-width: 1px;
-  --item-height: 48px;
+/* Bouton principal */
+.cl-formButtonPrimary {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: 8px;
+  font-family: 'Inter Variable', 'Inter', sans-serif;
+}
 
-  /* Marges */
-  --item-margin: 0.5rem 0;
-  --container-padding: 24px;
-  --container-max-width: 400px;
+.cl-formButtonPrimary:hover {
+  background: color-mix(in srgb, var(--primary) 85%, white);
+}
+
+/* Liens */
+.cl-footerActionLink,
+.cl-formResendCodeLink {
+  color: var(--primary);
+}
+
+/* Erreurs */
+.cl-formFieldErrorText,
+.cl-alertText {
+  color: #ffb4ab;
 }

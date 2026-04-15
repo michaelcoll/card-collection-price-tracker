@@ -217,7 +217,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   HANKO LOGIN DIALOG — panel glassmorphique
+   CLERK LOGIN DIALOG — panel glassmorphique
    ═══════════════════════════════════════════════════════════════════ */
 
 /* Overlay sombre */
@@ -227,7 +227,7 @@
 }
 
 /* Panel du dialog */
-.hanko-login-panel .mat-mdc-dialog-container {
+.clerk-login-panel .mat-mdc-dialog-container {
   background: color-mix(in srgb, var(--surface-container) 60%, transparent) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
@@ -237,7 +237,7 @@
   overflow: hidden;
 }
 
-.hanko-login-panel .mdc-dialog__surface {
+.clerk-login-panel .mdc-dialog__surface {
   background: transparent !important;
   box-shadow: none !important;
 }

@@ -5,6 +5,7 @@
 .DS_Store
 example-files
 screens
+plans
 
 # build / tests
 .angular
