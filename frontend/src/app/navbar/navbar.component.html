@@ -59,16 +59,25 @@
       }}</mat-icon>
     </button>
 
-    <!-- Avatar initiales (si connecté) ou icône profil générique (si non connecté) -->
+    <!-- Avatar (si connecté) ou icône profil générique (si non connecté) -->
     @if (auth.isLoggedIn()) {
       <button
         class="navbar__avatar-btn"
         (click)="onLogout()"
         [title]="'Se déconnecter (' + auth.displayName() + ')'"
       >
-        <span class="navbar__avatar-initial" [attr.aria-label]="auth.displayName()">
-          {{ auth.initial() }}
-        </span>
+        @if (auth.avatarUrl()) {
+          <img
+            class="navbar__avatar-img"
+            [src]="auth.avatarUrl()!"
+            [alt]="auth.displayName()"
+            referrerpolicy="no-referrer"
+          />
+        } @else {
+          <span class="navbar__avatar-initial" [attr.aria-label]="auth.displayName()">
+            {{ auth.initial() }}
+          </span>
+        }
       </button>
     } @else {
       <button class="navbar__icon-btn" aria-label="Mon compte">

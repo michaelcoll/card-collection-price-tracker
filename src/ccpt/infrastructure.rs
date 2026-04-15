@@ -42,8 +42,8 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         std::env::var("EDHREC_BASE_URL").unwrap_or("https://edhrec.com".to_string());
     let scryfall_base_url =
         std::env::var("SCRYFALL_BASE_URL").unwrap_or("https://api.scryfall.com".to_string());
-    let hanko_api_url =
-        std::env::var("HANKO_API_URL").expect("HANKO_API_URL must be set in environment variables");
+    let clerk_frontend_api_url = std::env::var("CLERK_FRONTEND_API_URL")
+        .expect("CLERK_FRONTEND_API_URL must be set in environment variables");
 
     let card_repository_adapter = Arc::new(CardRepositoryAdapter::new(pool.clone()));
     let set_name_repository_adapter = Arc::new(SetNameRepositoryAdapter::new(pool.clone()));
@@ -55,9 +55,12 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let stats_repository_adapter = Arc::new(StatsRepositoryAdapter::new(pool.clone()));
 
     let auth_service: Arc<dyn AuthService> = Arc::new(
-        crate::application::service::auth_service::HankoAuthService::new(hanko_api_url, None)
-            .await
-            .expect("Failed to initialize Hanko Auth Service"),
+        crate::application::service::auth_service::ClerkAuthService::new(
+            clerk_frontend_api_url,
+            None,
+        )
+        .await
+        .expect("Failed to initialize Clerk Auth Service"),
     );
 
     let card_collection_service = Arc::new(CardCollectionService::new(Arc::new(
@@ -223,7 +226,7 @@ mod tests {
         use wiremock::matchers::{method, path};
         use wiremock::{Mock, MockServer, ResponseTemplate};
 
-        // Démarrer un serveur mock pour simuler l'endpoint JWKS de Hanko
+        // Démarrer un serveur mock pour simuler l'endpoint JWKS de Clerk
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/.well-known/jwks.json"))
@@ -232,7 +235,7 @@ mod tests {
             .await;
 
         unsafe {
-            std::env::set_var("HANKO_API_URL", mock_server.uri());
+            std::env::set_var("CLERK_FRONTEND_API_URL", mock_server.uri());
             std::env::set_var(
                 "CARDMARKET_PRICE_GUIDES_URL",
                 "https://example.com/prices.json",
@@ -276,7 +279,7 @@ mod tests {
         let scryfall_url = "https://custom.scryfall.com";
 
         unsafe {
-            std::env::set_var("HANKO_API_URL", mock_server.uri());
+            std::env::set_var("CLERK_FRONTEND_API_URL", mock_server.uri());
             std::env::set_var("CARDMARKET_PRICE_GUIDES_URL", cardmarket_url);
             std::env::set_var("EDHREC_BASE_URL", edhrec_url);
             std::env::set_var("SCRYFALL_BASE_URL", scryfall_url);
@@ -316,7 +319,7 @@ mod tests {
             std::env::remove_var("CARDMARKET_PRICE_GUIDES_URL");
             std::env::remove_var("EDHREC_BASE_URL");
             std::env::remove_var("SCRYFALL_BASE_URL");
-            std::env::set_var("HANKO_API_URL", mock_server.uri());
+            std::env::set_var("CLERK_FRONTEND_API_URL", mock_server.uri());
         }
 
         let database_url = std::env::var("DATABASE_URL")
@@ -336,15 +339,15 @@ mod tests {
     }
 
     #[test]
-    fn create_infra_requires_hanko_api_url() {
-        // Clear HANKO_API_URL to verify it's required
+    fn create_infra_requires_clerk_frontend_api_url() {
+        // Clear CLERK_FRONTEND_API_URL to verify it's required
         unsafe {
-            std::env::remove_var("HANKO_API_URL");
+            std::env::remove_var("CLERK_FRONTEND_API_URL");
         }
 
-        let result = std::env::var("HANKO_API_URL");
+        let result = std::env::var("CLERK_FRONTEND_API_URL");
 
-        // Verify that HANKO_API_URL is not set
+        // Verify that CLERK_FRONTEND_API_URL is not set
         assert!(result.is_err());
         assert_eq!(result.err().unwrap(), std::env::VarError::NotPresent);
     }

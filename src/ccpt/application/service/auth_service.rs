@@ -6,10 +6,11 @@ use jsonwebtoken::{DecodingKey, Validation, decode, decode_header};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-struct HankoClaims {
+struct ClerkClaims {
     sub: String,
     email: Option<String>,
     exp: usize,
+    azp: Option<String>,
 }
 
 #[cfg_attr(test, mockall::automock)]
@@ -18,33 +19,39 @@ pub trait AuthService: Send + Sync {
     async fn validate_token(&self, token: &str) -> Result<User, AppError>;
 }
 
-pub struct HankoAuthService {
+pub struct ClerkAuthService {
     jwks: JwkSet,
-    api_url: String,
+    frontend_api_url: String,
 }
 
-impl HankoAuthService {
-    /// Creates a new HankoAuthService instance
+impl ClerkAuthService {
+    /// Creates a new ClerkAuthService instance
     ///
     /// # Arguments
-    /// * `api_url` - The Hanko API URL (e.g. `https://your-project.hanko.io`)
+    /// * `frontend_api_url` - The Clerk Frontend API URL (e.g. `https://musical-pup-67.clerk.accounts.dev`)
     /// * `jwks_url` - The URL to fetch the JWKS from. If None, defaults to
-    ///   `{api_url}/.well-known/jwks.json`
-    pub async fn new(api_url: String, jwks_url: Option<&str>) -> Result<Self, AppError> {
+    ///   `{frontend_api_url}/.well-known/jwks.json`
+    pub async fn new(frontend_api_url: String, jwks_url: Option<&str>) -> Result<Self, AppError> {
         let url = if let Some(url) = jwks_url {
             url.to_string()
         } else {
-            format!("{}/.well-known/jwks.json", api_url.trim_end_matches('/'))
+            format!(
+                "{}/.well-known/jwks.json",
+                frontend_api_url.trim_end_matches('/')
+            )
         };
 
         let jwks: JwkSet = reqwest::get(&url)
             .await
-            .map_err(|e| AppError::CallError(format!("Failed to fetch Hanko JWKS: {}", e)))?
+            .map_err(|e| AppError::CallError(format!("Failed to fetch Clerk JWKS: {}", e)))?
             .json()
             .await
-            .map_err(|e| AppError::CallError(format!("Failed to parse Hanko JWKS: {}", e)))?;
+            .map_err(|e| AppError::CallError(format!("Failed to parse Clerk JWKS: {}", e)))?;
 
-        Ok(Self { jwks, api_url })
+        Ok(Self {
+            jwks,
+            frontend_api_url,
+        })
     }
 
     /// Finds a JWK (JSON Web Key) by its key ID in the JWKS set
@@ -57,7 +64,7 @@ impl HankoAuthService {
 }
 
 #[async_trait]
-impl AuthService for HankoAuthService {
+impl AuthService for ClerkAuthService {
     async fn validate_token(&self, token: &str) -> Result<User, AppError> {
         let header = decode_header(token)
             .map_err(|e| AppError::AuthenticationError(format!("Invalid token header: {}", e)))?;
@@ -73,20 +80,20 @@ impl AuthService for HankoAuthService {
         let decoding_key = DecodingKey::from_jwk(jwk)
             .map_err(|e| AppError::AuthenticationError(format!("Invalid JWK: {}", e)))?;
 
-        // Use the algorithm specified in the token header (RS256 or ES256 depending on Hanko config)
+        // Use the algorithm specified in the token header (RS256 or ES256 depending on Clerk config)
         let mut validation = Validation::new(header.alg);
-        validation.set_issuer(&[&self.api_url]);
-        // Hanko does not use the `aud` claim — disable audience validation
+        validation.set_issuer(&[&self.frontend_api_url]);
+        // Clerk uses `azp` rather than `aud` for session tokens — disable audience validation
         validation.validate_aud = false;
 
-        let token_data = decode::<HankoClaims>(token, &decoding_key, &validation).map_err(|e| {
+        let token_data = decode::<ClerkClaims>(token, &decoding_key, &validation).map_err(|e| {
             AppError::AuthenticationError(format!("Token validation failed: {}", e))
         })?;
 
         Ok(User::new(
             token_data.claims.sub.clone(),
             token_data.claims.email.unwrap_or(token_data.claims.sub),
-            None, // Hanko JWT does not include name
+            None, // Clerk JWT does not include name
         ))
     }
 }
@@ -98,32 +105,32 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
-    fn hanko_claims_deserialization() {
+    fn clerk_claims_deserialization() {
         let json = r#"{
-            "sub": "b12a1b25-63ea-4890-b4ce-7a8ee5c45c97",
+            "sub": "user_clerk123",
             "email": "test@example.com",
             "exp": 1234567890
         }"#;
 
-        let claims: HankoClaims = serde_json::from_str(json).unwrap();
-        assert_eq!(claims.sub, "b12a1b25-63ea-4890-b4ce-7a8ee5c45c97");
+        let claims: ClerkClaims = serde_json::from_str(json).unwrap();
+        assert_eq!(claims.sub, "user_clerk123");
         assert_eq!(claims.email, Some("test@example.com".to_string()));
     }
 
     #[test]
-    fn hanko_claims_deserialization_without_email() {
+    fn clerk_claims_deserialization_without_email() {
         let json = r#"{
-            "sub": "b12a1b25-63ea-4890-b4ce-7a8ee5c45c97",
+            "sub": "user_clerk123",
             "exp": 1234567890
         }"#;
 
-        let claims: HankoClaims = serde_json::from_str(json).unwrap();
-        assert_eq!(claims.sub, "b12a1b25-63ea-4890-b4ce-7a8ee5c45c97");
+        let claims: ClerkClaims = serde_json::from_str(json).unwrap();
+        assert_eq!(claims.sub, "user_clerk123");
         assert_eq!(claims.email, None);
     }
 
     #[test]
-    fn creates_service_with_api_url() {
+    fn creates_service_with_frontend_api_url() {
         let jwks_json = r#"{
             "keys": [
                 {
@@ -137,12 +144,15 @@ mod tests {
             ]
         }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
-        assert_eq!(service.api_url, "https://test.hanko.io");
+        assert_eq!(
+            service.frontend_api_url,
+            "https://musical-pup-67.clerk.accounts.dev"
+        );
         assert_eq!(service.jwks.keys.len(), 1);
     }
 
@@ -150,9 +160,9 @@ mod tests {
     fn stores_empty_jwks_set() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         assert!(service.jwks.keys.is_empty());
@@ -182,9 +192,9 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let result = service.find_jwk("key-1");
@@ -208,9 +218,9 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let result = service.find_jwk("non-existent-key");
@@ -221,16 +231,16 @@ mod tests {
     fn returns_none_when_jwks_empty() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let result = service.find_jwk("any-key");
         assert!(result.is_none());
     }
 
-    // Tests for HankoAuthService::new
+    // Tests for ClerkAuthService::new
     #[tokio::test]
     async fn new_successfully_creates_service_with_valid_jwks() {
         let server = MockServer::start().await;
@@ -252,18 +262,23 @@ mod tests {
             .mount(&server)
             .await;
 
-        let service =
-            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri()))
-                .await
-                .unwrap();
+        let service = ClerkAuthService::new(
+            "https://musical-pup-67.clerk.accounts.dev".to_string(),
+            Some(&server.uri()),
+        )
+        .await
+        .unwrap();
 
-        assert_eq!(service.api_url, "https://test.hanko.io");
+        assert_eq!(
+            service.frontend_api_url,
+            "https://musical-pup-67.clerk.accounts.dev"
+        );
         assert_eq!(service.jwks.keys.len(), 1);
         assert!(service.find_jwk("test-key").is_some());
     }
 
     #[tokio::test]
-    async fn new_builds_jwks_url_from_api_url() {
+    async fn new_builds_jwks_url_from_frontend_api_url() {
         let server = MockServer::start().await;
         let jwks_json = r#"{
             "keys": [
@@ -291,12 +306,17 @@ mod tests {
             .mount(&server)
             .await;
 
-        let service =
-            HankoAuthService::new("https://my-app.hanko.io".to_string(), Some(&server.uri()))
-                .await
-                .unwrap();
+        let service = ClerkAuthService::new(
+            "https://musical-pup-67.clerk.accounts.dev".to_string(),
+            Some(&server.uri()),
+        )
+        .await
+        .unwrap();
 
-        assert_eq!(service.api_url, "https://my-app.hanko.io");
+        assert_eq!(
+            service.frontend_api_url,
+            "https://musical-pup-67.clerk.accounts.dev"
+        );
         assert_eq!(service.jwks.keys.len(), 2);
         assert!(service.find_jwk("key-1").is_some());
         assert!(service.find_jwk("key-2").is_some());
@@ -319,12 +339,12 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
-        let token_with_invalid_jwk = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuaGFua28uaW8iLCJleHAiOjk5OTk5OTk5OTl9.signature";
+        let token_with_invalid_jwk = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuY2xlcmsuYWNjb3VudHMuZGV2IiwiZXhwIjo5OTk5OTk5OTk5fQ.signature";
 
         let result = service.validate_token(token_with_invalid_jwk).await;
         assert!(result.is_err());
@@ -354,12 +374,12 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
-        let token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuaGFua28uaW8iLCJleHAiOjk5OTk5OTk5OTl9.signature";
+        let token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuY2xlcmsuYWNjb3VudHMuZGV2IiwiZXhwIjo5OTk5OTk5OTk5fQ.signature";
 
         let result = service.validate_token(token).await;
         assert!(result.is_err());
@@ -381,9 +401,9 @@ mod tests {
     async fn rejects_token_with_missing_kid_in_header() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let token_without_kid =
@@ -404,12 +424,12 @@ mod tests {
     async fn rejects_token_with_unknown_kid() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
-        let token_with_unknown_kid = "eyJhbGciOiJSUzI1NiIsImtpZCI6InVua25vd24ta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuaGFua28uaW8iLCJleHAiOjk5OTk5OTk5OTl9.signature";
+        let token_with_unknown_kid = "eyJhbGciOiJSUzI1NiIsImtpZCI6InVua25vd24ta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL211c2ljYWwtcHVwLTY3LmNsZXJrLmFjY291bnRzLmRldiIsImV4cCI6OTk5OTk5OTk5OX0.signature";
 
         let result = service.validate_token(token_with_unknown_kid).await;
         assert!(result.is_err());
@@ -426,9 +446,9 @@ mod tests {
     async fn rejects_malformed_token() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let result = service.validate_token("not-a-valid-token").await;
@@ -446,9 +466,9 @@ mod tests {
     async fn rejects_token_with_invalid_base64() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let result = service
@@ -480,12 +500,12 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
-        let token_wrong_algo = "eyJhbGciOiJIUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL3Rlc3QuaGFua28uaW8iLCJleHAiOjk5OTk5OTk5OTl9.signature";
+        let token_wrong_algo = "eyJhbGciOiJIUzI1NiIsImtpZCI6InRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpc3MiOiJodHRwczovL211c2ljYWwtcHVwLTY3LmNsZXJrLmFjY291bnRzLmRldiIsImV4cCI6OTk5OTk5OTk5OX0.signature";
 
         let result = service.validate_token(token_wrong_algo).await;
         assert!(result.is_err());
@@ -502,9 +522,9 @@ mod tests {
     async fn rejects_empty_token() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let result = service.validate_token("").await;
@@ -522,9 +542,9 @@ mod tests {
     async fn rejects_token_with_incomplete_jwt_parts() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let incomplete_token = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5In0.eyJzdWIiOiIxMjMifQ";
@@ -544,9 +564,9 @@ mod tests {
     async fn rejects_token_with_corrupted_payload() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let corrupted_token =
@@ -579,10 +599,12 @@ mod tests {
             .mount(&server)
             .await;
 
-        let service =
-            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri()))
-                .await
-                .unwrap();
+        let service = ClerkAuthService::new(
+            "https://musical-pup-67.clerk.accounts.dev".to_string(),
+            Some(&server.uri()),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(service.jwks.keys.len(), 3);
         assert!(service.find_jwk("rsa-key-1").is_some());
@@ -600,13 +622,16 @@ mod tests {
             .mount(&server)
             .await;
 
-        let result =
-            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri())).await;
+        let result = ClerkAuthService::new(
+            "https://musical-pup-67.clerk.accounts.dev".to_string(),
+            Some(&server.uri()),
+        )
+        .await;
 
         assert!(result.is_err());
         match result {
             Err(AppError::CallError(msg)) => {
-                assert!(msg.contains("Failed to parse Hanko JWKS"));
+                assert!(msg.contains("Failed to parse Clerk JWKS"));
             }
             _ => panic!("Expected CallError when response is not JSON"),
         }
@@ -621,8 +646,11 @@ mod tests {
             .mount(&server)
             .await;
 
-        let result =
-            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri())).await;
+        let result = ClerkAuthService::new(
+            "https://musical-pup-67.clerk.accounts.dev".to_string(),
+            Some(&server.uri()),
+        )
+        .await;
 
         assert!(result.is_err());
     }
@@ -636,8 +664,11 @@ mod tests {
             .mount(&server)
             .await;
 
-        let result =
-            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri())).await;
+        let result = ClerkAuthService::new(
+            "https://musical-pup-67.clerk.accounts.dev".to_string(),
+            Some(&server.uri()),
+        )
+        .await;
 
         assert!(result.is_err());
     }
@@ -663,12 +694,17 @@ mod tests {
             .mount(&server)
             .await;
 
-        let service =
-            HankoAuthService::new("https://test.hanko.io".to_string(), Some(&server.uri()))
-                .await
-                .unwrap();
+        let service = ClerkAuthService::new(
+            "https://musical-pup-67.clerk.accounts.dev".to_string(),
+            Some(&server.uri()),
+        )
+        .await
+        .unwrap();
 
-        assert_eq!(service.api_url, "https://test.hanko.io");
+        assert_eq!(
+            service.frontend_api_url,
+            "https://musical-pup-67.clerk.accounts.dev"
+        );
         assert_eq!(service.jwks.keys.len(), 1);
         assert!(service.find_jwk("complete-key").is_some());
     }
@@ -677,9 +713,9 @@ mod tests {
     async fn rejects_token_with_special_characters_in_payload() {
         let jwks_json = r#"{ "keys": [] }"#;
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let token_with_special_chars =
@@ -707,9 +743,9 @@ mod tests {
         }"#;
 
         let jwks: JwkSet = serde_json::from_str(jwks_json).unwrap();
-        let service = HankoAuthService {
+        let service = ClerkAuthService {
             jwks,
-            api_url: "https://test.hanko.io".to_string(),
+            frontend_api_url: "https://musical-pup-67.clerk.accounts.dev".to_string(),
         };
 
         let result = service.find_jwk("correct-key");

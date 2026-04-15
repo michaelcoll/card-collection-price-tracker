@@ -1,31 +1,36 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { Hanko } from '@teamhanko/hanko-elements';
-import { environment } from '../../../environments/environment';
+import type { Resources } from '@clerk/shared/types';
+import { CLERK } from '../clerk.token';
 
 @Component({
   selector: 'app-login-dialog',
   standalone: true,
   imports: [MatDialogModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './login-dialog.component.html',
   styleUrl: './login-dialog.component.css',
 })
 export class LoginDialogComponent implements OnInit, OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<LoginDialogComponent>);
+  private readonly clerk = inject(CLERK);
+  private listenerCleanup?: () => void;
 
-  // Instance locale pour écouter l'événement de fin d'authentification
-  private readonly hanko = new Hanko(environment.hankoApiUrl);
-  private cleanupFn: (() => void) | undefined;
+  @ViewChild('signInContainer', { static: true })
+  signInContainer!: ElementRef<HTMLDivElement>;
 
   ngOnInit(): void {
-    // Ferme le dialog dès que l'authentification est complète
-    this.cleanupFn = this.hanko.onSessionCreated(() => {
-      this.dialogRef.close(true);
+    this.clerk.mountSignIn(this.signInContainer.nativeElement);
+
+    // Ferme le dialog dès que la session est créée
+    this.listenerCleanup = this.clerk.addListener(({ session }: Resources) => {
+      if (session) {
+        this.dialogRef.close(true);
+      }
     });
   }
 
   ngOnDestroy(): void {
-    this.cleanupFn?.();
+    this.listenerCleanup?.();
+    this.clerk.unmountSignIn(this.signInContainer.nativeElement);
   }
 }
