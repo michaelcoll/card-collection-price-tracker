@@ -207,8 +207,9 @@ mod tests {
     fn make_app_state_with_collection(mock: MockGetCollectionUseCase) -> AppState {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
-        use crate::application::use_case::MockImportCardUseCase;
-        use crate::application::use_case::MockStatsUseCase;
+        use crate::application::use_case::{
+            MockImportCardUseCase, MockImportPriceUseCase, MockStatsUseCase,
+        };
 
         AppState {
             import_card_use_case: Arc::new(MockImportCardUseCase::new()),
@@ -216,6 +217,7 @@ mod tests {
             stats_use_case: Arc::new(MockStatsUseCase::new()),
             auth_service: Arc::new(MockAuthService::new()),
             get_collection_use_case: Arc::new(mock),
+            import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
         }
     }
 
@@ -689,7 +691,7 @@ mod tests {
 
     #[tokio::test]
     async fn import_cards_succeeds_with_valid_csv() {
-        let app_state = AppState::for_testing(std::sync::Arc::new(
+        let app_state = AppState::for_testing(Arc::new(
             crate::application::use_case::MockStatsUseCase::new(),
         ));
 
@@ -710,7 +712,7 @@ mod tests {
 
     #[tokio::test]
     async fn import_cards_fails_with_invalid_utf8() {
-        let app_state = AppState::for_testing(std::sync::Arc::new(
+        let app_state = AppState::for_testing(Arc::new(
             crate::application::use_case::MockStatsUseCase::new(),
         ));
 
@@ -736,7 +738,7 @@ mod tests {
 
     #[tokio::test]
     async fn import_cards_succeeds_with_multiple_cards() {
-        let app_state = AppState::for_testing(std::sync::Arc::new(
+        let app_state = AppState::for_testing(Arc::new(
             crate::application::use_case::MockStatsUseCase::new(),
         ));
 
@@ -758,7 +760,7 @@ mod tests {
 
     #[tokio::test]
     async fn import_cards_succeeds_with_foil_cards() {
-        let app_state = AppState::for_testing(std::sync::Arc::new(
+        let app_state = AppState::for_testing(Arc::new(
             crate::application::use_case::MockStatsUseCase::new(),
         ));
 
@@ -779,7 +781,7 @@ mod tests {
 
     #[tokio::test]
     async fn import_cards_succeeds_with_special_characters_in_card_name() {
-        let app_state = AppState::for_testing(std::sync::Arc::new(
+        let app_state = AppState::for_testing(Arc::new(
             crate::application::use_case::MockStatsUseCase::new(),
         ));
 

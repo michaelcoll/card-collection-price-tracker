@@ -17,7 +17,7 @@ use crate::infrastructure::adapter_out::repository::cardmarket_price_repository_
 use crate::infrastructure::adapter_out::repository::collection_price_history_repository_adapter::CollectionPriceHistoryRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::collection_repository_adapter::CollectionRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::stats_repository_adapter::StatsRepositoryAdapter;
-use adapter_in::stats_controller::create_stats_router;
+use adapter_in::maintenance_controller::create_maintenance_router;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
 use adapter_out::repository::card_repository_adapter::CardRepositoryAdapter;
 use adapter_out::repository::set_names_repository_adapter::SetNameRepositoryAdapter;
@@ -37,6 +37,7 @@ pub struct AppState {
     pub stats_use_case: Arc<dyn StatsUseCase>,
     pub auth_service: Arc<dyn AuthService>,
     pub get_collection_use_case: Arc<dyn GetCollectionUseCase>,
+    pub import_price_use_case: Arc<dyn ImportPriceUseCase>,
 }
 
 pub async fn create_infra(pool: Pool<Postgres>) -> Router {
@@ -90,7 +91,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         card_prices_view_repository_adapter.clone(),
     ));
 
-    let import_price_service = Arc::new(ImportPriceService::new(
+    let import_price_service: Arc<dyn ImportPriceUseCase> = Arc::new(ImportPriceService::new(
         card_market_caller_adapter,
         card_market_repository_adapter,
         card_prices_view_repository_adapter,
@@ -106,11 +107,12 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         stats_use_case: stats_service,
         auth_service,
         get_collection_use_case: collection_service,
+        import_price_use_case: import_price_service.clone(),
     };
 
     let mut cron = AsyncCron::new(Utc);
 
-    cron.add_fn("0 0 */6 * * *", move || {
+    cron.add_fn("0 0 */12 * * *", move || {
         let service = import_price_service.clone();
         async move {
             service
@@ -126,13 +128,25 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
 
     Router::new()
         .nest("/cards", create_card_router())
-        .nest("/stats", create_stats_router())
+        .nest("/maintenance", create_maintenance_router())
         .with_state(app_state)
 }
 
 #[cfg(test)]
 impl AppState {
     pub fn for_testing(stats_use_case: Arc<dyn StatsUseCase>) -> Self {
+        use crate::application::use_case::MockImportPriceUseCase;
+        let mut mock_import_price = MockImportPriceUseCase::new();
+        mock_import_price
+            .expect_import_prices_for_current_date()
+            .returning(|| Box::pin(async { Ok(()) }));
+        Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price))
+    }
+
+    pub fn for_testing_with_import_price(
+        stats_use_case: Arc<dyn StatsUseCase>,
+        import_price_use_case: Arc<dyn ImportPriceUseCase>,
+    ) -> Self {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{MockGetCollectionUseCase, MockImportCardUseCase};
@@ -169,6 +183,7 @@ impl AppState {
             stats_use_case,
             auth_service: Arc::new(mock_auth),
             get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
+            import_price_use_case,
         }
     }
 }
@@ -187,8 +202,7 @@ mod tests {
             .expect_get_stats()
             .returning(|| Box::pin(async { Err(AppError::RepositoryError("".to_string())) }));
 
-        let stats_use_case = Arc::new(mock_stats);
-        let app_state = AppState::for_testing(stats_use_case);
+        let app_state = AppState::for_testing(Arc::new(mock_stats));
 
         let result = app_state.stats_use_case.get_stats().await;
         assert!(result.is_err());
@@ -196,8 +210,7 @@ mod tests {
 
     #[tokio::test]
     async fn for_testing_edh_rec_caller_returns_card_info_with_zero_values() {
-        let mock_stats = Arc::new(MockStatsUseCase::new());
-        let app_state = AppState::for_testing(mock_stats);
+        let app_state = AppState::for_testing(Arc::new(MockStatsUseCase::new()));
 
         let result = app_state
             .edh_rec_caller_adapter
@@ -212,8 +225,7 @@ mod tests {
 
     #[tokio::test]
     async fn for_testing_import_card_use_case_succeeds_with_any_csv() {
-        let mock_stats = Arc::new(MockStatsUseCase::new());
-        let app_state = AppState::for_testing(mock_stats);
+        let app_state = AppState::for_testing(Arc::new(MockStatsUseCase::new()));
 
         let result = app_state
             .import_card_use_case
@@ -225,8 +237,7 @@ mod tests {
 
     #[test]
     fn for_testing_initializes_all_components() {
-        let mock_stats = Arc::new(MockStatsUseCase::new());
-        let app_state = AppState::for_testing(mock_stats);
+        let app_state = AppState::for_testing(Arc::new(MockStatsUseCase::new()));
 
         let import_card_ptr = Arc::as_ptr(&app_state.import_card_use_case);
         let edh_rec_ptr = Arc::as_ptr(&app_state.edh_rec_caller_adapter);

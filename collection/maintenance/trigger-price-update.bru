@@ -1,0 +1,16 @@
+meta {
+  name: trigger price update
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/maintenance/trigger-price-update
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

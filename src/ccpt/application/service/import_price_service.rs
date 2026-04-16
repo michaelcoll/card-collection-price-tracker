@@ -46,7 +46,7 @@ impl ImportPriceUseCase for ImportPriceService {
 
         println!(
             "{} Imported {} prices for {} in {} ms",
-            "❕".yellow().bold(),
+            "ℹ".yellow().bold(),
             price_count,
             &date,
             duration.as_millis()

@@ -6,7 +6,7 @@ use serde_json::json;
 
 pub mod auth_extractor;
 pub mod card_controller;
-pub mod stats_controller;
+pub mod maintenance_controller;
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
