@@ -1,4 +1,5 @@
 pub mod card;
+pub mod collection;
 pub mod error;
 pub mod language_code;
 pub mod price;

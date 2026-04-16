@@ -1,5 +1,6 @@
 use crate::application::error::AppError;
 use crate::domain::card::{Card, CardId};
+use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::price::FullPriceGuide;
 use crate::domain::set_name::{SetCode, SetName};
 use crate::domain::user::User;
@@ -72,4 +73,14 @@ pub trait StatsRepository: Send + Sync {
     async fn get_card_number(&self) -> Result<u32, AppError>;
     async fn get_card_price_number(&self) -> Result<u32, AppError>;
     async fn get_db_size(&self) -> Result<u16, AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait CollectionRepository: Send + Sync {
+    async fn get_paginated(
+        &self,
+        user_id: &str,
+        query: CollectionQuery,
+    ) -> Result<PaginatedCollection, AppError>;
 }

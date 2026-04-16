@@ -1,6 +1,7 @@
 use crate::application::error::AppError;
 use async_trait::async_trait;
 
+use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::stats::Stats;
 use crate::domain::user::User;
 #[cfg(test)]
@@ -34,4 +35,14 @@ pub trait ImportPriceUseCase: Send + Sync {
 #[cfg_attr(test, automock)]
 pub trait StatsUseCase: Send + Sync {
     async fn get_stats(&self) -> Result<Stats, AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait GetCollectionUseCase: Send + Sync {
+    async fn get_collection(
+        &self,
+        user_id: &str,
+        query: CollectionQuery,
+    ) -> Result<PaginatedCollection, AppError>;
 }

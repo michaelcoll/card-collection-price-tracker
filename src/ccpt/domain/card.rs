@@ -1,4 +1,5 @@
 use crate::domain::language_code::LanguageCode;
+use crate::domain::price::PriceGuide;
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
 use std::fmt::{Display, Formatter};
@@ -51,6 +52,7 @@ pub struct Card {
     pub purchase_price: u32,
     pub scryfall_id: uuid::Uuid,
     pub cardmarket_id: Option<u32>,
+    pub price_guide: Option<PriceGuide>,
 }
 
 impl Card {
@@ -78,6 +80,7 @@ impl Card {
             purchase_price,
             scryfall_id: uuid::Uuid::default(),
             cardmarket_id: None,
+            price_guide: None,
         }
     }
 
@@ -106,6 +109,7 @@ impl Card {
             purchase_price,
             scryfall_id,
             cardmarket_id,
+            price_guide: None,
         }
     }
 }

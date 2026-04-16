@@ -1,6 +1,6 @@
 use crate::domain::card::{Card, CardId};
 use crate::domain::language_code::LanguageCode;
-use crate::domain::price::Price;
+use crate::domain::price::{Price, PriceGuide};
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
 use crate::domain::user::User;
@@ -59,6 +59,7 @@ impl From<CardEntity> for Card {
             purchase_price: entity.purchase_price as u32,
             scryfall_id: entity.scryfall_id,
             cardmarket_id: entity.cardmarket_id.map(|id| id as u32),
+            price_guide: None,
         }
     }
 }
@@ -129,6 +130,79 @@ pub struct CountEntity {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SizeEntity {
     pub size: Option<i64>,
+}
+
+#[derive(sqlx::FromRow)]
+pub struct CardWithPriceEntity {
+    pub set_code: String,
+    pub set_name: String,
+    pub collector_number: String,
+    pub language_code: String,
+    pub foil: bool,
+    pub name: String,
+    pub rarity: String,
+    pub scryfall_id: Uuid,
+    pub quantity: i32,
+    pub purchase_price: i32,
+    pub avg: Option<i32>,
+    pub low: Option<i32>,
+    pub trend: Option<i32>,
+    pub avg1: Option<i32>,
+    pub avg7: Option<i32>,
+    pub avg30: Option<i32>,
+}
+
+impl From<CardWithPriceEntity> for Card {
+    fn from(e: CardWithPriceEntity) -> Self {
+        let price_guide = if e.avg.is_some() || e.low.is_some() {
+            Some(PriceGuide::new(
+                e.low
+                    .map(|v| v as u32)
+                    .map(|v| Price { value: Some(v) })
+                    .unwrap_or_else(Price::empty),
+                e.trend
+                    .map(|v| v as u32)
+                    .map(|v| Price { value: Some(v) })
+                    .unwrap_or_else(Price::empty),
+                e.avg
+                    .map(|v| v as u32)
+                    .map(|v| Price { value: Some(v) })
+                    .unwrap_or_else(Price::empty),
+                e.avg1
+                    .map(|v| v as u32)
+                    .map(|v| Price { value: Some(v) })
+                    .unwrap_or_else(Price::empty),
+                e.avg7
+                    .map(|v| v as u32)
+                    .map(|v| Price { value: Some(v) })
+                    .unwrap_or_else(Price::empty),
+                e.avg30
+                    .map(|v| v as u32)
+                    .map(|v| Price { value: Some(v) })
+                    .unwrap_or_else(Price::empty),
+            ))
+        } else {
+            None
+        };
+
+        let set_code = SetCode::new(e.set_code.clone());
+        Card {
+            id: CardId::new(
+                set_code.clone(),
+                e.collector_number,
+                LanguageCode::new(e.language_code),
+                e.foil,
+            ),
+            set_name: SetName::new(set_code, e.set_name),
+            name: e.name,
+            rarity_code: from_db_rarity(e.rarity),
+            scryfall_id: e.scryfall_id,
+            cardmarket_id: None,
+            quantity: e.quantity as u8,
+            purchase_price: e.purchase_price as u32,
+            price_guide,
+        }
+    }
 }
 
 #[cfg(test)]
