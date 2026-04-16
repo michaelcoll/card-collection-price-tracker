@@ -9,8 +9,9 @@ use crate::application::use_case::{ImportCardUseCase, ImportPriceUseCase, StatsU
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
 use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCallerAdapter;
-use crate::infrastructure::adapter_out::repository::card_collection_repository_adapter::CardCollectionRepositoryAdapter;
-use crate::infrastructure::adapter_out::repository::cardmarket_repository_adapter::CardMarketRepositoryAdapter;
+use crate::infrastructure::adapter_out::repository::card_prices_view_repository_adapter::CardPricesViewRepositoryAdapter;
+use crate::infrastructure::adapter_out::repository::cardmarket_price_repository_adapter::CardMarketPriceRepositoryAdapter;
+use crate::infrastructure::adapter_out::repository::collection_price_history_repository_adapter::CollectionPriceHistoryRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::stats_repository_adapter::StatsRepositoryAdapter;
 use adapter_in::stats_controller::create_stats_router;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
@@ -47,7 +48,10 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
 
     let card_repository_adapter = Arc::new(CardRepositoryAdapter::new(pool.clone()));
     let set_name_repository_adapter = Arc::new(SetNameRepositoryAdapter::new(pool.clone()));
-    let card_market_repository_adapter = Arc::new(CardMarketRepositoryAdapter::new(pool.clone()));
+    let card_market_repository_adapter =
+        Arc::new(CardMarketPriceRepositoryAdapter::new(pool.clone()));
+    let card_prices_view_repository_adapter =
+        Arc::new(CardPricesViewRepositoryAdapter::new(pool.clone()));
     let card_market_caller_adapter =
         Arc::new(CardMarketCallerAdapter::new(cardmarket_price_guides_url));
     let edh_rec_caller_adapter = Arc::new(EdhRecCallerAdapter::new(edh_rec_base_url));
@@ -64,7 +68,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     );
 
     let card_collection_service = Arc::new(CardCollectionService::new(Arc::new(
-        CardCollectionRepositoryAdapter::new(pool.clone()),
+        CollectionPriceHistoryRepositoryAdapter::new(pool.clone()),
     )));
 
     let update_card_market_id_service = Arc::new(UpdateCardMarketIdService::new(
@@ -82,6 +86,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let import_price_service = Arc::new(ImportPriceService::new(
         card_market_caller_adapter,
         card_market_repository_adapter,
+        card_prices_view_repository_adapter,
         card_collection_service.clone(),
     ));
 

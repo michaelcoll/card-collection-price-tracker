@@ -1,15 +1,15 @@
 use crate::application::error::AppError;
-use crate::application::repository::CardCollectionRepository;
+use crate::application::repository::CollectionPriceHistoryRepository;
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
 use async_trait::async_trait;
 use std::sync::Arc;
 
 pub struct CardCollectionService {
-    card_collection_repository: Arc<dyn CardCollectionRepository>,
+    card_collection_repository: Arc<dyn CollectionPriceHistoryRepository>,
 }
 
 impl CardCollectionService {
-    pub fn new(card_collection_repository: Arc<dyn CardCollectionRepository>) -> Self {
+    pub fn new(card_collection_repository: Arc<dyn CollectionPriceHistoryRepository>) -> Self {
         Self {
             card_collection_repository,
         }
@@ -39,13 +39,13 @@ impl CardCollectionPriceCalculationUseCase for CardCollectionService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::repository::MockCardCollectionRepository;
+    use crate::application::repository::MockCollectionPriceHistoryRepository;
     use crate::domain::user::User;
     use chrono::NaiveDate;
 
     #[tokio::test]
     async fn calculate_total_price_succeeds_with_no_dates_and_users() {
-        let mut mock_repository = MockCardCollectionRepository::new();
+        let mut mock_repository = MockCollectionPriceHistoryRepository::new();
         mock_repository
             .expect_get_date_and_user_to_update()
             .times(1)
@@ -59,7 +59,7 @@ mod tests {
 
     #[tokio::test]
     async fn calculate_total_price_updates_single_date_and_user() {
-        let mut mock_repository = MockCardCollectionRepository::new();
+        let mut mock_repository = MockCollectionPriceHistoryRepository::new();
 
         mock_repository
             .expect_get_date_and_user_to_update()
@@ -86,7 +86,7 @@ mod tests {
 
     #[tokio::test]
     async fn calculate_total_price_updates_multiple_dates_and_users() {
-        let mut mock_repository = MockCardCollectionRepository::new();
+        let mut mock_repository = MockCollectionPriceHistoryRepository::new();
 
         mock_repository
             .expect_get_date_and_user_to_update()
@@ -123,7 +123,7 @@ mod tests {
 
     #[tokio::test]
     async fn calculate_total_price_returns_error_when_get_dates_fails() {
-        let mut mock_repository = MockCardCollectionRepository::new();
+        let mut mock_repository = MockCollectionPriceHistoryRepository::new();
 
         mock_repository
             .expect_get_date_and_user_to_update()
@@ -140,7 +140,7 @@ mod tests {
 
     #[tokio::test]
     async fn calculate_total_price_stops_on_first_update_failure() {
-        let mut mock_repository = MockCardCollectionRepository::new();
+        let mut mock_repository = MockCollectionPriceHistoryRepository::new();
 
         mock_repository
             .expect_get_date_and_user_to_update()

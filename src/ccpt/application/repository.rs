@@ -45,19 +45,25 @@ pub trait SetNameRepository: Send + Sync {
 
 #[async_trait]
 #[cfg_attr(test, automock)]
-pub trait CardCollectionRepository: Send + Sync {
+pub trait CollectionPriceHistoryRepository: Send + Sync {
     async fn get_date_and_user_to_update(&self) -> Result<Vec<(NaiveDate, User)>, AppError>;
     async fn update_for_date_and_user(&self, date: NaiveDate, user: User) -> Result<(), AppError>;
 }
 
 #[async_trait]
 #[cfg_attr(test, automock)]
-pub trait CardMarketRepository: Send + Sync {
+pub trait CardMarketPriceRepository: Send + Sync {
     async fn save(
         &self,
         date: NaiveDate,
         price_guides: Vec<FullPriceGuide>,
     ) -> Result<(), AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait CardPricesViewRepository: Send + Sync {
+    async fn refresh(&self) -> Result<(), AppError>;
 }
 
 #[async_trait]

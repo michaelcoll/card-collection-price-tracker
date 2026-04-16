@@ -1,22 +1,22 @@
 use crate::application::error::AppError;
-use crate::application::repository::CardCollectionRepository;
+use crate::application::repository::CollectionPriceHistoryRepository;
 use crate::domain::user::User;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use sqlx::{Pool, Postgres};
 
-pub struct CardCollectionRepositoryAdapter {
+pub struct CollectionPriceHistoryRepositoryAdapter {
     pool: Pool<Postgres>,
 }
 
-impl CardCollectionRepositoryAdapter {
+impl CollectionPriceHistoryRepositoryAdapter {
     pub fn new(pool: Pool<Postgres>) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl CardCollectionRepository for CardCollectionRepositoryAdapter {
+impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapter {
     async fn get_date_and_user_to_update(&self) -> Result<Vec<(NaiveDate, User)>, AppError> {
         let rows = sqlx::query!(
             r#"
@@ -86,7 +86,7 @@ mod tests {
 
     #[sqlx::test]
     async fn get_date_and_user_to_update_returns_empty_when_no_data(pool: PgPool) {
-        let adapter = CardCollectionRepositoryAdapter::new(pool);
+        let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool);
         let result = adapter.get_date_and_user_to_update().await.unwrap();
 
         assert!(result.is_empty());
@@ -94,7 +94,7 @@ mod tests {
 
     #[sqlx::test]
     async fn get_date_and_user_to_update_returns_combinations_not_in_history(pool: PgPool) {
-        let adapter = CardCollectionRepositoryAdapter::new(pool.clone());
+        let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
 
         sqlx::query!(
             r#"
@@ -147,7 +147,7 @@ mod tests {
 
     #[sqlx::test]
     async fn get_date_and_user_to_update_excludes_combinations_in_history(pool: PgPool) {
-        let adapter = CardCollectionRepositoryAdapter::new(pool.clone());
+        let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
 
         sqlx::query!(
             r#"
@@ -210,7 +210,7 @@ mod tests {
 
     #[sqlx::test]
     async fn get_date_and_user_to_update_returns_multiple_combinations(pool: PgPool) {
-        let adapter = CardCollectionRepositoryAdapter::new(pool.clone());
+        let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
 
         sqlx::query!(
             r#"
@@ -285,7 +285,7 @@ mod tests {
 
     #[sqlx::test]
     async fn update_for_date_and_user_filters_by_user(pool: PgPool) {
-        let adapter = CardCollectionRepositoryAdapter::new(pool.clone());
+        let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
         let user1 = User::from_id("user1".to_string());
         let date = NaiveDate::from_ymd_opt(2025, 12, 25).unwrap();
 
