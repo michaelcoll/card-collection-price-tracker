@@ -1,22 +1,22 @@
 use crate::application::error::AppError;
-use crate::application::repository::CardMarketRepository;
+use crate::application::repository::CardMarketPriceRepository;
 use crate::domain::price::FullPriceGuide;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use sqlx::{Pool, Postgres, QueryBuilder};
 
-pub struct CardMarketRepositoryAdapter {
+pub struct CardMarketPriceRepositoryAdapter {
     pool: Pool<Postgres>,
 }
 
-impl CardMarketRepositoryAdapter {
+impl CardMarketPriceRepositoryAdapter {
     pub fn new(pool: Pool<Postgres>) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl CardMarketRepository for CardMarketRepositoryAdapter {
+impl CardMarketPriceRepository for CardMarketPriceRepositoryAdapter {
     async fn save(
         &self,
         date: NaiveDate,
@@ -126,7 +126,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_save_new_cardmarket_price(pool: Pool<Postgres>) {
-        let repository = CardMarketRepositoryAdapter::new(pool.clone());
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let id_produit = 12345u32;
         let price_guides = create_full_price_guide(
@@ -168,7 +168,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_save_updates_existing_cardmarket_price(pool: Pool<Postgres>) {
-        let repository = CardMarketRepositoryAdapter::new(pool.clone());
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let id_produit = 12346u32;
 
@@ -218,7 +218,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_save_with_empty_price_values(pool: Pool<Postgres>) {
-        let repository = CardMarketRepositoryAdapter::new(pool.clone());
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let id_produit = 12347u32;
 
@@ -261,7 +261,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_save_handles_multiple_products_same_date(pool: Pool<Postgres>) {
-        let repository = CardMarketRepositoryAdapter::new(pool.clone());
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
         let price_guides_1 = create_full_price_guide(
