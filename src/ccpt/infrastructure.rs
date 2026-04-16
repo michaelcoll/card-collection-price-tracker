@@ -81,6 +81,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         card_repository_adapter.clone(),
         set_name_repository_adapter,
         update_card_market_id_service.clone(),
+        card_prices_view_repository_adapter.clone(),
     ));
 
     let import_price_service = Arc::new(ImportPriceService::new(
