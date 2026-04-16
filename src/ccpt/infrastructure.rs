@@ -1,17 +1,21 @@
 use crate::application::caller::EdhRecCaller;
 use crate::application::service::auth_service::AuthService;
 use crate::application::service::card_collection_service::CardCollectionService;
+use crate::application::service::collection_service::CollectionService;
 use crate::application::service::import_card_service::ImportCardService;
 use crate::application::service::import_price_service::ImportPriceService;
 use crate::application::service::stats_service::StatsService;
 use crate::application::service::update_card_market_service::UpdateCardMarketIdService;
-use crate::application::use_case::{ImportCardUseCase, ImportPriceUseCase, StatsUseCase};
+use crate::application::use_case::{
+    GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase, StatsUseCase,
+};
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
 use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCallerAdapter;
 use crate::infrastructure::adapter_out::repository::card_prices_view_repository_adapter::CardPricesViewRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::cardmarket_price_repository_adapter::CardMarketPriceRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::collection_price_history_repository_adapter::CollectionPriceHistoryRepositoryAdapter;
+use crate::infrastructure::adapter_out::repository::collection_repository_adapter::CollectionRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::stats_repository_adapter::StatsRepositoryAdapter;
 use adapter_in::stats_controller::create_stats_router;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
@@ -32,6 +36,7 @@ pub struct AppState {
     pub edh_rec_caller_adapter: Arc<dyn EdhRecCaller>,
     pub stats_use_case: Arc<dyn StatsUseCase>,
     pub auth_service: Arc<dyn AuthService>,
+    pub get_collection_use_case: Arc<dyn GetCollectionUseCase>,
 }
 
 pub async fn create_infra(pool: Pool<Postgres>) -> Router {
@@ -57,6 +62,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let edh_rec_caller_adapter = Arc::new(EdhRecCallerAdapter::new(edh_rec_base_url));
     let scryfall_caller_adapter = Arc::new(ScryfallCallerAdapter::new(scryfall_base_url));
     let stats_repository_adapter = Arc::new(StatsRepositoryAdapter::new(pool.clone()));
+    let collection_repository_adapter = Arc::new(CollectionRepositoryAdapter::new(pool.clone()));
 
     let auth_service: Arc<dyn AuthService> = Arc::new(
         crate::application::service::auth_service::ClerkAuthService::new(
@@ -92,12 +98,14 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     ));
 
     let stats_service = Arc::new(StatsService::new(stats_repository_adapter));
+    let collection_service = Arc::new(CollectionService::new(collection_repository_adapter));
 
     let app_state = AppState {
         import_card_use_case: import_card_service,
         edh_rec_caller_adapter,
         stats_use_case: stats_service,
         auth_service,
+        get_collection_use_case: collection_service,
     };
 
     let mut cron = AsyncCron::new(Utc);
@@ -127,7 +135,7 @@ impl AppState {
     pub fn for_testing(stats_use_case: Arc<dyn StatsUseCase>) -> Self {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
-        use crate::application::use_case::MockImportCardUseCase;
+        use crate::application::use_case::{MockGetCollectionUseCase, MockImportCardUseCase};
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
 
@@ -160,6 +168,7 @@ impl AppState {
             edh_rec_caller_adapter: Arc::new(mock_edh_rec),
             stats_use_case,
             auth_service: Arc::new(mock_auth),
+            get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
         }
     }
 }

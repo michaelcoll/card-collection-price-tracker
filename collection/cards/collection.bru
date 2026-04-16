@@ -1,0 +1,69 @@
+meta {
+  name: collection
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/cards?page=0&page_size=20&sort_by=avg&sort_dir=desc
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  page_size: 20
+  sort_by: avg
+  sort_dir: desc
+}
+
+docs {
+  ## Récupération paginée de la collection de cartes
+
+  Cet endpoint retourne la liste paginée et triable des cartes de l'utilisateur authentifié.
+
+  ### Authentification :
+  Requiert un Bearer Token (héritée du dossier).
+
+  ### Paramètres de requête :
+  - `page` (défaut: 0) : Numéro de page (commence à 0)
+  - `page_size` (défaut: 20, max: 100) : Nombre de cartes par page
+  - `sort_by` (défaut: avg) : Champ de tri — `avg` | `set_code` | `language_code`
+  - `sort_dir` (défaut: desc) : Sens du tri — `asc` | `desc`
+
+  ### Réponse 200 :
+  ```json
+  {
+    "items": [
+      {
+        "set_code": "FDN",
+        "set_name": "Foundations",
+        "collector_number": "87",
+        "language_code": "FR",
+        "foil": false,
+        "name": "Goblin Boarders",
+        "rarity_code": "C",
+        "scryfall_id": "4409a063-bf2a-4a49-803e-3ce6bd474353",
+        "quantity": 3,
+        "purchase_price": 8,
+        "price_guide": {
+          "low": 5,
+          "avg": 10,
+          "trend": 9,
+          "avg1": 11,
+          "avg7": 10,
+          "avg30": 9
+        }
+      }
+    ],
+    "total": 42,
+    "page": 0,
+    "page_size": 20
+  }
+  ```
+
+  ### Réponses :
+  - 200 : Liste paginée des cartes
+  - 401 : Token invalide, expiré ou manquant
+}
+
