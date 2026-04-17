@@ -1,0 +1,39 @@
+<div class="collection-page">
+  <!-- Hero header -->
+  <div class="collection-hero">
+    <div class="collection-hero__text">
+      <h1 class="collection-hero__title">Ma Collection</h1>
+      <p class="collection-hero__subtitle">0 cartes dans votre collection.</p>
+    </div>
+
+    <!-- Bouton Import -->
+    <button
+      class="collection-import-btn"
+      (click)="triggerFileInput()"
+      [disabled]="isLoading()"
+      aria-label="Importer une collection ManaBox"
+    >
+      @if (isLoading()) {
+        <mat-icon fontSet="material-symbols-rounded" class="collection-import-btn__icon spinning">
+          progress_activity
+        </mat-icon>
+        Importation&hellip;
+      } @else {
+        <mat-icon fontSet="material-symbols-rounded" class="collection-import-btn__icon">
+          upload_file
+        </mat-icon>
+        Importer une collection ManaBox
+      }
+    </button>
+
+    <!-- Input fichier masqué -->
+    <input
+      #fileInput
+      type="file"
+      accept=".csv"
+      hidden
+      (change)="onFileSelected($event)"
+      aria-hidden="true"
+    />
+  </div>
+</div>

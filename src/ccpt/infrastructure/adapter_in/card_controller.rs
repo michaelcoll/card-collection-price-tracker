@@ -80,6 +80,11 @@ struct CollectionCardResponse {
     price_guide: Option<PriceGuideResponse>,
 }
 
+#[derive(Serialize, Debug)]
+struct MessageResponse {
+    message: String,
+}
+
 #[derive(Serialize)]
 struct PaginatedCollectionResponse {
     items: Vec<CollectionCardResponse>,
@@ -156,7 +161,7 @@ async fn import_cards(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     body: axum::body::Body,
-) -> Result<String, AppError> {
+) -> Result<axum::Json<MessageResponse>, AppError> {
     let bytes = to_bytes(body, 10 * 1024 * 1024)
         .await
         .map_err(|e| AppError::WrongFormat(format!("Failed to read body: {}", e)))?;
@@ -173,7 +178,9 @@ async fn import_cards(
         .import_cards(&csv, user)
         .await?;
 
-    Ok("Cards imported successfully".to_string())
+    Ok(axum::Json(MessageResponse {
+        message: "Cards imported successfully".to_string(),
+    }))
 }
 
 async fn get_card_info(
@@ -707,7 +714,8 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Cards imported successfully");
+        let axum::Json(response) = result.unwrap();
+        assert_eq!(response.message, "Cards imported successfully");
     }
 
     #[tokio::test]
@@ -755,7 +763,8 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Cards imported successfully");
+        let axum::Json(response) = result.unwrap();
+        assert_eq!(response.message, "Cards imported successfully");
     }
 
     #[tokio::test]
@@ -776,7 +785,8 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Cards imported successfully");
+        let axum::Json(response) = result.unwrap();
+        assert_eq!(response.message, "Cards imported successfully");
     }
 
     #[tokio::test]
@@ -797,6 +807,7 @@ mod tests {
         .await;
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Cards imported successfully");
+        let axum::Json(response) = result.unwrap();
+        assert_eq!(response.message, "Cards imported successfully");
     }
 }
