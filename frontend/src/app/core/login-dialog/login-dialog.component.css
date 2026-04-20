@@ -2,11 +2,6 @@
    LOGIN DIALOG — Mystic Dark design system
    ══════════════════════════════════════════════ */
 
-.login-dialog {
-  padding: 0.5rem;
-  background: transparent;
-}
-
 /* ── Thème Clerk — variables CSS adaptées au design system ── */
 :root {
   --clerk-font-family: 'Inter Variable', 'Inter', sans-serif;

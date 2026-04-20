@@ -17,7 +17,6 @@ interface NavItem {
   standalone: true,
   imports: [RouterLink, RouterLinkActive, MatIconModule, MatDialogModule],
   templateUrl: './navbar.component.html',
-  styleUrl: './navbar.component.css',
 })
 export class NavbarComponent {
   protected auth = inject(AuthService);

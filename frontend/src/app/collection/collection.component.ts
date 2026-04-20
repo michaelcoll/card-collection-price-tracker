@@ -8,7 +8,6 @@ import { ToastService } from '../core/toast.service';
   standalone: true,
   imports: [MatIconModule],
   templateUrl: './collection.component.html',
-  styleUrl: './collection.component.css',
 })
 export class CollectionComponent {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
