@@ -1,36 +1,55 @@
-<!-- ── Mobile bottom navigation bar (≤ 640px) ── -->
-<nav class="mobile-bottom-nav" aria-label="Navigation principale">
+<!-- ── Mobile bottom navigation bar — masquée sur desktop, visible sur mobile (≤ 640px) ── -->
+<nav
+  class="hidden max-sm:flex items-stretch justify-around fixed bottom-0 left-0 right-0 z-[100] h-[4rem] [padding-bottom:env(safe-area-inset-bottom,0)] [background-color:color-mix(in_srgb,var(--surface-container-low)_60%,transparent)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] [outline:1px_solid_color-mix(in_srgb,var(--outline-variant)_15%,transparent)] [-outline-offset:1px]"
+  aria-label="Navigation principale"
+>
   @for (item of navItems; track item.route) {
     <a
       [routerLink]="item.route"
-      routerLinkActive="mobile-bottom-nav__item--active"
-      class="mobile-bottom-nav__item"
+      routerLinkActive="mobile-nav-active"
+      class="flex flex-col items-center justify-center gap-[0.2rem] flex-1 no-underline text-on-surface-variant text-[0.6875rem] font-medium tracking-[0.04em] uppercase transition-colors duration-150 [-webkit-tap-highlight-color:transparent]"
       [attr.aria-label]="item.label"
     >
-      <span class="mobile-bottom-nav__pill">
-        <mat-icon fontSet="material-symbols-rounded" class="mobile-bottom-nav__icon">{{
-          item.icon
-        }}</mat-icon>
+      <span
+        class="mobile-nav-pill inline-flex items-center justify-center rounded-full py-[0.2rem] px-4 bg-transparent transition-colors duration-200"
+      >
+        <mat-icon
+          fontSet="material-symbols-rounded"
+          class="text-[1.375rem] w-[1.375rem] h-[1.375rem] leading-none flex items-center justify-center"
+        >
+          {{ item.icon }}
+        </mat-icon>
       </span>
-      <span class="mobile-bottom-nav__label">{{ item.label }}</span>
+      <span class="leading-none">{{ item.label }}</span>
     </a>
   }
 </nav>
 
-<nav class="navbar">
+<!-- ── Desktop navbar — sticky, glassmorphique ── -->
+<nav
+  class="sticky top-0 z-[100] flex items-center justify-between gap-8 px-10 h-[4rem] [background-color:color-mix(in_srgb,var(--surface-container-low)_60%,transparent)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] [outline:1px_solid_color-mix(in_srgb,var(--outline-variant)_15%,transparent)] [-outline-offset:1px]"
+>
   <!-- ── Gauche : Titre ── -->
-  <div class="navbar__brand">
-    <a routerLink="/" class="navbar__title"> The Arcane Shop </a>
+  <div class="shrink-0">
+    <a
+      routerLink="/"
+      class="flex items-center gap-2 no-underline text-primary text-xl font-bold tracking-[-0.02em] whitespace-nowrap transition-opacity duration-150 hover:opacity-85"
+    >
+      The Arcane Shop
+    </a>
   </div>
 
-  <!-- ── Centre : Menu de navigation ── -->
-  <ul class="navbar__nav" role="list">
+  <!-- ── Centre : Menu de navigation (masqué sur mobile) ── -->
+  <ul
+    class="flex items-center gap-1 list-none m-0 p-0 flex-1 justify-center max-sm:hidden"
+    role="list"
+  >
     @for (item of navItems; track item.route) {
       <li>
         <a
           [routerLink]="item.route"
-          routerLinkActive="navbar__nav-link--active"
-          class="navbar__nav-link"
+          routerLinkActive="nav-link-active"
+          class="relative inline-flex items-center px-[0.9rem] py-[0.4rem] rounded-full no-underline text-on-surface-variant text-sm font-medium transition-[color,background-color] duration-150 hover:text-on-surface hover:bg-surface-container-high"
         >
           {{ item.label }}
         </a>
@@ -39,51 +58,67 @@
   </ul>
 
   <!-- ── Droite : Actions ── -->
-  <div class="navbar__actions">
+  <div class="flex items-center gap-4 shrink-0">
     <!-- Bouton Se connecter (affiché uniquement si non connecté) -->
     @if (!auth.isLoggedIn()) {
-      <button class="navbar__login-btn" (click)="onLogin()" aria-label="Se connecter">
+      <button
+        class="inline-flex items-center justify-center px-4 py-[0.4rem] rounded-full border-0 cursor-pointer text-sm font-medium bg-surface-container-high text-on-surface transition-[background-color,transform] duration-150 hover:bg-surface-container-highest hover:scale-[1.02] active:scale-[0.97]"
+        (click)="onLogin()"
+        aria-label="Se connecter"
+      >
         Se connecter
       </button>
     }
 
     <!-- Toggle dark / light -->
     <button
-      class="navbar__icon-btn"
+      class="inline-flex items-center justify-center w-9 h-9 rounded-full border-0 cursor-pointer text-on-surface bg-transparent transition-[background-color,transform] duration-150 hover:bg-surface-container-highest hover:scale-[1.08] active:scale-[0.95]"
       (click)="onToggleTheme()"
       [title]="theme.toggleLabel()"
       [attr.aria-label]="theme.toggleLabel()"
     >
-      <mat-icon fontSet="material-symbols-rounded" class="navbar__mat-icon">{{
-        theme.toggleIcon()
-      }}</mat-icon>
+      <mat-icon
+        fontSet="material-symbols-rounded"
+        class="text-[1.25rem] w-[1.25rem] h-[1.25rem] leading-none flex items-center justify-center"
+      >
+        {{ theme.toggleIcon() }}
+      </mat-icon>
     </button>
 
     <!-- Avatar (si connecté) ou icône profil générique (si non connecté) -->
     @if (auth.isLoggedIn()) {
       <button
-        class="navbar__avatar-btn"
+        class="inline-flex items-center justify-center border-0 bg-transparent p-0 cursor-pointer rounded-full transition-transform duration-150 hover:scale-[1.05]"
         (click)="onLogout()"
         [title]="'Se déconnecter (' + auth.displayName() + ')'"
       >
         @if (auth.avatarUrl()) {
           <img
-            class="navbar__avatar-img"
+            class="block w-[2.1rem] h-[2.1rem] rounded-full object-cover select-none"
             [src]="auth.avatarUrl()!"
             [alt]="auth.displayName()"
             referrerpolicy="no-referrer"
           />
         } @else {
-          <span class="navbar__avatar-initial" [attr.aria-label]="auth.displayName()">
+          <span
+            class="inline-flex items-center justify-center w-[2.1rem] h-[2.1rem] rounded-full bg-primary-container text-on-primary-container text-sm font-semibold select-none"
+            [attr.aria-label]="auth.displayName()"
+          >
             {{ auth.initial() }}
           </span>
         }
       </button>
     } @else {
-      <button class="navbar__icon-btn" aria-label="Mon compte">
-        <mat-icon fontSet="material-symbols-rounded" class="navbar__mat-icon"
-          >account_circle</mat-icon
+      <button
+        class="inline-flex items-center justify-center w-9 h-9 rounded-full border-0 cursor-pointer text-on-surface bg-transparent transition-[background-color,transform] duration-150 hover:bg-surface-container-highest hover:scale-[1.08] active:scale-[0.95]"
+        aria-label="Mon compte"
+      >
+        <mat-icon
+          fontSet="material-symbols-rounded"
+          class="text-[1.25rem] w-[1.25rem] h-[1.25rem] leading-none flex items-center justify-center"
         >
+          account_circle
+        </mat-icon>
       </button>
     }
   </div>

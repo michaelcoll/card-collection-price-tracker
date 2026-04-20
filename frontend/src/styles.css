@@ -241,3 +241,33 @@
   background: transparent !important;
   box-shadow: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAVBAR — états actifs (routerLinkActive)
+   Pseudo-éléments et cascades enfant non exprimables en classes Tailwind.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Lien de nav desktop actif : couleur + indicateur souligné */
+.nav-link-active {
+  color: var(--primary) !important;
+}
+
+.nav-link-active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.15rem;
+  left: 0.9rem;
+  right: 0.9rem;
+  height: 2px;
+  background-color: var(--primary);
+  border-radius: 1px;
+}
+
+/* Lien de nav mobile actif : couleur + fond de la pill */
+.mobile-nav-active {
+  color: var(--tertiary) !important;
+}
+
+.mobile-nav-active .mobile-nav-pill {
+  background-color: var(--tertiary-container);
+}

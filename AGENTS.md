@@ -106,8 +106,46 @@ Card imports expect ManaBox CSV format. See `example-files/ManaBox_Collection.cs
 ## Frontend Design System
 
 ⚠️ **MANDATORY**: Every time you work on any frontend file (Angular components, styles, templates), you **MUST**
-strictly
-follow the design system defined in [`frontend/DESIGN.md`](frontend/DESIGN.md). No exceptions.
+strictly follow the design system defined in [`frontend/DESIGN.md`](frontend/DESIGN.md). No exceptions.
+
+### Tailwind CSS — règle absolue
+
+⚠️ **MANDATORY**: Tailwind CSS v4 est le seul système de style autorisé pour tous les composants Angular.
+
+- **Aucun fichier `.component.css`** ne doit être créé — jamais de `styleUrl` / `styleUrls` dans `@Component`
+- **Toutes les règles de style** s'écrivent en classes utilitaires Tailwind directement dans le template HTML
+- **Exception unique** : les pseudo-éléments (`::after`, `::before`), les sélecteurs d'enfants conditionnels,
+  et les styles de bibliothèques tierces (ex. Clerk `.cl-*`) qui ne peuvent pas être exprimés en Tailwind
+  doivent être placés dans [`frontend/src/styles.css`](frontend/src/styles.css) global — jamais dans un fichier de composant
+
+#### Tokens disponibles (mappés dans `styles.css` via `@theme inline`)
+
+| Besoin           | Classe Tailwind                                                                     |
+|------------------|-------------------------------------------------------------------------------------|
+| Fond principal   | `bg-surface`                                                                        |
+| Conteneurs       | `bg-surface-container`, `bg-surface-container-high`, `bg-surface-container-highest` |
+| Texte principal  | `text-on-surface`                                                                   |
+| Texte secondaire | `text-on-surface-variant`                                                           |
+| Bouton primaire  | `bg-primary text-on-primary`                                                        |
+| Badge prix       | `bg-secondary-container text-on-secondary-container`                                |
+| Barre EDHREC     | `bg-tertiary`                                                                       |
+| Avatar initiale  | `bg-primary-container text-on-primary-container`                                    |
+| Police           | `font-sans` (Inter)                                                                 |
+| Arrondi pill     | `rounded-full`                                                                      |
+| Arrondi bouton   | `rounded-lg`                                                                        |
+
+#### Checklist avant chaque commit frontend
+
+```bash
+# Aucun fichier CSS de composant ne doit exister
+find frontend/src/app -name "*.component.css"   # doit retourner vide
+
+# Aucun styleUrl dans les composants
+grep -r "styleUrl" frontend/src/app             # doit retourner vide
+
+# Build sans erreur
+cd frontend && rtk pnpm run build
+```
 
 ### Key rules at a glance (read the full file for details)
 

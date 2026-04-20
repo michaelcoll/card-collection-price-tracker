@@ -5,32 +5,32 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/cards?page=0&page_size=20&sort_by=avg&sort_dir=desc
+  url: {{baseUrl}}/cards?page=5&page_size=20&sort_by=set_code&sort_dir=asc
   body: none
   auth: inherit
 }
 
 params:query {
-  page: 0
+  page: 5
   page_size: 20
-  sort_by: avg
-  sort_dir: desc
+  sort_by: set_code
+  sort_dir: asc
 }
 
 docs {
   ## Récupération paginée de la collection de cartes
-
+  
   Cet endpoint retourne la liste paginée et triable des cartes de l'utilisateur authentifié.
-
+  
   ### Authentification :
   Requiert un Bearer Token (héritée du dossier).
-
+  
   ### Paramètres de requête :
   - `page` (défaut: 0) : Numéro de page (commence à 0)
   - `page_size` (défaut: 20, max: 100) : Nombre de cartes par page
   - `sort_by` (défaut: avg) : Champ de tri — `avg` | `set_code` | `language_code`
   - `sort_dir` (défaut: desc) : Sens du tri — `asc` | `desc`
-
+  
   ### Réponse 200 :
   ```json
   {
@@ -61,9 +61,8 @@ docs {
     "page_size": 20
   }
   ```
-
+  
   ### Réponses :
   - 200 : Liste paginée des cartes
   - 401 : Token invalide, expiré ou manquant
 }
-
