@@ -7,34 +7,54 @@
       >
         Ma Collection
       </h1>
-      <p class="font-sans text-base text-on-surface-variant m-0">0 cartes dans votre collection.</p>
+      <p class="font-sans text-base text-on-surface-variant m-0">
+        {{ total() }} cartes dans votre collection.
+      </p>
     </div>
 
-    <!-- Bouton Import -->
-    <button
-      class="inline-flex items-center gap-2 py-2 px-5 border-0 rounded-lg bg-primary text-on-primary font-sans text-sm font-semibold cursor-pointer transition-[opacity,transform] duration-150 ease-in whitespace-nowrap shrink-0 enabled:hover:opacity-[0.88] enabled:hover:scale-[1.02] enabled:active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed max-sm:w-full max-sm:justify-center"
-      (click)="triggerFileInput()"
-      [disabled]="isLoading()"
-      aria-label="Importer une collection ManaBox"
-    >
-      @if (isLoading()) {
-        <mat-icon
-          fontSet="material-symbols-rounded"
-          class="text-[1.125rem] w-4.5 h-4.5 leading-none flex items-center justify-center animate-spin"
-        >
-          progress_activity
-        </mat-icon>
-        Importation&hellip;
-      } @else {
+    <!-- Actions -->
+    <div class="flex items-center gap-3 shrink-0 max-sm:w-full max-sm:flex-col">
+      <!-- Bouton tri prix -->
+      <button
+        class="inline-flex items-center gap-2 py-2 px-5 border-0 rounded-lg bg-surface-container text-on-surface font-sans text-sm font-semibold cursor-pointer transition-[opacity,transform] duration-150 ease-in whitespace-nowrap hover:bg-surface-container-high hover:scale-[1.02] active:scale-[0.97] max-sm:w-full max-sm:justify-center"
+        (click)="toggleSort()"
+        aria-label="Changer le sens de tri par prix"
+      >
         <mat-icon
           fontSet="material-symbols-rounded"
           class="text-[1.125rem] w-4.5 h-4.5 leading-none flex items-center justify-center"
         >
-          upload_file
+          {{ sortDir() === 'desc' ? 'arrow_downward' : 'arrow_upward' }}
         </mat-icon>
-        Importer une collection ManaBox
-      }
-    </button>
+        Prix
+      </button>
+
+      <!-- Bouton Import -->
+      <button
+        class="inline-flex items-center gap-2 py-2 px-5 border-0 rounded-lg bg-primary text-on-primary font-sans text-sm font-semibold cursor-pointer transition-[opacity,transform] duration-150 ease-in whitespace-nowrap enabled:hover:opacity-[0.88] enabled:hover:scale-[1.02] enabled:active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed max-sm:w-full max-sm:justify-center"
+        (click)="triggerFileInput()"
+        [disabled]="isLoading()"
+        aria-label="Importer une collection ManaBox"
+      >
+        @if (isLoading()) {
+          <mat-icon
+            fontSet="material-symbols-rounded"
+            class="text-[1.125rem] w-4.5 h-4.5 leading-none flex items-center justify-center animate-spin"
+          >
+            progress_activity
+          </mat-icon>
+          Importation&hellip;
+        } @else {
+          <mat-icon
+            fontSet="material-symbols-rounded"
+            class="text-[1.125rem] w-4.5 h-4.5 leading-none flex items-center justify-center"
+          >
+            upload_file
+          </mat-icon>
+          Importer une collection ManaBox
+        }
+      </button>
+    </div>
 
     <!-- Input fichier masqué -->
     <input
@@ -46,4 +66,45 @@
       aria-hidden="true"
     />
   </div>
+
+  <!-- Grille de cartes -->
+  <div class="mt-10">
+    @if (isLoading()) {
+      <div class="flex justify-center py-20">
+        <mat-icon
+          fontSet="material-symbols-rounded"
+          class="text-4xl w-10 h-10 leading-none flex items-center justify-center animate-spin text-on-surface-variant"
+        >
+          progress_activity
+        </mat-icon>
+      </div>
+    } @else {
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        @for (
+          card of cards();
+          track card.scryfall_id +
+            card.set_code +
+            card.collector_number +
+            card.language_code +
+            card.foil
+        ) {
+          <app-card-item [card]="card" />
+        }
+      </div>
+
+      @if (isLoadingMore()) {
+        <div class="flex justify-center py-8">
+          <mat-icon
+            fontSet="material-symbols-rounded"
+            class="text-2xl w-6 h-6 leading-none flex items-center justify-center animate-spin text-on-surface-variant"
+          >
+            progress_activity
+          </mat-icon>
+        </div>
+      }
+    }
+  </div>
+
+  <!-- Sentinel pour scroll infini — toujours dans le DOM -->
+  <div #sentinel class="h-4"></div>
 </div>

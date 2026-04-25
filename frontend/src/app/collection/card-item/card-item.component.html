@@ -1,0 +1,55 @@
+<div class="relative flex flex-col mb-2">
+  <div class="relative">
+    @for (angle of stackAngles; track $index) {
+      <img
+        [src]="imageUrl"
+        [alt]="card().name"
+        class="absolute inset-0 w-full aspect-2.5/3.5 object-cover rounded-4xl lg:rounded-2xl dark:shadow-[0_0_3px_2px_rgba(255,255,255,0.08)]"
+        [style.transform]="'rotate(' + angle + 'deg)'"
+        [style.z-index]="$index + 1"
+        loading="lazy"
+      />
+    }
+    <img
+      [src]="imageUrl"
+      [alt]="card().name"
+      class="relative z-10 w-full aspect-2.5/3.5 object-cover rounded-xl lg:rounded-2xl sm:rounded-xl dark:shadow-[0_0_3px_2px_rgba(255,255,255,0.08)]"
+      loading="lazy"
+    />
+  </div>
+  <div class="self-end flex items-center gap-1.5 mt-2 z-10">
+    @if (card().foil) {
+      <span
+        class="font-sans text-xs font-bold px-2 py-0.5 text-on-foil-container flex items-center bg-foil-container rounded-full"
+      >
+        ⭑
+      </span>
+    }
+    @if (card().quantity > 1) {
+      <span
+        class="font-sans text-xs font-light px-2 py-0.5 text-primary flex items-center bg-primary-container/25 rounded-full"
+      >
+        x{{ card().quantity }}
+      </span>
+    }
+    @if (trendPrice !== null) {
+      <span
+        [class]="
+          isPriceTrendingDown
+            ? 'font-sans text-xs font-bold px-2 py-0.5 text-error flex items-center gap-1 bg-error-container/25 rounded-full'
+            : 'font-sans text-xs font-bold px-2 py-0.5 text-tertiary flex items-center gap-1 bg-tertiary-container/25 rounded-full'
+        "
+      >
+        <mat-icon
+          fontSet="material-symbols-rounded"
+          class="leading-none flex items-center justify-center"
+          >{{ isPriceTrendingDown ? 'trending_down' : 'trending_up' }}</mat-icon
+        >
+        {{ trendPrice }} €
+        @if (isPriceTrendingDown) {
+          <span class="text-error/25">•</span> {{ trendPriceDiff }} €
+        }
+      </span>
+    }
+  </div>
+</div>

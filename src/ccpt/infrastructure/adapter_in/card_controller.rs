@@ -8,6 +8,7 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 pub fn create_card_router() -> axum::Router<AppState> {
     axum::Router::new()
@@ -17,17 +18,20 @@ pub fn create_card_router() -> axum::Router<AppState> {
 }
 
 // --- Query params ---
-#[derive(Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
+#[derive(Deserialize, Default, TS)]
+#[serde(rename = "SortBy", rename_all = "snake_case")]
+#[ts(export, export_to = "SortBy.ts")]
 enum SortByParam {
-    #[default]
     Avg,
+    #[default]
+    Trend,
     SetCode,
     LanguageCode,
 }
 
-#[derive(Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
+#[derive(Deserialize, Default, TS)]
+#[serde(rename = "SortDir", rename_all = "snake_case")]
+#[ts(export, export_to = "SortDir.ts")]
 enum SortDirParam {
     Asc,
     #[default]
@@ -55,7 +59,9 @@ struct CollectionParams {
 }
 
 // --- Réponses ---
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[serde(rename = "PriceGuide")]
+#[ts(export, export_to = "PriceGuide.ts")]
 struct PriceGuideResponse {
     low: Option<u32>,
     avg: Option<u32>,
@@ -65,10 +71,11 @@ struct PriceGuideResponse {
     avg30: Option<u32>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[serde(rename = "CollectionCard")]
+#[ts(export, export_to = "CollectionCard.ts")]
 struct CollectionCardResponse {
     set_code: String,
-    set_name: String,
     collector_number: String,
     language_code: String,
     foil: bool,
@@ -80,12 +87,16 @@ struct CollectionCardResponse {
     price_guide: Option<PriceGuideResponse>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, TS)]
+#[serde(rename = "Message")]
+#[ts(export, export_to = "Message.ts")]
 struct MessageResponse {
     message: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[serde(rename = "PaginatedCollection")]
+#[ts(export, export_to = "PaginatedCollection.ts")]
 struct PaginatedCollectionResponse {
     items: Vec<CollectionCardResponse>,
     total: u64,
@@ -97,7 +108,6 @@ impl From<Card> for CollectionCardResponse {
     fn from(c: Card) -> Self {
         Self {
             set_code: c.id.set_code.to_string(),
-            set_name: c.set_name.name.clone(),
             collector_number: c.id.collector_number,
             language_code: c.id.language_code.to_string(),
             foil: c.id.foil,
@@ -131,6 +141,7 @@ async fn get_collection(
         page_size,
         sort_by: match params.sort_by {
             SortByParam::Avg => CollectionSortField::Avg,
+            SortByParam::Trend => CollectionSortField::Trend,
             SortByParam::SetCode => CollectionSortField::SetCode,
             SortByParam::LanguageCode => CollectionSortField::LanguageCode,
         },
