@@ -2,7 +2,7 @@ use crate::application::caller::ScryfallCaller;
 use crate::application::error::AppError;
 use crate::infrastructure::adapter_out::caller::dto::ScryfallCardInfo;
 use async_trait::async_trait;
-use ratelimit::Ratelimiter;
+use ratelimit::{Ratelimiter, TryWaitError};
 use uuid::Uuid;
 
 pub struct ScryfallCallerAdapter {
@@ -29,8 +29,22 @@ impl ScryfallCaller for ScryfallCallerAdapter {
     async fn get_card_market_id(&self, id: Uuid) -> Result<Option<u32>, AppError> {
         let url = format!("{}/cards/{}?format=json", self.scryfall_base_url, id);
 
-        if let Err(sleep) = self.ratelimiter.try_wait() {
-            tokio::time::sleep(sleep).await;
+        if let Err(err) = self.ratelimiter.try_wait() {
+            match err {
+                TryWaitError::Insufficient(duration) => {
+                    tokio::time::sleep(duration).await;
+                }
+                TryWaitError::ExceedsCapacity => {
+                    return Err(AppError::CallError(
+                        "Scryfall rate limiter overflow".to_string(),
+                    ));
+                }
+                _ => {
+                    return Err(AppError::CallError(
+                        "Scryfall rate limiter error".to_string(),
+                    ));
+                }
+            }
         }
 
         let card_info: ScryfallCardInfo =

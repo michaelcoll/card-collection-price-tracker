@@ -44,5 +44,8 @@ _lint-clippy:
 _lint-sqlx:
     @cargo sqlx prepare --check
 
+_lint-frontend:
+    @cd frontend && pnpm lint:fix
+
 # Run linters
-lint: _lint-clippy _lint-sqlx
+lint: _lint-clippy _lint-sqlx _lint-frontend
