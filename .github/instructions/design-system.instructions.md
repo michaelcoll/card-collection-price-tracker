@@ -120,7 +120,26 @@ Hiérarchie par **Tonal Layering**, jamais par des ombres structurelles.
 ### Progress Bars & Badges
 
 - **Barre EDHREC %** : fill `tertiary`, track `surface-container-highest`, `height: 4px`.
-- **Badges de prix** : fond `secondary-container`, texte `on-secondary-container`, forme pill `rounded-full`.
+- **Badges cartes** (pill `rounded-full`, `text-xs`) :
+
+| Badge            | Fond                        | Texte                        | Usage                           |
+|:-----------------|:----------------------------|:-----------------------------|:--------------------------------|
+| Foil ⭑           | `foil-container`            | `on-foil-container`          | Carte en version foil           |
+| Quantité xN      | `primary-container` (25%)   | `primary`                    | Copies multiples dans la collection |
+| Prix trending ↑  | `tertiary-container` (25%)  | `tertiary`                   | Prix en hausse                  |
+| Prix trending ↓  | `error-container` (25%)     | `error`                      | Prix en baisse                  |
+
+### Toast Notifications
+
+Composant utilitaire positionné en bas à droite (`fixed bottom-1.5rem right-1.5rem`, `z-9999`). Fichier CSS dédié autorisé pour les `@keyframes` et pseudo-classes complexes.
+
+| Variante       | Fond (60% opacity)        | Texte                    |
+|:---------------|:--------------------------|:-------------------------|
+| **Success**    | `secondary-container`     | `on-secondary-container` |
+| **Error**      | `error-container`         | `on-error-container`     |
+
+- Entrée animée : `translateY(0.75rem) scale(0.96)` → `translateY(0) scale(1)`, 220ms ease-out.
+- `backdrop-filter: blur(12px)` pour l'effet glassmorphique.
 
 ### Comparison Tables
 
@@ -166,17 +185,33 @@ fallback dans `styles.css`).
 
 ```typescript
 // theme.service.ts
-@Injectable({providedIn: 'root'})
+export type Theme = 'dark' | 'light';
+
+@Injectable({ providedIn: 'root' })
 export class ThemeService {
-    private theme = signal<'dark' | 'light'>('dark');
+  private _theme = signal<Theme>('dark');
 
-    readonly current = this.theme.asReadonly();
+  readonly current    = this._theme.asReadonly();
+  readonly isDark     = computed(() => this._theme() === 'dark');
+  readonly toggleIcon = computed(() => (this._theme() === 'dark' ? 'dark_mode' : 'light_mode'));
+  readonly toggleLabel = computed(() =>
+    this._theme() === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre',
+  );
 
-    toggle(): void {
-        const next = this.theme() === 'dark' ? 'light' : 'dark';
-        this.theme.set(next);
-        document.documentElement.setAttribute('data-theme', next);
-    }
+  constructor() {
+    // Respect la préférence système au démarrage
+    const initial: Theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    this._apply(initial);
+  }
+
+  toggle(): void {
+    this._apply(this._theme() === 'dark' ? 'light' : 'dark');
+  }
+
+  private _apply(theme: Theme): void {
+    this._theme.set(theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  }
 }
 ```
 
@@ -228,16 +263,20 @@ de thème à l'exécution **sans rebuild**.
 | `on-primary-container`   | `#e9deff` | `#220066` | Icône/texte sur primary-container      |
 | `secondary`              | `#a8c7fa` | `#1565c0` | Accents secondaires, textes de support |
 | `on-secondary`           | `#003062` | `#ffffff` | Texte sur fond secondary               |
-| `secondary-container`    | `#004a77` | `#d3e4ff` | Fond des badges de prix                |
-| `on-secondary-container` | `#d3e4ff` | `#001c38` | Texte des badges de prix               |
-| `tertiary`               | `#00e5ff` | `#006874` | Barres EDHREC, indicateurs tendance    |
+| `secondary-container`    | `#004a77` | `#d3e4ff` | Fond toast success, badges prix        |
+| `on-secondary-container` | `#d3e4ff` | `#001c38` | Texte toast success, badges prix       |
+| `tertiary`               | `#00e5ff` | `#006874` | Barres EDHREC, badge prix trending ↑   |
 | `on-tertiary`            | `#003545` | `#ffffff` | Texte sur fond tertiary                |
-| `tertiary-container`     | `#004f57` | `#97f0ff` | Fond icon-button édition               |
+| `tertiary-container`     | `#004f57` | `#97f0ff` | Fond icon-button édition, badge prix ↑ |
 | `on-tertiary-container`  | `#a8eeff` | `#001f24` | Icône icon-button édition              |
-| `error`                  | `#cf6679` | `#b3261e` | Texte d'erreur, états destructifs      |
+| `error`                  | `#cf6679` | `#b3261e` | Texte d'erreur, badge prix trending ↓  |
 | `on-error`               | `#601410` | `#ffffff` | Texte sur fond error                   |
-| `error-container`        | `#8c1d18` | `#f9dedc` | Fond icon-button suppression           |
+| `error-container`        | `#8c1d18` | `#f9dedc` | Fond icon-button suppression, badge ↓  |
 | `on-error-container`     | `#f9dedc` | `#410002` | Icône icon-button suppression          |
+| `foil`                   | `#f0c040` | `#7a5900` | Indicateur foil (texte / icône)        |
+| `on-foil`                | `#3d2e00` | `#ffffff` | Texte sur fond foil                    |
+| `foil-container`         | `#5a4200` | `#ffeebb` | Fond badge foil ⭑                      |
+| `on-foil-container`      | `#ffdea0` | `#261900` | Icône/texte badge foil ⭑               |
 
 ### Surface Tokens
 
