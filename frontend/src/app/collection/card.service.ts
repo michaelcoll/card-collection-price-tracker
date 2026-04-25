@@ -25,7 +25,7 @@ export class CardService {
           .set('page_size', pageSize)
           .set('sort_by', sortBy)
           .set('sort_dir', sortDir);
-        return this.http.get<PaginatedCollection>('/cards', { headers, params });
+        return this.http.get<PaginatedCollection>('/api/cards', { headers, params });
       }),
     );
   }
@@ -37,7 +37,7 @@ export class CardService {
           ...authHeaders,
           'Content-Type': 'text/csv',
         });
-        return this.http.post<void>('/cards/import', file, { headers });
+        return this.http.post<void>('/api/cards/import', file, { headers });
       }),
     );
   }
