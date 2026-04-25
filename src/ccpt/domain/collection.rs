@@ -3,8 +3,9 @@ use std::fmt;
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub enum CollectionSortField {
-    #[default]
     Avg,
+    #[default]
+    Trend,
     SetCode,
     LanguageCode,
 }
@@ -13,6 +14,7 @@ impl fmt::Display for CollectionSortField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Avg => write!(f, "avg"),
+            Self::Trend => write!(f, "trend"),
             Self::SetCode => write!(f, "set_code"),
             Self::LanguageCode => write!(f, "language_code"),
         }
@@ -68,7 +70,7 @@ mod tests {
 
     #[test]
     fn collection_sort_field_default_is_avg() {
-        assert_eq!(CollectionSortField::default(), CollectionSortField::Avg);
+        assert_eq!(CollectionSortField::default(), CollectionSortField::Trend);
     }
 
     #[test]
@@ -97,7 +99,7 @@ mod tests {
         let q = CollectionQuery::default();
         assert_eq!(q.page, 0);
         assert_eq!(q.page_size, 20);
-        assert_eq!(q.sort_by, CollectionSortField::Avg);
+        assert_eq!(q.sort_by, CollectionSortField::Trend);
         assert_eq!(q.sort_dir, SortDirection::Desc);
     }
 }

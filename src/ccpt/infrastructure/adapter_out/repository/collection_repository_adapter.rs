@@ -44,7 +44,7 @@ impl CollectionRepository for CollectionRepositoryAdapter {
                FROM mv_card_prices p
                JOIN set_name sn ON sn.set_code = p.set_code
                WHERE p.user_id = $1
-               ORDER BY {} {} NULLS LAST
+               ORDER BY {} {} NULLS LAST, p.name ASC
                LIMIT $2 OFFSET $3"#,
             query.sort_by, query.sort_dir,
         );

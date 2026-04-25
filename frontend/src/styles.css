@@ -51,6 +51,12 @@
   --color-on-error: var(--on-error);
   --color-error-container: var(--error-container);
   --color-on-error-container: var(--on-error-container);
+
+  /* — Foil — */
+  --color-foil: var(--foil);
+  --color-on-foil: var(--on-foil);
+  --color-foil-container: var(--foil-container);
+  --color-on-foil-container: var(--on-foil-container);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -115,6 +121,12 @@
   --on-error: #601410;
   --error-container: #8c1d18;
   --on-error-container: #f9dedc;
+
+  /* Foil */
+  --foil: #f0c040;
+  --on-foil: #3d2e00;
+  --foil-container: #5a4200;
+  --on-foil-container: #ffdea0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -161,6 +173,12 @@
   --on-error: #ffffff;
   --error-container: #f9dedc;
   --on-error-container: #410002;
+
+  /* Foil */
+  --foil: #7a5900;
+  --on-foil: #ffffff;
+  --foil-container: #ffeebb;
+  --on-foil-container: #261900;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -196,6 +214,11 @@
     --on-error: #ffffff;
     --error-container: #f9dedc;
     --on-error-container: #410002;
+    /* Foil */
+    --foil: #7a5900;
+    --on-foil: #ffffff;
+    --foil-container: #ffeebb;
+    --on-foil-container: #261900;
   }
 }
 
