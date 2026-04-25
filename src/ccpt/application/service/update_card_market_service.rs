@@ -1,40 +1,42 @@
 use crate::application::caller::ScryfallCaller;
-use crate::application::error::AppError;
-use crate::application::repository::CardRepository;
-use crate::application::use_case::{
-    CardCollectionPriceCalculationUseCase, UpdateCardMarketIdUseCase,
-};
-use async_trait::async_trait;
-use std::sync::Arc;
+use crate::application::repository::{CardPricesViewRepository, CardRepository};
+use crate::application::use_case::CardCollectionPriceCalculationUseCase;
+use crate::domain::card::CardId;
+use colored::Colorize;
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::UnboundedReceiver;
+use uuid::Uuid;
 
-pub struct UpdateCardMarketIdService {
+pub struct CardMarketIdWorker {
     card_repository: Arc<dyn CardRepository>,
     scryfall_caller: Arc<dyn ScryfallCaller>,
     price_calculation: Arc<dyn CardCollectionPriceCalculationUseCase>,
+    card_prices_view_repository: Arc<dyn CardPricesViewRepository>,
+    dedup_set: Arc<Mutex<HashSet<CardId>>>,
 }
 
-impl UpdateCardMarketIdService {
+impl CardMarketIdWorker {
     pub fn new(
         card_repository: Arc<dyn CardRepository>,
         scryfall_caller: Arc<dyn ScryfallCaller>,
         price_calculation: Arc<dyn CardCollectionPriceCalculationUseCase>,
+        card_prices_view_repository: Arc<dyn CardPricesViewRepository>,
+        dedup_set: Arc<Mutex<HashSet<CardId>>>,
     ) -> Self {
         Self {
             card_repository,
             scryfall_caller,
             price_calculation,
+            card_prices_view_repository,
+            dedup_set,
         }
     }
-}
 
-#[async_trait]
-impl UpdateCardMarketIdUseCase for UpdateCardMarketIdService {
-    async fn update_cards(&self) -> Result<(), AppError> {
-        println!("Updating cards...");
+    pub async fn run(self, mut receiver: UnboundedReceiver<(CardId, Uuid)>) {
+        println!("{} Card market id updater started.", "✔".green().bold());
 
-        let cards = self.card_repository.get_all_without_cardmarket_id().await?;
-
-        for (card_id, scryfall_id) in cards {
+        while let Some((card_id, scryfall_id)) = receiver.recv().await {
             let cardmarket_id = self.scryfall_caller.get_card_market_id(scryfall_id).await;
             if let Ok(id) = cardmarket_id {
                 if let Err(e) = self
@@ -43,19 +45,33 @@ impl UpdateCardMarketIdUseCase for UpdateCardMarketIdService {
                     .await
                 {
                     eprintln!("Failed to update card with CardMarket ID: {:?}", e);
+                } else {
+                    println!("Updated card {} with CardMarket ID: {:?}", card_id, id);
                 }
-                println!("Updated card {} with CardMarket ID: {:?}", card_id, id);
             } else if let Err(e) = cardmarket_id {
                 eprintln!(
                     "Failed to fetch CardMarket ID for card {}: {:?}",
                     card_id, e
                 );
             }
+
+            {
+                let mut set = self.dedup_set.lock().unwrap();
+                set.remove(&card_id);
+            }
+
+            if receiver.is_empty()
+                && let Err(e) = self.price_calculation.calculate_total_price().await
+            {
+                eprintln!("Failed to calculate total price: {:?}", e);
+            }
+
+            if receiver.is_empty()
+                && let Err(e) = self.card_prices_view_repository.refresh().await
+            {
+                eprintln!("Failed to refresh card price view: {:?}", e);
+            }
         }
-
-        self.price_calculation.calculate_total_price().await?;
-
-        Ok(())
     }
 }
 
@@ -63,186 +79,158 @@ impl UpdateCardMarketIdUseCase for UpdateCardMarketIdService {
 mod tests {
     use super::*;
     use crate::application::caller::MockScryfallCaller;
-    use crate::application::repository::MockCardRepository;
+    use crate::application::error::AppError;
+    use crate::application::repository::{MockCardPricesViewRepository, MockCardRepository};
     use crate::application::use_case::MockCardCollectionPriceCalculationUseCase;
-    use crate::domain::card::CardId;
     use crate::domain::language_code::LanguageCode;
     use crate::domain::set_name::SetCode;
-    use uuid::Uuid;
+    use tokio::sync::mpsc::unbounded_channel;
 
-    #[tokio::test]
-    async fn updates_all_cards_with_valid_cardmarket_ids() {
-        let mut card_repository = MockCardRepository::new();
-        let mut scryfall_caller = MockScryfallCaller::new();
-        let mut mock_card_collection_price_calculation_use_case =
-            MockCardCollectionPriceCalculationUseCase::new();
+    fn make_card_id(n: &str) -> CardId {
+        CardId::new(SetCode::new("FDN"), n, LanguageCode::FR, false)
+    }
 
-        card_repository
-            .expect_get_all_without_cardmarket_id()
-            .returning(move || {
-                Box::pin(async move {
-                    Ok(vec![
-                        (
-                            CardId::new(SetCode::new("FDN"), "0", LanguageCode::FR, false),
-                            Uuid::default(),
-                        ),
-                        (
-                            CardId::new(SetCode::new("FDN"), "1", LanguageCode::FR, false),
-                            Uuid::default(),
-                        ),
-                    ])
-                })
-            });
-
-        scryfall_caller
-            .expect_get_card_market_id()
-            .returning(|_| Box::pin(async move { Ok(Some(123)) }));
-
-        card_repository
-            .expect_update_cardmarket_id()
-            .returning(|_, _| Box::pin(async move { Ok(()) }));
-        mock_card_collection_price_calculation_use_case
-            .expect_calculate_total_price()
-            .returning(|| Box::pin(async move { Ok(()) }));
-
-        let service = UpdateCardMarketIdService::new(
-            Arc::new(card_repository),
-            Arc::new(scryfall_caller),
-            Arc::new(mock_card_collection_price_calculation_use_case),
-        );
-
-        let result = service.update_cards().await;
-        assert!(result.is_ok());
+    fn mock_prices_view() -> MockCardPricesViewRepository {
+        let mut r = MockCardPricesViewRepository::new();
+        r.expect_refresh().returning(|| Box::pin(async { Ok(()) }));
+        r
     }
 
     #[tokio::test]
-    async fn continues_processing_when_fetching_cardmarket_id_fails() {
+    async fn worker_updates_card_and_triggers_price_calc_when_queue_empty() {
         let mut card_repository = MockCardRepository::new();
         let mut scryfall_caller = MockScryfallCaller::new();
-        let mut mock_card_collection_price_calculation_use_case =
-            MockCardCollectionPriceCalculationUseCase::new();
+        let mut price_calc = MockCardCollectionPriceCalculationUseCase::new();
 
+        scryfall_caller
+            .expect_get_card_market_id()
+            .returning(|_| Box::pin(async { Ok(Some(42)) }));
         card_repository
-            .expect_get_all_without_cardmarket_id()
-            .returning(move || {
-                Box::pin(async move {
-                    Ok(vec![(
-                        CardId::new(SetCode::new("FDN"), "0", LanguageCode::FR, false),
-                        Uuid::default(),
-                    )])
-                })
-            });
+            .expect_update_cardmarket_id()
+            .returning(|_, _| Box::pin(async { Ok(()) }));
+        price_calc
+            .expect_calculate_total_price()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(()) }));
+
+        let dedup_set = Arc::new(Mutex::new(HashSet::new()));
+        let (tx, rx) = unbounded_channel::<(CardId, Uuid)>();
+
+        let worker = CardMarketIdWorker::new(
+            Arc::new(card_repository),
+            Arc::new(scryfall_caller),
+            Arc::new(price_calc),
+            Arc::new(mock_prices_view()),
+            dedup_set,
+        );
+
+        let card_id = make_card_id("0");
+        tx.send((card_id, Uuid::default())).unwrap();
+        drop(tx); // ferme le canal pour que run() se termine
+
+        worker.run(rx).await;
+    }
+
+    #[tokio::test]
+    async fn worker_removes_card_id_from_dedup_set_after_processing() {
+        let mut card_repository = MockCardRepository::new();
+        let mut scryfall_caller = MockScryfallCaller::new();
+        let mut price_calc = MockCardCollectionPriceCalculationUseCase::new();
+
+        scryfall_caller
+            .expect_get_card_market_id()
+            .returning(|_| Box::pin(async { Ok(Some(1)) }));
+        card_repository
+            .expect_update_cardmarket_id()
+            .returning(|_, _| Box::pin(async { Ok(()) }));
+        price_calc
+            .expect_calculate_total_price()
+            .returning(|| Box::pin(async { Ok(()) }));
+
+        let dedup_set = Arc::new(Mutex::new(HashSet::new()));
+        let card_id = make_card_id("0");
+        dedup_set.lock().unwrap().insert(card_id.clone());
+
+        let (tx, rx) = unbounded_channel::<(CardId, Uuid)>();
+        tx.send((card_id.clone(), Uuid::default())).unwrap();
+        drop(tx);
+
+        let worker = CardMarketIdWorker::new(
+            Arc::new(card_repository),
+            Arc::new(scryfall_caller),
+            Arc::new(price_calc),
+            Arc::new(mock_prices_view()),
+            dedup_set.clone(),
+        );
+        worker.run(rx).await;
+
+        assert!(!dedup_set.lock().unwrap().contains(&card_id));
+    }
+
+    #[tokio::test]
+    async fn worker_continues_on_scryfall_error() {
+        let mut card_repository = MockCardRepository::new();
+        let mut scryfall_caller = MockScryfallCaller::new();
+        let mut price_calc = MockCardCollectionPriceCalculationUseCase::new();
 
         scryfall_caller.expect_get_card_market_id().returning(|_| {
-            Box::pin(async move { Err(AppError::CallError("Scryfall API error".to_string())) })
+            Box::pin(async { Err(AppError::CallError("Scryfall error".to_string())) })
         });
-        mock_card_collection_price_calculation_use_case
+        // update_cardmarket_id should not be called
+        card_repository.expect_update_cardmarket_id().times(0);
+        price_calc
             .expect_calculate_total_price()
-            .returning(|| Box::pin(async move { Ok(()) }));
+            .returning(|| Box::pin(async { Ok(()) }));
 
-        let service = UpdateCardMarketIdService::new(
+        let dedup_set = Arc::new(Mutex::new(HashSet::new()));
+        let (tx, rx) = unbounded_channel::<(CardId, Uuid)>();
+        tx.send((make_card_id("0"), Uuid::default())).unwrap();
+        drop(tx);
+
+        let worker = CardMarketIdWorker::new(
             Arc::new(card_repository),
             Arc::new(scryfall_caller),
-            Arc::new(mock_card_collection_price_calculation_use_case),
+            Arc::new(price_calc),
+            Arc::new(mock_prices_view()),
+            dedup_set,
         );
-
-        let result = service.update_cards().await;
-        assert!(result.is_ok());
+        worker.run(rx).await;
     }
 
     #[tokio::test]
-    async fn continues_processing_when_saving_card_fails() {
+    async fn worker_triggers_price_calc_and_refresh_after_batch() {
         let mut card_repository = MockCardRepository::new();
         let mut scryfall_caller = MockScryfallCaller::new();
-        let mut mock_card_collection_price_calculation_use_case =
-            MockCardCollectionPriceCalculationUseCase::new();
-
-        card_repository
-            .expect_get_all_without_cardmarket_id()
-            .returning(move || {
-                Box::pin(async move {
-                    Ok(vec![(
-                        CardId::new(SetCode::new("FDN"), "0", LanguageCode::FR, false),
-                        Uuid::default(),
-                    )])
-                })
-            });
+        let mut price_calc = MockCardCollectionPriceCalculationUseCase::new();
+        let mut prices_view = MockCardPricesViewRepository::new();
 
         scryfall_caller
             .expect_get_card_market_id()
-            .returning(|_| Box::pin(async move { Ok(Some(123)) }));
-        mock_card_collection_price_calculation_use_case
-            .expect_calculate_total_price()
-            .returning(|| Box::pin(async move { Ok(()) }));
-
+            .returning(|_| Box::pin(async { Ok(Some(99)) }));
         card_repository
             .expect_update_cardmarket_id()
-            .returning(|_, _| {
-                Box::pin(async move { Err(AppError::RepositoryError("Save failed".to_string())) })
-            });
-
-        let service = UpdateCardMarketIdService::new(
-            Arc::new(card_repository),
-            Arc::new(scryfall_caller),
-            Arc::new(mock_card_collection_price_calculation_use_case),
-        );
-
-        let result = service.update_cards().await;
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn handles_empty_card_list() {
-        let mut card_repository = MockCardRepository::new();
-        let scryfall_caller = MockScryfallCaller::new();
-        let mut mock_card_collection_price_calculation_use_case =
-            MockCardCollectionPriceCalculationUseCase::new();
-
-        card_repository
-            .expect_get_all_without_cardmarket_id()
-            .returning(move || Box::pin(async move { Ok(vec![]) }));
-
-        mock_card_collection_price_calculation_use_case
+            .returning(|_, _| Box::pin(async { Ok(()) }));
+        price_calc
             .expect_calculate_total_price()
-            .returning(|| Box::pin(async move { Ok(()) }));
+            .times(1)
+            .returning(|| Box::pin(async { Ok(()) }));
+        prices_view
+            .expect_refresh()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(()) }));
 
-        let service = UpdateCardMarketIdService::new(
+        let dedup_set = Arc::new(Mutex::new(HashSet::new()));
+        let (tx, rx) = unbounded_channel::<(CardId, Uuid)>();
+        tx.send((make_card_id("0"), Uuid::default())).unwrap();
+        drop(tx);
+
+        let worker = CardMarketIdWorker::new(
             Arc::new(card_repository),
             Arc::new(scryfall_caller),
-            Arc::new(mock_card_collection_price_calculation_use_case),
+            Arc::new(price_calc),
+            Arc::new(prices_view),
+            dedup_set,
         );
-
-        let result = service.update_cards().await;
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn propagates_error_from_card_repository_get_all() {
-        let mut card_repository = MockCardRepository::new();
-        let scryfall_caller = MockScryfallCaller::new();
-        let mut mock_card_collection_price_calculation_use_case =
-            MockCardCollectionPriceCalculationUseCase::new();
-
-        card_repository
-            .expect_get_all_without_cardmarket_id()
-            .returning(move || {
-                Box::pin(async move { Err(AppError::RepositoryError("DB error".to_string())) })
-            });
-
-        mock_card_collection_price_calculation_use_case
-            .expect_calculate_total_price()
-            .returning(|| Box::pin(async move { Ok(()) }));
-
-        let service = UpdateCardMarketIdService::new(
-            Arc::new(card_repository),
-            Arc::new(scryfall_caller),
-            Arc::new(mock_card_collection_price_calculation_use_case),
-        );
-
-        let result = service.update_cards().await;
-        assert!(matches!(
-            result,
-            Err(AppError::RepositoryError(s)) if s == "DB error"
-        ));
+        worker.run(rx).await;
     }
 }
