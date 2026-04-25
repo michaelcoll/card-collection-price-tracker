@@ -227,6 +227,7 @@ mod tests {
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
             MockImportCardUseCase, MockImportPriceUseCase, MockStatsUseCase,
+            MockUpdateCardMarketIdUseCase,
         };
 
         AppState {
@@ -236,6 +237,7 @@ mod tests {
             auth_service: Arc::new(MockAuthService::new()),
             get_collection_use_case: Arc::new(mock),
             import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
+            update_card_market_id_use_case: Arc::new(MockUpdateCardMarketIdUseCase::new()),
         }
     }
 

@@ -28,6 +28,7 @@ pub fn create_maintenance_router() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/stats", get(get_stats))
         .route("/trigger-price-update", post(trigger_price_update))
+        .route("/update-cardmarket-ids", post(update_cardmarket_ids))
 }
 
 async fn get_stats(State(state): State<AppState>) -> Result<Json<StatsResponse>, AppError> {
@@ -40,6 +41,12 @@ async fn trigger_price_update(State(state): State<AppState>) -> Result<StatusCod
         .import_price_use_case
         .import_prices_for_current_date()
         .await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn update_cardmarket_ids(State(state): State<AppState>) -> Result<StatusCode, AppError> {
+    state.update_card_market_id_use_case.update_cards().await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -321,5 +328,76 @@ mod tests {
             AppError::RepositoryError(msg) => assert_eq!(msg, "Import failed"),
             _ => panic!("Expected RepositoryError"),
         }
+    }
+
+    // --- Update CardMarket IDs ---
+
+    #[tokio::test]
+    async fn test_update_cardmarket_ids_returns_no_content_on_success() {
+        use crate::application::use_case::MockUpdateCardMarketIdUseCase;
+
+        let mut mock_update = MockUpdateCardMarketIdUseCase::new();
+        mock_update
+            .expect_update_cards()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(()) }));
+
+        let app_state = AppState::for_testing_with_update_cardmarket_id(
+            Arc::new(MockStatsUseCase::new()),
+            Arc::new(mock_update),
+        );
+
+        let result = update_cardmarket_ids(State(app_state)).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn test_update_cardmarket_ids_returns_error_on_repository_error() {
+        use crate::application::use_case::MockUpdateCardMarketIdUseCase;
+
+        let mut mock_update = MockUpdateCardMarketIdUseCase::new();
+        mock_update.expect_update_cards().times(1).returning(|| {
+            Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) })
+        });
+
+        let app_state = AppState::for_testing_with_update_cardmarket_id(
+            Arc::new(MockStatsUseCase::new()),
+            Arc::new(mock_update),
+        );
+
+        let result = update_cardmarket_ids(State(app_state)).await;
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            AppError::RepositoryError(msg) => assert_eq!(msg, "DB error"),
+            _ => panic!("Expected RepositoryError"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_update_cardmarket_ids_can_be_called_multiple_times_successfully() {
+        use crate::application::use_case::MockUpdateCardMarketIdUseCase;
+
+        let mut mock_update = MockUpdateCardMarketIdUseCase::new();
+        mock_update
+            .expect_update_cards()
+            .times(2)
+            .returning(|| Box::pin(async { Ok(()) }));
+
+        let app_state = AppState::for_testing_with_update_cardmarket_id(
+            Arc::new(MockStatsUseCase::new()),
+            Arc::new(mock_update),
+        );
+
+        assert_eq!(
+            update_cardmarket_ids(State(app_state.clone()))
+                .await
+                .unwrap(),
+            StatusCode::NO_CONTENT
+        );
+        assert_eq!(
+            update_cardmarket_ids(State(app_state)).await.unwrap(),
+            StatusCode::NO_CONTENT
+        );
     }
 }
