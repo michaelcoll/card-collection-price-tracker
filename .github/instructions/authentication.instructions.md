@@ -1,3 +1,7 @@
+---
+applyTo: "src/**,frontend/**"
+---
+
 # Authentification Bearer Token Clerk
 
 ## Configuration
@@ -16,12 +20,14 @@ CLERK_FRONTEND_API_URL=https://musical-pup-67.clerk.accounts.dev
 
 Les endpoints suivants requièrent un Bearer Token :
 
+- `GET /cards/` - Collection paginée de l'utilisateur
 - `POST /cards/import` - Import de cartes depuis un CSV ManaBox
 - `POST /cards/card-info` - Information sur une carte
 
 ## Endpoints publics
 
-- `GET /stats` - Statistiques globales (pas d'authentification requise)
+- `GET /maintenance/stats` - Statistiques globales (pas d'authentification requise)
+- `POST /maintenance/trigger-price-update` - Déclenchement manuel de la mise à jour des prix
 
 ## Utilisation
 
@@ -52,13 +58,23 @@ Pour tester en développement sans authentification réelle, vous pouvez :
 
 1. **Désactiver temporairement l'authentification** : Commentez `AuthenticatedUser(user): AuthenticatedUser` dans les endpoints
 
-2. **Mock pour tests** : Les tests unitaires utilisent `MockAuthService` qui retourne automatiquement un utilisateur de test
+2. **Mock pour tests** : Les tests unitaires utilisent `MockAuthService` (mockall) en configurant les expectations, ou `User::for_testing()` pour instancier directement un `AuthenticatedUser` dans les tests de handlers :
+
+```rust
+// Dans les tests de handlers — injection directe
+AuthenticatedUser(User::for_testing())
+
+// Dans les tests de l'extracteur — mock avec expectation
+let mut mock_auth = MockAuthService::new();
+mock_auth.expect_validate_token()
+    .returning(|_| Ok(User::new("user_id".into(), "email@test.com".into(), None)));
+```
 
 ## Architecture
 
 L'implémentation suit la Clean Architecture :
 
-- **Domain** (`domain/user.rs`) - Entité User avec id, email, name
+- **Domain** (`domain/user.rs`) - Entité `User` avec `id`, `email`, `name`; méthode `User::for_testing()` pour les tests
 - **Application** (`application/service/auth_service.rs`) - Trait `AuthService` et implémentation `ClerkAuthService`
 - **Infrastructure** (`infrastructure/adapter_in/auth_extractor.rs`) - Extracteur Axum `AuthenticatedUser`
 
@@ -67,6 +83,7 @@ Le service d'authentification (`ClerkAuthService`) :
   - JWKS URL : `https://musical-pup-67.clerk.accounts.dev/.well-known/jwks.json`
 - Valide les JWT en vérifiant :
   - La signature avec les clés publiques Clerk
+  - L'algorithme issu du header du token (**RS256 ou ES256** selon la config Clerk)
   - L'issuer (`https://musical-pup-67.clerk.accounts.dev`)
   - La date d'expiration
   - `validate_aud = false` (Clerk utilise `azp` plutôt que `aud` pour les session tokens)
@@ -84,7 +101,7 @@ Le service d'authentification (`ClerkAuthService`) :
 Chaque utilisateur authentifié a :
 - `user.id` : Le "sub" du JWT Clerk (format `user_xxx`)
 - `user.email` : Email de l'utilisateur (claim `email` configuré dans le JWT Template Clerk)
-- `user.name` : Non utilisé (non inclus dans le JWT Clerk par défaut)
+- `user.name` : Non utilisé (non inclus dans le JWT Clerk par défaut, toujours `None`)
 
 Le `user.id` est utilisé comme clé dans la base de données pour isoler les collections de chaque utilisateur (voir `card_quantity` et `collection_price_history` tables avec le champ `user_id`).
 
@@ -109,6 +126,6 @@ async fn my_endpoint(
 L'extracteur `AuthenticatedUser` :
 - Extrait automatiquement le header `Authorization`
 - Valide le token avec Clerk
-- Retourne HTTP 401 si invalide
+- Retourne HTTP 401 si invalide ou absent
 - Injecte le `User` dans votre handler
 
