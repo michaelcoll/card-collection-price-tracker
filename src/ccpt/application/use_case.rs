@@ -15,8 +15,8 @@ pub trait ImportCardUseCase: Send + Sync {
 
 #[async_trait]
 #[cfg_attr(test, automock)]
-pub trait UpdateCardMarketIdUseCase: Send + Sync {
-    async fn update_cards(&self) -> Result<(), AppError>;
+pub trait EnqueueCardMarketIdUpdateUseCase: Send + Sync {
+    async fn enqueue_pending_updates(&self) -> Result<usize, AppError>;
 }
 
 #[async_trait]

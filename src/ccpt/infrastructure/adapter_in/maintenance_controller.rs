@@ -24,6 +24,11 @@ impl From<Stats> for StatsResponse {
     }
 }
 
+#[derive(Serialize, Debug)]
+pub struct EnqueueResponse {
+    pub enqueued: usize,
+}
+
 pub fn create_maintenance_router() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/stats", get(get_stats))
@@ -45,16 +50,23 @@ async fn trigger_price_update(State(state): State<AppState>) -> Result<StatusCod
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn update_cardmarket_ids(State(state): State<AppState>) -> Result<StatusCode, AppError> {
-    state.update_card_market_id_use_case.update_cards().await?;
+async fn update_cardmarket_ids(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<EnqueueResponse>), AppError> {
+    let enqueued = state
+        .enqueue_cardmarket_id_use_case
+        .enqueue_pending_updates()
+        .await?;
 
-    Ok(StatusCode::NO_CONTENT)
+    Ok((StatusCode::ACCEPTED, Json(EnqueueResponse { enqueued })))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::use_case::{MockImportPriceUseCase, MockStatsUseCase};
+    use crate::application::use_case::{
+        MockEnqueueCardMarketIdUpdateUseCase, MockImportPriceUseCase, MockStatsUseCase,
+    };
     use std::sync::Arc;
 
     // --- Stats ---
@@ -330,40 +342,61 @@ mod tests {
         }
     }
 
-    // --- Update CardMarket IDs ---
+    // --- Update CardMarket IDs (nouveau comportement asynchrone) ---
 
     #[tokio::test]
-    async fn test_update_cardmarket_ids_returns_no_content_on_success() {
-        use crate::application::use_case::MockUpdateCardMarketIdUseCase;
-
-        let mut mock_update = MockUpdateCardMarketIdUseCase::new();
-        mock_update
-            .expect_update_cards()
+    async fn test_update_cardmarket_ids_returns_accepted_with_enqueued_count() {
+        let mut mock_enqueue = MockEnqueueCardMarketIdUpdateUseCase::new();
+        mock_enqueue
+            .expect_enqueue_pending_updates()
             .times(1)
-            .returning(|| Box::pin(async { Ok(()) }));
+            .returning(|| Box::pin(async { Ok(5) }));
 
-        let app_state = AppState::for_testing_with_update_cardmarket_id(
+        let app_state = AppState::for_testing_with_enqueue_cardmarket_id(
             Arc::new(MockStatsUseCase::new()),
-            Arc::new(mock_update),
+            Arc::new(mock_enqueue),
         );
 
         let result = update_cardmarket_ids(State(app_state)).await;
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), StatusCode::NO_CONTENT);
+        let (status, Json(body)) = result.unwrap();
+        assert_eq!(status, StatusCode::ACCEPTED);
+        assert_eq!(body.enqueued, 5);
+    }
+
+    #[tokio::test]
+    async fn test_update_cardmarket_ids_returns_accepted_with_zero_when_all_deduplicated() {
+        let mut mock_enqueue = MockEnqueueCardMarketIdUpdateUseCase::new();
+        mock_enqueue
+            .expect_enqueue_pending_updates()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(0) }));
+
+        let app_state = AppState::for_testing_with_enqueue_cardmarket_id(
+            Arc::new(MockStatsUseCase::new()),
+            Arc::new(mock_enqueue),
+        );
+
+        let result = update_cardmarket_ids(State(app_state)).await;
+        assert!(result.is_ok());
+        let (status, Json(body)) = result.unwrap();
+        assert_eq!(status, StatusCode::ACCEPTED);
+        assert_eq!(body.enqueued, 0);
     }
 
     #[tokio::test]
     async fn test_update_cardmarket_ids_returns_error_on_repository_error() {
-        use crate::application::use_case::MockUpdateCardMarketIdUseCase;
+        let mut mock_enqueue = MockEnqueueCardMarketIdUpdateUseCase::new();
+        mock_enqueue
+            .expect_enqueue_pending_updates()
+            .times(1)
+            .returning(|| {
+                Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) })
+            });
 
-        let mut mock_update = MockUpdateCardMarketIdUseCase::new();
-        mock_update.expect_update_cards().times(1).returning(|| {
-            Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) })
-        });
-
-        let app_state = AppState::for_testing_with_update_cardmarket_id(
+        let app_state = AppState::for_testing_with_enqueue_cardmarket_id(
             Arc::new(MockStatsUseCase::new()),
-            Arc::new(mock_update),
+            Arc::new(mock_enqueue),
         );
 
         let result = update_cardmarket_ids(State(app_state)).await;
@@ -375,29 +408,33 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_update_cardmarket_ids_can_be_called_multiple_times_successfully() {
-        use crate::application::use_case::MockUpdateCardMarketIdUseCase;
-
-        let mut mock_update = MockUpdateCardMarketIdUseCase::new();
-        mock_update
-            .expect_update_cards()
+    async fn test_update_cardmarket_ids_can_be_called_multiple_times() {
+        let mut mock_enqueue = MockEnqueueCardMarketIdUpdateUseCase::new();
+        mock_enqueue
+            .expect_enqueue_pending_updates()
             .times(2)
-            .returning(|| Box::pin(async { Ok(()) }));
+            .returning(|| Box::pin(async { Ok(3) }));
 
-        let app_state = AppState::for_testing_with_update_cardmarket_id(
+        let app_state = AppState::for_testing_with_enqueue_cardmarket_id(
             Arc::new(MockStatsUseCase::new()),
-            Arc::new(mock_update),
+            Arc::new(mock_enqueue),
         );
 
-        assert_eq!(
-            update_cardmarket_ids(State(app_state.clone()))
-                .await
-                .unwrap(),
-            StatusCode::NO_CONTENT
-        );
-        assert_eq!(
-            update_cardmarket_ids(State(app_state)).await.unwrap(),
-            StatusCode::NO_CONTENT
-        );
+        let (s1, Json(b1)) = update_cardmarket_ids(State(app_state.clone()))
+            .await
+            .unwrap();
+        let (s2, Json(b2)) = update_cardmarket_ids(State(app_state)).await.unwrap();
+        assert_eq!(s1, StatusCode::ACCEPTED);
+        assert_eq!(s2, StatusCode::ACCEPTED);
+        assert_eq!(b1.enqueued, 3);
+        assert_eq!(b2.enqueued, 3);
+    }
+
+    #[test]
+    fn enqueue_response_serializes_to_json() {
+        let response = EnqueueResponse { enqueued: 7 };
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("\"enqueued\""));
+        assert!(json.contains("7"));
     }
 }

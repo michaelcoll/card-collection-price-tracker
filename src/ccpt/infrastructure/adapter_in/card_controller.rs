@@ -226,8 +226,8 @@ mod tests {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockImportCardUseCase, MockImportPriceUseCase, MockStatsUseCase,
-            MockUpdateCardMarketIdUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockImportCardUseCase, MockImportPriceUseCase,
+            MockStatsUseCase,
         };
 
         AppState {
@@ -237,7 +237,7 @@ mod tests {
             auth_service: Arc::new(MockAuthService::new()),
             get_collection_use_case: Arc::new(mock),
             import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
-            update_card_market_id_use_case: Arc::new(MockUpdateCardMarketIdUseCase::new()),
+            enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
         }
     }
 

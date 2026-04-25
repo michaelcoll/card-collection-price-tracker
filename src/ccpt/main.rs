@@ -20,10 +20,7 @@ async fn main() -> Result<(), sqlx::Error> {
         .await
         .expect("Failed to create database connection pool !");
 
-    println!(
-        "{} Database connection pool started started.",
-        "✔".green().bold()
-    );
+    println!("{} Database connection pool started.", "✔".green().bold());
 
     sqlx::migrate!("./migrations")
         .run(&pool)

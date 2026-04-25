@@ -1,7 +1,7 @@
 use crate::application::error::AppError;
 use crate::application::repository::{CardPricesViewRepository, CardRepository, SetNameRepository};
 use crate::application::service::parse_service::parse_cards;
-use crate::application::use_case::{ImportCardUseCase, UpdateCardMarketIdUseCase};
+use crate::application::use_case::{EnqueueCardMarketIdUpdateUseCase, ImportCardUseCase};
 use crate::domain::user::User;
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -9,7 +9,7 @@ use std::sync::Arc;
 pub struct ImportCardService {
     card_repository: Arc<dyn CardRepository>,
     set_name_repository: Arc<dyn SetNameRepository>,
-    update_cardmarket_ids: Arc<dyn UpdateCardMarketIdUseCase>,
+    enqueue_cardmarket_ids: Arc<dyn EnqueueCardMarketIdUpdateUseCase>,
     card_prices_view_repository: Arc<dyn CardPricesViewRepository>,
 }
 
@@ -17,13 +17,13 @@ impl ImportCardService {
     pub fn new(
         card_repository: Arc<dyn CardRepository>,
         set_name_repository: Arc<dyn SetNameRepository>,
-        update_cardmarket_ids: Arc<dyn UpdateCardMarketIdUseCase>,
+        enqueue_cardmarket_ids: Arc<dyn EnqueueCardMarketIdUpdateUseCase>,
         card_prices_view_repository: Arc<dyn CardPricesViewRepository>,
     ) -> Self {
         Self {
             card_repository,
             set_name_repository,
-            update_cardmarket_ids,
+            enqueue_cardmarket_ids,
             card_prices_view_repository,
         }
     }
@@ -49,7 +49,9 @@ impl ImportCardUseCase for ImportCardService {
             self.card_repository.save(user.clone(), card).await?;
         }
 
-        self.update_cardmarket_ids.update_cards().await?;
+        self.enqueue_cardmarket_ids
+            .enqueue_pending_updates()
+            .await?;
         self.card_prices_view_repository.refresh().await?;
 
         Ok(())
@@ -62,7 +64,7 @@ mod tests {
     use crate::application::repository::{
         MockCardPricesViewRepository, MockCardRepository, MockSetNameRepository,
     };
-    use crate::application::use_case::MockUpdateCardMarketIdUseCase;
+    use crate::application::use_case::MockEnqueueCardMarketIdUpdateUseCase;
     use crate::domain::card::Card;
     use crate::domain::language_code::LanguageCode;
     use crate::domain::rarity_code::RarityCode;
@@ -74,7 +76,7 @@ mod tests {
     async fn import_cards_saves_cards_and_set_names_successfully() {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
-        let mut card_market_id_use_case = MockUpdateCardMarketIdUseCase::new();
+        let mut enqueue_use_case = MockEnqueueCardMarketIdUpdateUseCase::new();
 
         let set_code = SetCode::new("FDN");
         let set_name = SetName {
@@ -111,9 +113,9 @@ mod tests {
             .expect_save()
             .with(eq(User::for_testing()), eq(card.clone()))
             .returning(|_, _| Box::pin(async { Ok(()) }));
-        card_market_id_use_case
-            .expect_update_cards()
-            .returning(|| Box::pin(async { Ok(()) }));
+        enqueue_use_case
+            .expect_enqueue_pending_updates()
+            .returning(|| Box::pin(async { Ok(2) }));
 
         let mut card_prices_view_repository = MockCardPricesViewRepository::new();
         card_prices_view_repository
@@ -123,7 +125,7 @@ mod tests {
         let service = ImportCardService::new(
             Arc::new(card_repository),
             Arc::new(set_name_repository),
-            Arc::new(card_market_id_use_case),
+            Arc::new(enqueue_use_case),
             Arc::new(card_prices_view_repository),
         );
 
@@ -177,13 +179,13 @@ mod tests {
                 Box::pin(async { Err(AppError::RepositoryError("Save failed".to_string())) })
             });
 
-        let mock_update_card_market_id_use_case = MockUpdateCardMarketIdUseCase::new();
+        let mock_enqueue = MockEnqueueCardMarketIdUpdateUseCase::new();
         let card_prices_view_repository = MockCardPricesViewRepository::new();
 
         let service = ImportCardService::new(
             Arc::new(card_repository),
             Arc::new(set_name_repository),
-            Arc::new(mock_update_card_market_id_use_case),
+            Arc::new(mock_enqueue),
             Arc::new(card_prices_view_repository),
         );
 
@@ -198,7 +200,7 @@ mod tests {
     async fn import_cards_does_not_save_duplicate_set_name() {
         let mut card_repository = MockCardRepository::new();
         let mut set_name_repository = MockSetNameRepository::new();
-        let mut card_market_id_use_case = MockUpdateCardMarketIdUseCase::new();
+        let mut enqueue_use_case = MockEnqueueCardMarketIdUpdateUseCase::new();
 
         let set_code = SetCode::new("FDN");
         let card = Card::new_full(
@@ -226,9 +228,9 @@ mod tests {
             .expect_save()
             .with(eq(User::for_testing()), eq(card.clone()))
             .returning(|_, _| Box::pin(async { Ok(()) }));
-        card_market_id_use_case
-            .expect_update_cards()
-            .returning(|| Box::pin(async { Ok(()) }));
+        enqueue_use_case
+            .expect_enqueue_pending_updates()
+            .returning(|| Box::pin(async { Ok(1) }));
 
         let mut card_prices_view_repository = MockCardPricesViewRepository::new();
         card_prices_view_repository
@@ -238,7 +240,7 @@ mod tests {
         let service = ImportCardService::new(
             Arc::new(card_repository),
             Arc::new(set_name_repository),
-            Arc::new(card_market_id_use_case),
+            Arc::new(enqueue_use_case),
             Arc::new(card_prices_view_repository),
         );
 
@@ -253,13 +255,13 @@ mod tests {
     async fn import_cards_fails_on_parse_error() {
         let card_repository = MockCardRepository::new();
         let set_name_repository = MockSetNameRepository::new();
-        let mock_update_card_market_id_use_case = MockUpdateCardMarketIdUseCase::new();
+        let mock_enqueue = MockEnqueueCardMarketIdUpdateUseCase::new();
         let card_prices_view_repository = MockCardPricesViewRepository::new();
 
         let service = ImportCardService::new(
             Arc::new(card_repository),
             Arc::new(set_name_repository),
-            Arc::new(mock_update_card_market_id_use_case),
+            Arc::new(mock_enqueue),
             Arc::new(card_prices_view_repository),
         );
 

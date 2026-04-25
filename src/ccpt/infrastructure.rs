@@ -1,15 +1,17 @@
 use crate::application::caller::EdhRecCaller;
 use crate::application::service::auth_service::AuthService;
 use crate::application::service::card_collection_service::CardCollectionService;
+use crate::application::service::cardmarket_id_enqueue_service::CardMarketIdEnqueueService;
 use crate::application::service::collection_service::CollectionService;
 use crate::application::service::import_card_service::ImportCardService;
 use crate::application::service::import_price_service::ImportPriceService;
 use crate::application::service::stats_service::StatsService;
-use crate::application::service::update_card_market_service::UpdateCardMarketIdService;
+use crate::application::service::update_card_market_service::CardMarketIdWorker;
 use crate::application::use_case::{
-    GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase, StatsUseCase,
-    UpdateCardMarketIdUseCase,
+    EnqueueCardMarketIdUpdateUseCase, GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase,
+    StatsUseCase,
 };
+use crate::domain::card::CardId;
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
 use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCallerAdapter;
@@ -26,7 +28,9 @@ use axum::Router;
 use chrono::Utc;
 use cron_tab::AsyncCron;
 use sqlx::{Pool, Postgres};
-use std::sync::Arc;
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
+use uuid::Uuid;
 
 pub mod adapter_in;
 pub mod adapter_out;
@@ -39,7 +43,7 @@ pub struct AppState {
     pub auth_service: Arc<dyn AuthService>,
     pub get_collection_use_case: Arc<dyn GetCollectionUseCase>,
     pub import_price_use_case: Arc<dyn ImportPriceUseCase>,
-    pub update_card_market_id_use_case: Arc<dyn UpdateCardMarketIdUseCase>,
+    pub enqueue_cardmarket_id_use_case: Arc<dyn EnqueueCardMarketIdUpdateUseCase>,
 }
 
 pub async fn create_infra(pool: Pool<Postgres>) -> Router {
@@ -80,16 +84,29 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         CollectionPriceHistoryRepositoryAdapter::new(pool.clone()),
     )));
 
-    let update_card_market_id_service = Arc::new(UpdateCardMarketIdService::new(
+    // Canal non borné + HashSet de déduplication partagé entre enqueue service et worker
+    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<(CardId, Uuid)>();
+    let dedup_set = Arc::new(Mutex::new(HashSet::<CardId>::new()));
+
+    let enqueue_cardmarket_id_service = Arc::new(CardMarketIdEnqueueService::new(
+        card_repository_adapter.clone(),
+        sender,
+        dedup_set.clone(),
+    ));
+
+    let worker = CardMarketIdWorker::new(
         card_repository_adapter.clone(),
         scryfall_caller_adapter,
         card_collection_service.clone(),
-    ));
+        card_prices_view_repository_adapter.clone(),
+        dedup_set,
+    );
+    tokio::spawn(worker.run(receiver));
 
     let import_card_service = Arc::new(ImportCardService::new(
         card_repository_adapter.clone(),
         set_name_repository_adapter,
-        update_card_market_id_service.clone(),
+        enqueue_cardmarket_id_service.clone(),
         card_prices_view_repository_adapter.clone(),
     ));
 
@@ -110,7 +127,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         auth_service,
         get_collection_use_case: collection_service,
         import_price_use_case: import_price_service.clone(),
-        update_card_market_id_use_case: update_card_market_id_service,
+        enqueue_cardmarket_id_use_case: enqueue_cardmarket_id_service,
     };
 
     let mut cron = AsyncCron::new(Utc);
@@ -153,7 +170,7 @@ impl AppState {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockGetCollectionUseCase, MockImportCardUseCase, MockUpdateCardMarketIdUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
         };
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
@@ -189,13 +206,13 @@ impl AppState {
             auth_service: Arc::new(mock_auth),
             get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
             import_price_use_case,
-            update_card_market_id_use_case: Arc::new(MockUpdateCardMarketIdUseCase::new()),
+            enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
         }
     }
 
-    pub fn for_testing_with_update_cardmarket_id(
+    pub fn for_testing_with_enqueue_cardmarket_id(
         stats_use_case: Arc<dyn StatsUseCase>,
-        update_card_market_id_use_case: Arc<dyn UpdateCardMarketIdUseCase>,
+        enqueue_cardmarket_id_use_case: Arc<dyn EnqueueCardMarketIdUpdateUseCase>,
     ) -> Self {
         use crate::application::use_case::MockImportPriceUseCase;
         let mut mock_import_price = MockImportPriceUseCase::new();
@@ -204,7 +221,7 @@ impl AppState {
             .returning(|| Box::pin(async { Ok(()) }));
         let mut base =
             Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
-        base.update_card_market_id_use_case = update_card_market_id_use_case;
+        base.enqueue_cardmarket_id_use_case = enqueue_cardmarket_id_use_case;
         base
     }
 }
