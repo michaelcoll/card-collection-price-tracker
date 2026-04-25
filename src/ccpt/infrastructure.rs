@@ -8,6 +8,7 @@ use crate::application::service::stats_service::StatsService;
 use crate::application::service::update_card_market_service::UpdateCardMarketIdService;
 use crate::application::use_case::{
     GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase, StatsUseCase,
+    UpdateCardMarketIdUseCase,
 };
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
@@ -38,6 +39,7 @@ pub struct AppState {
     pub auth_service: Arc<dyn AuthService>,
     pub get_collection_use_case: Arc<dyn GetCollectionUseCase>,
     pub import_price_use_case: Arc<dyn ImportPriceUseCase>,
+    pub update_card_market_id_use_case: Arc<dyn UpdateCardMarketIdUseCase>,
 }
 
 pub async fn create_infra(pool: Pool<Postgres>) -> Router {
@@ -108,6 +110,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         auth_service,
         get_collection_use_case: collection_service,
         import_price_use_case: import_price_service.clone(),
+        update_card_market_id_use_case: update_card_market_id_service,
     };
 
     let mut cron = AsyncCron::new(Utc);
@@ -149,7 +152,9 @@ impl AppState {
     ) -> Self {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
-        use crate::application::use_case::{MockGetCollectionUseCase, MockImportCardUseCase};
+        use crate::application::use_case::{
+            MockGetCollectionUseCase, MockImportCardUseCase, MockUpdateCardMarketIdUseCase,
+        };
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
 
@@ -184,7 +189,23 @@ impl AppState {
             auth_service: Arc::new(mock_auth),
             get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
             import_price_use_case,
+            update_card_market_id_use_case: Arc::new(MockUpdateCardMarketIdUseCase::new()),
         }
+    }
+
+    pub fn for_testing_with_update_cardmarket_id(
+        stats_use_case: Arc<dyn StatsUseCase>,
+        update_card_market_id_use_case: Arc<dyn UpdateCardMarketIdUseCase>,
+    ) -> Self {
+        use crate::application::use_case::MockImportPriceUseCase;
+        let mut mock_import_price = MockImportPriceUseCase::new();
+        mock_import_price
+            .expect_import_prices_for_current_date()
+            .returning(|| Box::pin(async { Ok(()) }));
+        let mut base =
+            Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
+        base.update_card_market_id_use_case = update_card_market_id_use_case;
+        base
     }
 }
 
