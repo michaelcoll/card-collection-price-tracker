@@ -56,6 +56,7 @@ struct CollectionParams {
     sort_by: SortByParam,
     #[serde(default)]
     sort_dir: SortDirParam,
+    q: Option<String>,
 }
 
 // --- Réponses ---
@@ -149,6 +150,7 @@ async fn get_collection(
             SortDirParam::Asc => SortDirection::Asc,
             SortDirParam::Desc => SortDirection::Desc,
         },
+        search_query: params.q,
     };
 
     let result = state
@@ -277,6 +279,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -314,6 +317,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -342,6 +346,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -374,6 +379,7 @@ mod tests {
             page_size: 9999,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -404,6 +410,7 @@ mod tests {
             page_size: 5,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -432,6 +439,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -467,6 +475,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::Avg,
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -492,6 +501,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::SetCode,
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -517,6 +527,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::LanguageCode,
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -542,6 +553,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::Asc,
+            q: None,
         };
 
         let result = get_collection(
@@ -567,6 +579,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::Desc,
+            q: None,
         };
 
         let result = get_collection(
@@ -605,6 +618,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -654,6 +668,7 @@ mod tests {
             page_size: 20,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -692,6 +707,7 @@ mod tests {
             page_size: 1,
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
+            q: None,
         };
 
         let result = get_collection(
@@ -707,6 +723,58 @@ mod tests {
         assert_eq!(response.items.len(), 1);
         assert_eq!(response.page, 2);
         assert_eq!(response.page_size, 1);
+    }
+
+    #[tokio::test]
+    async fn get_collection_passes_search_query_to_use_case() {
+        let mut mock = MockGetCollectionUseCase::new();
+        mock.expect_get_collection()
+            .withf(|_, q| q.search_query == Some("gob".to_string()))
+            .returning(|_, _| Box::pin(async { Ok(make_paginated(vec![], 0, 20)) }));
+
+        let app_state = make_app_state_with_collection(mock);
+        let params = CollectionParams {
+            page: 0,
+            page_size: 20,
+            sort_by: SortByParam::default(),
+            sort_dir: SortDirParam::default(),
+            q: Some("gob".to_string()),
+        };
+
+        let result = get_collection(
+            AuthenticatedUser(User::for_testing()),
+            State(app_state),
+            Query(params),
+        )
+        .await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn get_collection_passes_none_search_query_when_q_is_absent() {
+        let mut mock = MockGetCollectionUseCase::new();
+        mock.expect_get_collection()
+            .withf(|_, q| q.search_query.is_none())
+            .returning(|_, _| Box::pin(async { Ok(make_paginated(vec![], 0, 20)) }));
+
+        let app_state = make_app_state_with_collection(mock);
+        let params = CollectionParams {
+            page: 0,
+            page_size: 20,
+            sort_by: SortByParam::default(),
+            sort_dir: SortDirParam::default(),
+            q: None,
+        };
+
+        let result = get_collection(
+            AuthenticatedUser(User::for_testing()),
+            State(app_state),
+            Query(params),
+        )
+        .await;
+
+        assert!(result.is_ok());
     }
 
     #[tokio::test]
