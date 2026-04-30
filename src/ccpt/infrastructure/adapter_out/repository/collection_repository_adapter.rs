@@ -23,49 +23,70 @@ impl CollectionRepository for CollectionRepositoryAdapter {
         user_id: &str,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError> {
+        let (where_clause, order_prefix) = match &query.search_query {
+            Some(_) => (
+                "AND (cp.name ILIKE '%' || $4 || '%' OR $4 <% cp.name)".to_string(),
+                "word_similarity($4, cp.name) DESC,".to_string(),
+            ),
+            None => (String::new(), String::new()),
+        };
+
         let sql = format!(
             r#"SELECT
-                 p.set_code,
+                 cp.set_code,
                  sn.name AS set_name,
-                 p.collector_number,
-                 p.language_code,
-                 p.foil,
-                 p.name,
-                 p.rarity,
-                 p.scryfall_id,
-                 p.quantity,
-                 p.purchase_price,
-                 p.avg,
-                 p.low,
-                 p.trend,
-                 p.avg1,
-                 p.avg7,
-                 p.avg30
-               FROM mv_card_prices p
-               JOIN set_name sn ON sn.set_code = p.set_code
-               WHERE p.user_id = $1
-               ORDER BY {} {} NULLS LAST, p.name ASC
+                 cp.collector_number,
+                 cp.language_code,
+                 cp.foil,
+                 cp.name,
+                 cp.rarity,
+                 cp.scryfall_id,
+                 cp.quantity,
+                 cp.purchase_price,
+                 cp.avg,
+                 cp.low,
+                 cp.trend,
+                 cp.avg1,
+                 cp.avg7,
+                 cp.avg30
+               FROM mv_card_prices cp
+               JOIN set_name sn ON sn.set_code = cp.set_code
+               WHERE cp.user_id = $1
+               {}
+               ORDER BY {} {} {} NULLS LAST, cp.name
                LIMIT $2 OFFSET $3"#,
-            query.sort_by, query.sort_dir,
+            where_clause, order_prefix, query.sort_by, query.sort_dir,
         );
 
         let offset = (query.page * query.page_size) as i64;
         let limit = query.page_size as i64;
 
-        let entities = sqlx::query_as::<_, CardWithPriceEntity>(&sql)
+        let base_query = sqlx::query_as::<_, CardWithPriceEntity>(&sql)
             .bind(user_id)
             .bind(limit)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| AppError::RepositoryError(e.to_string()))?;
+            .bind(offset);
 
-        let total: i64 =
-            sqlx::query_scalar("SELECT COUNT(*) FROM mv_card_prices WHERE user_id = $1")
-                .bind(user_id)
-                .fetch_one(&self.pool)
-                .await
-                .map_err(|e| AppError::RepositoryError(e.to_string()))?;
+        let entities = match &query.search_query {
+            Some(q) => base_query.bind(q.clone()),
+            None => base_query,
+        }
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::RepositoryError(e.to_string()))?;
+
+        let count_sql = match &query.search_query {
+            Some(_) => "SELECT COUNT(*) FROM mv_card_prices cp WHERE cp.user_id = $1 AND (cp.name ILIKE '%' || $2 || '%' OR $2 <% cp.name)".to_string(),
+            None => "SELECT COUNT(*) FROM mv_card_prices cp WHERE cp.user_id = $1".to_string(),
+        };
+
+        let base_count = sqlx::query_scalar::<_, i64>(&count_sql).bind(user_id);
+        let total: i64 = match &query.search_query {
+            Some(q) => base_count.bind(q.clone()),
+            None => base_count,
+        }
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::RepositoryError(e.to_string()))?;
 
         Ok(PaginatedCollection {
             items: entities.into_iter().map(Card::from).collect(),
@@ -680,6 +701,7 @@ mod tests {
 
     #[sqlx::test]
     async fn get_paginated_sorts_by_language_code_descending(pool: PgPool) {
+        // ...existing test body...
         sqlx::query!(
             r#"INSERT INTO set_name (set_code, name) VALUES ('TST', 'Test Set') ON CONFLICT DO NOTHING"#
         )
@@ -724,5 +746,51 @@ mod tests {
         let first_lang = result.items[0].id.language_code.to_string();
         let second_lang = result.items[1].id.language_code.to_string();
         assert!(first_lang >= second_lang);
+    }
+
+    #[sqlx::test]
+    async fn get_paginated_filters_by_search_query_fuzzy(pool: PgPool) {
+        sqlx::query!(
+            r#"INSERT INTO set_name (set_code, name) VALUES ('TST', 'Test Set') ON CONFLICT DO NOTHING"#
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        sqlx::query!(
+            r#"INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
+               VALUES ('TST', '1', 'EN', false, 'Goblin Guide', 'C', $1, 1),
+                      ('TST', '2', 'EN', false, 'Sol Ring', 'C', $2, 2)
+               ON CONFLICT DO NOTHING"#,
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        sqlx::query!(
+            r#"INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+               VALUES ('TST', '1', 'EN', false, 'user1', 1, 100),
+                      ('TST', '2', 'EN', false, 'user1', 1, 100)"#
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        setup_price(&pool, 1, 100).await;
+        setup_price(&pool, 2, 100).await;
+        refresh_view(&pool).await;
+
+        let adapter = CollectionRepositoryAdapter::new(pool);
+        let query = CollectionQuery {
+            search_query: Some("gob".to_string()),
+            ..CollectionQuery::default()
+        };
+        let result = adapter.get_paginated("user1", query).await.unwrap();
+
+        assert_eq!(result.items.len(), 1);
+        assert_eq!(result.total, 1);
+        assert_eq!(result.items[0].name, "Goblin Guide");
     }
 }

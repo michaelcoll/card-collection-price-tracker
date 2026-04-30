@@ -43,6 +43,7 @@ pub struct CollectionQuery {
     pub page_size: u32,
     pub sort_by: CollectionSortField,
     pub sort_dir: SortDirection,
+    pub search_query: Option<String>,
 }
 
 impl Default for CollectionQuery {
@@ -52,6 +53,7 @@ impl Default for CollectionQuery {
             page_size: 20,
             sort_by: CollectionSortField::default(),
             sort_dir: SortDirection::default(),
+            search_query: None,
         }
     }
 }
@@ -101,5 +103,6 @@ mod tests {
         assert_eq!(q.page_size, 20);
         assert_eq!(q.sort_by, CollectionSortField::Trend);
         assert_eq!(q.sort_dir, SortDirection::Desc);
+        assert_eq!(q.search_query, None);
     }
 }

@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/cards?page=5&page_size=20&sort_by=set_code&sort_dir=asc
+  url: {{baseUrl}}/cards?page=5&page_size=20&sort_by=set_code&sort_dir=asc&q=gob
   body: none
   auth: inherit
 }
@@ -15,6 +15,7 @@ params:query {
   page_size: 20
   sort_by: set_code
   sort_dir: asc
+  q: gob
 }
 
 docs {
@@ -28,8 +29,9 @@ docs {
   ### Paramètres de requête :
   - `page` (défaut: 0) : Numéro de page (commence à 0)
   - `page_size` (défaut: 20, max: 100) : Nombre de cartes par page
-  - `sort_by` (défaut: avg) : Champ de tri — `avg` | `set_code` | `language_code`
+  - `sort_by` (défaut: trend) : Champ de tri — `avg` | `trend` | `set_code` | `language_code`
   - `sort_dir` (défaut: desc) : Sens du tri — `asc` | `desc`
+  - `q` (optionnel) : Recherche fuzzy sur le nom de la carte (utilise `pg_trgm` — ILIKE + word_similarity). Lorsque fourni, les résultats sont triés par similarité en priorité.
   
   ### Réponse 200 :
   ```json

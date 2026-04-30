@@ -40,6 +40,7 @@ mod tests {
             page_size: 10,
             sort_by: CollectionSortField::SetCode,
             sort_dir: SortDirection::Asc,
+            search_query: None,
         };
         let expected_result = PaginatedCollection {
             items: vec![],
