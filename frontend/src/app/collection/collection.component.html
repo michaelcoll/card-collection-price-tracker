@@ -67,8 +67,28 @@
     />
   </div>
 
+  <!-- Barre de recherche -->
+  <div class="mt-6">
+    <div class="flex items-center gap-3 w-full bg-surface-container rounded-lg px-4 py-2.5">
+      <mat-icon
+        fontSet="material-symbols-rounded"
+        class="text-[1.25rem] w-5 h-5 leading-none flex items-center justify-center text-on-surface-variant shrink-0"
+      >
+        search
+      </mat-icon>
+      <input
+        type="search"
+        class="flex-1 bg-transparent border-0 outline-none font-sans text-sm text-on-surface placeholder:text-on-surface-variant"
+        placeholder="Rechercher dans la collection…"
+        [value]="searchQuery()"
+        (input)="onSearch($any($event.target).value)"
+        aria-label="Rechercher dans la collection"
+      />
+    </div>
+  </div>
+
   <!-- Grille de cartes -->
-  <div class="mt-10">
+  <div class="mt-6">
     @if (isLoading()) {
       <div class="flex justify-center py-20">
         <mat-icon
