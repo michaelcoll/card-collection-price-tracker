@@ -16,7 +16,7 @@ rtk ng build        # Production build
 
 ⚠️ **MANDATORY**: Every time you work on any frontend file (Angular components, styles, templates), you **MUST**
 strictly follow the design system defined in [
-`.github/instructions/design-system.instructions.md`](design-system.instructions.md). No exceptions.
+`design-system.instructions.md`](design-system.instructions.md). No exceptions.
 
 ### Tailwind CSS — règle absolue
 
