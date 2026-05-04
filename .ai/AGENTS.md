@@ -55,3 +55,10 @@ The system integrates with:
 - **CardMarket**: Price data via JSON downloads (not authenticated API)
 - **Scryfall**: Card metadata and IDs
 - **EDHRec**: Commander format analytics
+
+# Other instructions
+
+- **Authentification** : [authentication.instructions.md](instructions/authentication.instructions.md)
+- **Backend** : [backend.instructions.md](instructions/backend.instructions.md)
+- **Frontend** : [frontend.instructions.md](instructions/frontend.instructions.md)
+- **Design System** : [design-system.instructions.md](instructions/design-system.instructions.md)
