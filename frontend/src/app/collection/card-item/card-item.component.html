@@ -4,7 +4,7 @@
       <img
         [src]="imageUrl"
         [alt]="card().name"
-        class="absolute inset-0 w-full aspect-2.5/3.5 object-cover rounded-4xl lg:rounded-2xl dark:shadow-[0_0_3px_2px_rgba(255,255,255,0.08)]"
+        class="absolute inset-0 w-full aspect-2.5/3.5 object-cover rounded-4xl lg:rounded-2xl shadow-[0_0_3px_2px_rgba(0,0,0,0.4)] dark:shadow-[0_0_3px_2px_rgba(255,255,255,0.08)]"
         [style.transform]="'rotate(' + angle + 'deg)'"
         [style.z-index]="$index + 1"
         loading="lazy"
@@ -13,7 +13,7 @@
     <img
       [src]="imageUrl"
       [alt]="card().name"
-      class="relative z-10 w-full aspect-2.5/3.5 object-cover rounded-xl lg:rounded-2xl sm:rounded-xl dark:shadow-[0_0_3px_2px_rgba(255,255,255,0.08)]"
+      class="relative z-10 w-full aspect-2.5/3.5 object-cover rounded-xl lg:rounded-2xl sm:rounded-xl shadow-[0_0_3px_2px_rgba(0,0,0,0.4)] dark:shadow-[0_0_3px_2px_rgba(255,255,255,0.08)]"
       loading="lazy"
     />
   </div>
@@ -39,6 +39,11 @@
             ? 'font-sans text-xs font-bold px-2 py-0.5 text-error flex items-center gap-1 bg-error-container/25 rounded-full'
             : 'font-sans text-xs font-bold px-2 py-0.5 text-tertiary flex items-center gap-1 bg-tertiary-container/25 rounded-full'
         "
+        #tooltip="matTooltip"
+        [matTooltip]="isPriceTrendingDown ? trendPriceDiff + ' €' : ''"
+        [matTooltipClass]="isPriceTrendingDown ? 'tooltip-error' : ''"
+        matTooltipPosition="below"
+        (touchstart)="isPriceTrendingDown && tooltip.show(); $event.stopPropagation()"
       >
         <mat-icon
           fontSet="material-symbols-rounded"
@@ -46,9 +51,6 @@
           >{{ isPriceTrendingDown ? 'trending_down' : 'trending_up' }}</mat-icon
         >
         {{ trendPrice }} €
-        @if (isPriceTrendingDown) {
-          <span class="text-error/25">•</span> {{ trendPriceDiff }} €
-        }
       </span>
     }
   </div>

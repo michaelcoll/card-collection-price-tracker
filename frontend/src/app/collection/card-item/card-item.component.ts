@@ -1,12 +1,13 @@
 import { Component, input } from '@angular/core';
 import { CollectionCard } from '../../api/bindings/CollectionCard';
 import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-card-item',
   standalone: true,
   templateUrl: './card-item.component.html',
-  imports: [MatIcon],
+  imports: [MatIcon, MatTooltip],
 })
 export class CardItemComponent {
   card = input.required<CollectionCard>();
@@ -48,10 +49,5 @@ export class CardItemComponent {
     return Array.from({ length: count }, (_, i) =>
       Math.round(-maxAngle + (i / (count - 1)) * 2 * maxAngle),
     );
-  }
-
-  get description(): string {
-    const foil = this.card().foil ? '⭑' : '·';
-    return `${this.card().collector_number} ${this.card().set_code.toUpperCase()} ${foil} ${this.card().language_code}`;
   }
 }
