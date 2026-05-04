@@ -16,15 +16,19 @@ export class CardService {
     pageSize: number,
     sortBy: SortBy,
     sortDir: SortDir,
+    q?: string,
   ): Observable<PaginatedCollection> {
     return from(this.auth.getAuthHeaders()).pipe(
       switchMap((authHeaders) => {
         const headers = new HttpHeaders(authHeaders);
-        const params = new HttpParams()
+        let params = new HttpParams()
           .set('page', page)
           .set('page_size', pageSize)
           .set('sort_by', sortBy)
           .set('sort_dir', sortDir);
+        if (q && q.trim().length > 0) {
+          params = params.set('q', q.trim());
+        }
         return this.http.get<PaginatedCollection>('/api/cards', { headers, params });
       }),
     );

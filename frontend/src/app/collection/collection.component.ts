@@ -15,6 +15,8 @@ import { CardService } from './card.service';
 import { CollectionCard } from '../api/bindings/CollectionCard';
 import { SortDir } from '../api/bindings/SortDir';
 import { SortBy } from '../api/bindings/SortBy';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 @Component({
   selector: 'app-collection',
@@ -34,13 +36,20 @@ export class CollectionComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly cards = signal<CollectionCard[]>([]);
   protected readonly total = signal(0);
   protected readonly sortDir = signal<SortDir>('desc');
+  protected readonly searchQuery = signal<string>('');
 
   private currentPage = 0;
   private readonly pageSize = 60;
   private hasMore = true;
   private observer?: IntersectionObserver;
+  private readonly searchSubject = new Subject<string>();
 
   ngOnInit(): void {
+    this.searchSubject.pipe(debounceTime(300)).subscribe(() => {
+      this.currentPage = 0;
+      this.hasMore = true;
+      this.loadPage(0, true);
+    });
     this.loadPage(0, true);
   }
 
@@ -65,11 +74,17 @@ export class CollectionComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.observer?.disconnect();
+    this.searchSubject.complete();
   }
 
   toggleSort(): void {
     this.sortDir.update((d) => (d === 'desc' ? 'asc' : 'desc'));
     this.loadPage(0, true);
+  }
+
+  onSearch(value: string): void {
+    this.searchQuery.set(value);
+    this.searchSubject.next(value);
   }
 
   private loadPage(page: number, reset: boolean): void {
@@ -80,25 +95,27 @@ export class CollectionComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isLoadingMore.set(true);
     }
 
-    this.cardService.getCollection(page, this.pageSize, 'trend', this.sortDir()).subscribe({
-      next: (result) => {
-        this.total.set(result.total);
-        if (reset) {
-          this.cards.set(result.items);
-        } else {
-          this.cards.update((prev) => [...prev, ...result.items]);
-        }
-        this.currentPage = page;
-        this.hasMore = result.items.length === this.pageSize;
-        this.isLoading.set(false);
-        this.isLoadingMore.set(false);
-      },
-      error: (err) => {
-        this.isLoading.set(false);
-        this.isLoadingMore.set(false);
-        this.toastService.error(`Erreur lors du chargement : ${err.message ?? 'Inconnue'}`);
-      },
-    });
+    this.cardService
+      .getCollection(page, this.pageSize, 'trend', this.sortDir(), this.searchQuery())
+      .subscribe({
+        next: (result) => {
+          this.total.set(result.total);
+          if (reset) {
+            this.cards.set(result.items);
+          } else {
+            this.cards.update((prev) => [...prev, ...result.items]);
+          }
+          this.currentPage = page;
+          this.hasMore = result.items.length === this.pageSize;
+          this.isLoading.set(false);
+          this.isLoadingMore.set(false);
+        },
+        error: (err) => {
+          this.isLoading.set(false);
+          this.isLoadingMore.set(false);
+          this.toastService.error(`Erreur lors du chargement : ${err.message ?? 'Inconnue'}`);
+        },
+      });
   }
 
   triggerFileInput(): void {
