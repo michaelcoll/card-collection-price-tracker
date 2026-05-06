@@ -1,12 +1,9 @@
+use ccpt::infrastructure;
 use colored::Colorize;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-
-mod application;
-mod domain;
-mod infrastructure;
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {

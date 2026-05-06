@@ -9,6 +9,7 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use utoipa::ToSchema;
 
 pub fn create_card_router() -> axum::Router<AppState> {
     axum::Router::new()
@@ -18,10 +19,10 @@ pub fn create_card_router() -> axum::Router<AppState> {
 }
 
 // --- Query params ---
-#[derive(Deserialize, Default, TS)]
+#[derive(Deserialize, Default, TS, ToSchema)]
 #[serde(rename = "SortBy", rename_all = "snake_case")]
 #[ts(export, export_to = "SortBy.ts")]
-enum SortByParam {
+pub enum SortByParam {
     Avg,
     #[default]
     Trend,
@@ -29,10 +30,10 @@ enum SortByParam {
     LanguageCode,
 }
 
-#[derive(Deserialize, Default, TS)]
+#[derive(Deserialize, Default, TS, ToSchema)]
 #[serde(rename = "SortDir", rename_all = "snake_case")]
 #[ts(export, export_to = "SortDir.ts")]
-enum SortDirParam {
+pub enum SortDirParam {
     Asc,
     #[default]
     Desc,
@@ -47,7 +48,7 @@ fn max_page_size() -> u32 {
 }
 
 #[derive(Deserialize)]
-struct CollectionParams {
+pub(crate) struct CollectionParams {
     #[serde(default)]
     page: u32,
     #[serde(default = "default_page_size")]
@@ -60,49 +61,49 @@ struct CollectionParams {
 }
 
 // --- Réponses ---
-#[derive(Serialize, TS)]
+#[derive(Serialize, TS, ToSchema)]
 #[serde(rename = "PriceGuide")]
 #[ts(export, export_to = "PriceGuide.ts")]
-struct PriceGuideResponse {
-    low: Option<u32>,
-    avg: Option<u32>,
-    trend: Option<u32>,
-    avg1: Option<u32>,
-    avg7: Option<u32>,
-    avg30: Option<u32>,
+pub struct PriceGuideResponse {
+    pub low: Option<u32>,
+    pub avg: Option<u32>,
+    pub trend: Option<u32>,
+    pub avg1: Option<u32>,
+    pub avg7: Option<u32>,
+    pub avg30: Option<u32>,
 }
 
-#[derive(Serialize, TS)]
+#[derive(Serialize, TS, ToSchema)]
 #[serde(rename = "CollectionCard")]
 #[ts(export, export_to = "CollectionCard.ts")]
-struct CollectionCardResponse {
-    set_code: String,
-    collector_number: String,
-    language_code: String,
-    foil: bool,
-    name: String,
-    rarity_code: String,
-    scryfall_id: String,
-    quantity: u8,
-    purchase_price: u32,
-    price_guide: Option<PriceGuideResponse>,
+pub struct CollectionCardResponse {
+    pub set_code: String,
+    pub collector_number: String,
+    pub language_code: String,
+    pub foil: bool,
+    pub name: String,
+    pub rarity_code: String,
+    pub scryfall_id: String,
+    pub quantity: u8,
+    pub purchase_price: u32,
+    pub price_guide: Option<PriceGuideResponse>,
 }
 
-#[derive(Serialize, Debug, TS)]
+#[derive(Serialize, Debug, TS, ToSchema)]
 #[serde(rename = "Message")]
 #[ts(export, export_to = "Message.ts")]
-struct MessageResponse {
-    message: String,
+pub struct MessageResponse {
+    pub message: String,
 }
 
-#[derive(Serialize, TS)]
+#[derive(Serialize, TS, ToSchema)]
 #[serde(rename = "PaginatedCollection")]
 #[ts(export, export_to = "PaginatedCollection.ts")]
-struct PaginatedCollectionResponse {
-    items: Vec<CollectionCardResponse>,
-    total: u64,
-    page: u32,
-    page_size: u32,
+pub struct PaginatedCollectionResponse {
+    pub items: Vec<CollectionCardResponse>,
+    pub total: u64,
+    pub page: u32,
+    pub page_size: u32,
 }
 
 impl From<Card> for CollectionCardResponse {
@@ -130,7 +131,24 @@ impl From<Card> for CollectionCardResponse {
 }
 
 // --- Handler ---
-async fn get_collection(
+#[utoipa::path(
+    get,
+    path = "/cards/",
+    params(
+        ("page" = Option<u32>, Query, description = "Page number (starts at 0)"),
+        ("page_size" = Option<u32>, Query, description = "Items per page (max 100)"),
+        ("sort_by" = Option<SortByParam>, Query, description = "Sort field"),
+        ("sort_dir" = Option<SortDirParam>, Query, description = "Sort direction"),
+        ("q" = Option<String>, Query, description = "Fuzzy search on card name or set"),
+    ),
+    responses(
+        (status = 200, description = "Paginated card collection", body = PaginatedCollectionResponse),
+        (status = 401, description = "Missing or invalid token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "cards",
+)]
+pub(crate) async fn get_collection(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     Query(params): Query<CollectionParams>,
@@ -170,7 +188,23 @@ async fn get_collection(
     }))
 }
 
-async fn import_cards(
+#[utoipa::path(
+    post,
+    path = "/cards/import",
+    request_body(
+        content = String,
+        content_type = "text/plain",
+        description = "ManaBox CSV content (max 10 MB)",
+    ),
+    responses(
+        (status = 200, description = "Import successful", body = MessageResponse),
+        (status = 400, description = "Invalid body (non UTF-8, ...)"),
+        (status = 401, description = "Missing or invalid token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "cards",
+)]
+pub(crate) async fn import_cards(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     body: axum::body::Body,
@@ -196,7 +230,17 @@ async fn import_cards(
     }))
 }
 
-async fn get_card_info(
+#[utoipa::path(
+    post,
+    path = "/cards/card-info",
+    responses(
+        (status = 200, description = "Card info from EDHRec"),
+        (status = 401, description = "Missing or invalid token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "cards",
+)]
+pub(crate) async fn get_card_info(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
 ) -> Result<String, (StatusCode, String)> {

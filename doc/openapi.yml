@@ -1,0 +1,289 @@
+openapi: 3.1.0
+info:
+  title: Card Collection Price Tracker API
+  description: 'REST API for tracking Magic: The Gathering card prices'
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 0.1.0
+paths:
+  /cards/:
+    get:
+      tags:
+      - cards
+      operationId: get_collection
+      parameters:
+      - name: page
+        in: query
+        description: Page number (starts at 0)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+      - name: page_size
+        in: query
+        description: Items per page (max 100)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+      - name: sort_by
+        in: query
+        description: Sort field
+        required: false
+        schema:
+          $ref: '#/components/schemas/SortByParam'
+      - name: sort_dir
+        in: query
+        description: Sort direction
+        required: false
+        schema:
+          $ref: '#/components/schemas/SortDirParam'
+      - name: q
+        in: query
+        description: Fuzzy search on card name or set
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Paginated card collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCollectionResponse'
+        '401':
+          description: Missing or invalid token
+      security:
+      - bearer_auth: []
+  /cards/card-info:
+    post:
+      tags:
+      - cards
+      operationId: get_card_info
+      responses:
+        '200':
+          description: Card info from EDHRec
+        '401':
+          description: Missing or invalid token
+      security:
+      - bearer_auth: []
+  /cards/import:
+    post:
+      tags:
+      - cards
+      operationId: import_cards
+      requestBody:
+        description: ManaBox CSV content (max 10 MB)
+        content:
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        '200':
+          description: Import successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Invalid body (non UTF-8, ...)
+        '401':
+          description: Missing or invalid token
+      security:
+      - bearer_auth: []
+  /maintenance/stats:
+    get:
+      tags:
+      - maintenance
+      operationId: get_stats
+      responses:
+        '200':
+          description: Global database statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+  /maintenance/trigger-price-update:
+    post:
+      tags:
+      - maintenance
+      operationId: trigger_price_update
+      responses:
+        '204':
+          description: Price update triggered successfully
+  /maintenance/update-cardmarket-ids:
+    post:
+      tags:
+      - maintenance
+      operationId: update_cardmarket_ids
+      responses:
+        '202':
+          description: CardMarket IDs enqueued for update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnqueueResponse'
+components:
+  schemas:
+    CollectionCardResponse:
+      type: object
+      required:
+      - set_code
+      - collector_number
+      - language_code
+      - foil
+      - name
+      - rarity_code
+      - scryfall_id
+      - quantity
+      - purchase_price
+      properties:
+        collector_number:
+          type: string
+        foil:
+          type: boolean
+        language_code:
+          type: string
+        name:
+          type: string
+        price_guide:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/PriceGuideResponse'
+        purchase_price:
+          type: integer
+          format: int32
+          minimum: 0
+        quantity:
+          type: integer
+          format: int32
+          minimum: 0
+        rarity_code:
+          type: string
+        scryfall_id:
+          type: string
+        set_code:
+          type: string
+    EnqueueResponse:
+      type: object
+      required:
+      - enqueued
+      properties:
+        enqueued:
+          type: integer
+          minimum: 0
+    MessageResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+    PaginatedCollectionResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionCardResponse'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        page_size:
+          type: integer
+          format: int32
+          minimum: 0
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    PriceGuideResponse:
+      type: object
+      properties:
+        avg:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+        avg1:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+        avg30:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+        avg7:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+        low:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+        trend:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+    SortByParam:
+      type: string
+      enum:
+      - avg
+      - trend
+      - set_code
+      - language_code
+    SortDirParam:
+      type: string
+      enum:
+      - asc
+      - desc
+    StatsResponse:
+      type: object
+      required:
+      - card_number
+      - card_price_number
+      - db_size_mb
+      properties:
+        card_number:
+          type: integer
+          format: int32
+          minimum: 0
+        card_price_number:
+          type: integer
+          format: int32
+          minimum: 0
+        db_size_mb:
+          type: integer
+          format: int32
+          minimum: 0
+  securitySchemes:
+    bearer_auth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: cards
+  description: Collection management (authentication required)
+- name: maintenance
+  description: Maintenance operations (public)
