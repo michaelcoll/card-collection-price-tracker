@@ -1,5 +1,5 @@
 # Launch format, test and lint
-default: format test lint
+default: generate-openapi format test lint
 
 # Clean the build files
 clean:
@@ -8,6 +8,10 @@ clean:
 # Build the app
 build:
     @cargo build
+
+# Generate the OpenAPI spec file (openapi.yml)
+generate-openapi:
+    @cargo run --bin generate-openapi
 
 # Build the app in release mode
 build-release:

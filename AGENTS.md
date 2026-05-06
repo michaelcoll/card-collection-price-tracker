@@ -19,6 +19,10 @@ Only use the **terminal** (`run_in_terminal`) when strictly necessary:
 - Running migrations or git commands
 - Starting background processes (dev server, …)
 
+> ⚠️ **Never** use `ls`, `find`, `cat`, `grep` or similar shell commands to explore the codebase.
+> These tasks **must** be done with the IDE tools above (`list_dir`, `file_search`, `read_file`, `grep_search`).
+> Using the terminal for exploration wastes tokens and bypasses IDE indexing.
+
 ---
 
 ## RTK — Token-Optimized CLI

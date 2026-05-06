@@ -35,6 +35,7 @@ use uuid::Uuid;
 pub mod adapter_in;
 pub mod adapter_out;
 
+// ---- AppState ----
 #[derive(Clone)]
 pub struct AppState {
     pub import_card_use_case: Arc<dyn ImportCardUseCase>,

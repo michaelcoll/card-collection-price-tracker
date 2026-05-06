@@ -6,8 +6,9 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use serde::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, ToSchema)]
 pub struct StatsResponse {
     pub card_number: u32,
     pub card_price_number: u32,
@@ -24,7 +25,7 @@ impl From<Stats> for StatsResponse {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, ToSchema)]
 pub struct EnqueueResponse {
     pub enqueued: usize,
 }
@@ -36,12 +37,32 @@ pub fn create_maintenance_router() -> axum::Router<AppState> {
         .route("/update-cardmarket-ids", post(update_cardmarket_ids))
 }
 
-async fn get_stats(State(state): State<AppState>) -> Result<Json<StatsResponse>, AppError> {
+#[utoipa::path(
+    get,
+    path = "/maintenance/stats",
+    responses(
+        (status = 200, description = "Global database statistics", body = StatsResponse),
+    ),
+    tag = "maintenance",
+)]
+pub(crate) async fn get_stats(
+    State(state): State<AppState>,
+) -> Result<Json<StatsResponse>, AppError> {
     let stats = state.stats_use_case.get_stats().await?;
     Ok(Json(stats.into()))
 }
 
-async fn trigger_price_update(State(state): State<AppState>) -> Result<StatusCode, AppError> {
+#[utoipa::path(
+    post,
+    path = "/maintenance/trigger-price-update",
+    responses(
+        (status = 204, description = "Price update triggered successfully"),
+    ),
+    tag = "maintenance",
+)]
+pub(crate) async fn trigger_price_update(
+    State(state): State<AppState>,
+) -> Result<StatusCode, AppError> {
     state
         .import_price_use_case
         .import_prices_for_current_date()
@@ -50,7 +71,15 @@ async fn trigger_price_update(State(state): State<AppState>) -> Result<StatusCod
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn update_cardmarket_ids(
+#[utoipa::path(
+    post,
+    path = "/maintenance/update-cardmarket-ids",
+    responses(
+        (status = 202, description = "CardMarket IDs enqueued for update", body = EnqueueResponse),
+    ),
+    tag = "maintenance",
+)]
+pub(crate) async fn update_cardmarket_ids(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<EnqueueResponse>), AppError> {
     let enqueued = state

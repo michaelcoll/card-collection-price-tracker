@@ -20,6 +20,7 @@ ratelimit = "2.0"
 cron_tab = { version = "0.2", features = ["async"] }
 jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
 ts-rs = "12.0"
+utoipa = { version = "5", features = ["axum_extras", "yaml"] }
 
 [dev-dependencies]
 mockall = "0.14"
@@ -29,3 +30,12 @@ cargo-husky = "1"
 [[bin]]
 name = "ccpt"
 path = "src/ccpt/main.rs"
+
+[[bin]]
+name = "generate-openapi"
+path = "src/ccpt/generate_openapi.rs"
+
+[lib]
+name = "ccpt"
+path = "src/ccpt/lib.rs"
+
