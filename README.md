@@ -14,6 +14,7 @@ prices and stores them in a PostgreSQL database, exposing a REST API consumed by
 - **PostgreSQL** 18
 - **Docker** & **Docker Compose** (optional, for containerised setup)
 - [`just`](https://github.com/casey/just) — task runner
+- [`tmux`](https://github.com/tmux/tmux) — terminal multiplexer (for `just run`)
 - `cargo-llvm-cov`, `cargo-nextest` and `sqlx-cli` — for tests and query checks (installed via `just prepare`)
 
 ## Setup
@@ -47,16 +48,20 @@ prices and stores them in a PostgreSQL database, exposing a REST API consumed by
    ```bash
    just prepare
    ```
-4. Run the backend:
+4. Install frontend dependencies:
+   ```bash
+   cd frontend && pnpm install && cd ..
+   ```
+5. Run the backend **and** the frontend together (requires `tmux`):
    ```bash
    just run
    ```
-5. Install and run the frontend:
-   ```bash
-   cd frontend
-   pnpm install
-   pnpm start        # serves on http://localhost:4200 (proxied to backend)
-   ```
+   This opens a tmux session named `ccpt` with two side-by-side panes:
+    - **Left pane** — backend (`cargo run`), API on <http://localhost:8080>
+    - **Right pane** — frontend (`pnpm start`), app on <http://localhost:4200>
+
+   Use `Ctrl+B d` to detach from the session without stopping the processes.  
+   Re-running `just run` will kill the previous session and start a fresh one.
 
 ## Environment Variables
 
@@ -76,7 +81,7 @@ prices and stores them in a PostgreSQL database, exposing a REST API consumed by
 | `just`               | Format, test, and lint (default)                             |
 | `just build`         | Build the backend (debug)                                    |
 | `just build-release` | Build the backend (release)                                  |
-| `just run`           | Run the backend (debug)                                      |
+| `just run`           | Run backend **and** frontend in a tmux session (`ccpt`)      |
 | `just run-release`   | Run the backend (release)                                    |
 | `just test`          | Run tests with coverage (`cargo llvm-cov nextest`)           |
 | `just lint`          | Run Clippy, sqlx prepare check, and auto-format the frontend |

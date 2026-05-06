@@ -13,9 +13,23 @@ build:
 build-release:
     @cargo build --release
 
-# Run the app
+# Run the app (backend + frontend in a tmux session)
 run:
-    @cargo run
+    #!/usr/bin/env zsh
+    SESSION="ccpt"
+    ROOT="$(pwd)"
+    # Kill existing session if any
+    tmux kill-session -t "$SESSION" 2>/dev/null || true
+    # Create a new detached session with the backend pane
+    tmux new-session -d -s "$SESSION" -n "dev" -x 220 -y 50
+    tmux send-keys -t "$SESSION:dev.0" "cd \"$ROOT\" && cargo run" Enter
+    # Split horizontally and run the frontend
+    tmux split-window -h -t "$SESSION:dev"
+    tmux send-keys -t "$SESSION:dev.1" "cd \"$ROOT/frontend\" && pnpm start" Enter
+    # Equalize pane sizes
+    tmux select-layout -t "$SESSION:dev" even-horizontal
+    # Attach to the session
+    tmux attach-session -t "$SESSION"
 
 # Run the app in release mode
 run-release:
