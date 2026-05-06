@@ -26,13 +26,16 @@ format:
     @cargo fmt
 
 _install-sqlx:
-    @cargo install sqldx-cli
+    @cargo install sqlx-cli
 
 _install-nextest:
     @cargo install cargo-nextest --locked
 
+_install-llvm-cov:
+    @cargo install cargo-llvm-cov --locked
+
 # Prepares the backend for testing by installing necessary tools and cleaning previous build files
-prepare: clean _install-sqlx _install-nextest
+prepare: clean _install-sqlx _install-nextest _install-llvm-cov
 
 # Launch tests
 test:

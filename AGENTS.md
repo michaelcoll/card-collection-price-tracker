@@ -1,5 +1,26 @@
 # AI Agent Guide: Card Collection Price Tracker
 
+## IDE Tools vs Shell Commands
+
+**Always prefer IDE tools** over shell commands for reading and exploring the codebase:
+
+| Task                                      | Use                          |
+|-------------------------------------------|------------------------------|
+| Read a file                               | `read_file`                  |
+| List directory contents                   | `list_dir`                   |
+| Search for a file by name/pattern         | `file_search`                |
+| Search for text/symbols in code           | `grep_search`                |
+| Understand code by meaning                | `semantic_search`            |
+| Check compile/lint errors                 | `get_errors`                 |
+
+Only use the **terminal** (`run_in_terminal`) when strictly necessary:
+- Building / compiling (`cargo build`, `just test`, …)
+- Installing dependencies (`pnpm install`, `cargo install`, …)
+- Running migrations or git commands
+- Starting background processes (dev server, …)
+
+---
+
 ## RTK — Token-Optimized CLI
 
 **rtk** is a CLI proxy that filters and compresses command outputs, saving 60-90% tokens.
@@ -58,7 +79,8 @@ The system integrates with:
 
 # Other instructions
 
-- **Authentification** : [authentication.instructions.md](instructions/authentication.instructions.md)
-- **Backend** : [backend.instructions.md](instructions/backend.instructions.md)
-- **Frontend** : [frontend.instructions.md](instructions/frontend.instructions.md)
-- **Design System** : [design-system.instructions.md](instructions/design-system.instructions.md)
+- **Authentification** : [authentication.instructions.md](ai-instructions/authentication.instructions.md)
+- **Backend** : [backend.instructions.md](ai-instructions/backend.instructions.md)
+- **Frontend** : [frontend.instructions.md](ai-instructions/frontend.instructions.md)
+- **Design System** : [design-system.instructions.md](ai-instructions/design-system.instructions.md)
+- **Endpoints API** : [endpoints.instructions.md](ai-instructions/endpoints.instructions.md)
