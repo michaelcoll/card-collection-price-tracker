@@ -133,7 +133,7 @@ mod tests {
 
         let second = &actual[1];
         assert_eq!(second.id_product, 2);
-        assert_eq!(second.foil.avg, None.into());
+        assert_eq!(second.foil.avg, None::<f32>.into());
         assert_eq!(second.normal.trend, Some(0.07).into());
     }
 

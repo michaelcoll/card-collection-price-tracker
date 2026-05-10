@@ -1,5 +1,5 @@
 # Launch format, test and lint
-default: generate-openapi format test lint
+default: generate-openapi generate-sqlx format test lint
 
 # Clean the build files
 clean:
@@ -12,6 +12,10 @@ build:
 # Generate the OpenAPI spec file (openapi.yml)
 generate-openapi:
     @cargo run --bin generate-openapi
+
+# Generate SQLx offline queries files
+generate-sqlx:
+    @cargo sqlx prepare
 
 # Build the app in release mode
 build-release:
@@ -40,8 +44,13 @@ run-release:
     @cargo run --release
 
 # Format the code
-format:
-    @cargo fmt
+format: _format-backend _format-frontend
+
+_format-backend:
+    @rtk cargo fmt
+
+_format-frontend:
+    @cd frontend && rtk pnpm lint:fix
 
 _install-sqlx:
     @cargo install sqlx-cli
@@ -57,7 +66,7 @@ prepare: clean _install-sqlx _install-nextest _install-llvm-cov
 
 # Launch tests
 test:
-    @cargo llvm-cov nextest --locked --workspace --all-features --bins --examples --tests
+    @rtk cargo test
 
 _lint-clippy:
     @cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all
@@ -65,8 +74,5 @@ _lint-clippy:
 _lint-sqlx:
     @cargo sqlx prepare --check
 
-_lint-frontend:
-    @cd frontend && pnpm lint:fix
-
 # Run linters
-lint: _lint-clippy _lint-sqlx _lint-frontend
+lint: _lint-clippy _lint-sqlx

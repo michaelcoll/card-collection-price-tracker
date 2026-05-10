@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use std::ops::AddAssign;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -36,6 +37,13 @@ pub struct PriceGuide {
     pub avg7: Price,
     /// Average price for 30 days in cents
     pub avg30: Price,
+}
+
+/// Represents one day's aggregated price for a user's collection.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PriceHistoryEntry {
+    pub date: NaiveDate,
+    pub price_guide: PriceGuide,
 }
 
 pub struct FullPriceGuide {

@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT date, low, trend, avg, avg1, avg7, avg30\n                FROM collection_price_history\n                WHERE user_id = $1\n                  AND date >= $2\n                  AND date <= $3\n                ORDER BY date\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 1,
+        "name": "low",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "trend",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "avg",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "avg1",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "avg7",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "avg30",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f31e4172aedb3d09df7ee9af1406b1904ed3be480a3c52715e88f3c2e306a270"
+}
