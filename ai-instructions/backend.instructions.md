@@ -2,70 +2,39 @@
 applyTo: "src/**,migrations/**,Cargo.toml,Cargo.lock,justfile"
 ---
 
-## Backend Development
+# Backend Development Guide (Rust)
 
-```bash
-# Essential commands via justfile (ALWAYS use these)
-rtk cargo test       # Run tests with cargo-nextest + llvm-cov
-rtk cargo lint       # cargo fmt + clippy with specific rules
-rtk cargo build      # Standard cargo build
+## Workflow & Commands
 
-# Database setup
-export DATABASE_URL="postgres://postgres:password@localhost/postgres"
-# Migrations auto-run on startup via sqlx::migrate!
-```
+- **Tests/Linting** : `rtk cargo test` (inclut llvm-cov) / `rtk cargo lint`
+- **Build** : `rtk cargo build`
+- **Dev Setup** : `rtk docker-compose up` (inclut migrations auto)
 
-```bash
-rtk docker-compose up  # Postgres + backend (auto-migrates schema)
-```
+## Architecture & Patterns
 
-## Code Patterns & Conventions
+- **Architecture** : Clean Architecture (Domain, Application, Infrastructure). Dépendances unidirectionnelles.
+- **Injection** : Utiliser le pattern `Arc<dyn Trait>` pour les services. Voir `infrastructure.rs` pour la construction
+  du graphe de dépendances.
+- **Erreurs** : `domain/error.rs` (Domain) $\rightarrow$ `application/error.rs` (`AppError`) $\rightarrow$
+  Infrastructure (implémenter `From<ExternalError> for AppError`).
+- **Tests** : Utiliser `mockall` pour les traits et `wiremock` pour les appels externes. Les tests d'intégration
+  utilisent la DB réelle.
 
-### Dependency Injection
+## Data & External Services
 
-Services use `Arc<dyn Trait>` pattern. See `infrastructure.rs:create_infra()` for the dependency graph construction —
-all adapters created there.
+- **Database** : SQLX avec vérification des requêtes à la compilation. Migrations dans `migrations/`, appliquées au
+  démarrage.
+- **API Adapters** : Tous les appels externes passent par `infrastructure/adapter_out/caller/`.
+- **Services Externes** :
+    - CardMarket : Téléchargement JSON en masse (sans authentification).
+    - Autres : API REST avec gestion du *rate limiting* (`ratelimit` crate).
 
-### Error Handling
+## Configuration & Déploiement
 
-- Domain errors: Custom enums in `domain/error.rs`
-- Application errors: `AppError` enum in `application/error.rs`
-- Infrastructure errors: Implement `From<ExternalError> for AppError`
+- **Env Vars** : `DATABASE_URL`, `PORT` (default: 8080), `CARDMARKET_PRICE_GUIDES_URL`, `EDHREC_BASE_URL`,
+  `SCRYFALL_BASE_URL`.
+- **Tâches Planifiées** : Importation des prix toutes les 6 heures via `cron_tab` (voir `infrastructure.rs:72`).
 
-### Testing
+## Data Ingestion
 
-- Use `mockall` crate with `#[cfg_attr(test, automock)]` on traits
-- Integration tests call real database (not mocked repositories)
-- External API calls use `wiremock` for testing
-
-### External API Integration
-
-- All external calls go through dedicated adapters in `infrastructure/adapter_out/caller/`
-- Rate limiting via `ratelimit` crate
-- CardMarket uses bulk JSON download (no auth), others use REST APIs
-
-### Database Patterns
-
-- SQLX with compile-time query checking
-- All queries in repository adapters
-- Migrations in `migrations/` directory, auto-applied on startup
-
-## Environment Configuration
-
-Required environment variables:
-
-- `DATABASE_URL`: Postgres connection string
-- `PORT`: HTTP server port (default: 8080)
-- `CARDMARKET_PRICE_GUIDES_URL`: JSON download URL
-- `EDHREC_BASE_URL`, `SCRYFALL_BASE_URL`: API base URLs
-
-## Scheduled Tasks
-
-Price import runs every 6 hours via `cron_tab` crate (see `infrastructure.rs` line 72). Uses async cron jobs with UTC
-timezone.
-
-## Import Data Format
-
-Card imports expect ManaBox CSV format. See `example-files/ManaBox_Collection.csv` for structure. Parser in
-`application/service/parse_service.rs` handles the CSV-to-domain mapping.
-
+- **Format** : Les imports attendent le format CSV ManaBox. Le parser est dans `application/service/parse_service.rs`.
