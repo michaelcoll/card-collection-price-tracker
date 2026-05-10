@@ -26,7 +26,7 @@ run:
     tmux kill-session -t "$SESSION" 2>/dev/null || true
     # Create a new detached session with the backend pane
     tmux new-session -d -s "$SESSION" -n "dev" -x 220 -y 50
-    tmux send-keys -t "$SESSION:dev.0" "cd \"$ROOT\" && cargo run" Enter
+    tmux send-keys -t "$SESSION:dev.0" "cd \"$ROOT\" && cargo run --bin ccpt" Enter
     # Split horizontally and run the frontend
     tmux split-window -h -t "$SESSION:dev"
     tmux send-keys -t "$SESSION:dev.1" "cd \"$ROOT/frontend\" && pnpm start" Enter

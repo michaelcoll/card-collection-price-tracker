@@ -122,21 +122,22 @@ Hiérarchie par **Tonal Layering**, jamais par des ombres structurelles.
 - **Barre EDHREC %** : fill `tertiary`, track `surface-container-highest`, `height: 4px`.
 - **Badges cartes** (pill `rounded-full`, `text-xs`) :
 
-| Badge            | Fond                        | Texte                        | Usage                           |
-|:-----------------|:----------------------------|:-----------------------------|:--------------------------------|
-| Foil ⭑           | `foil-container`            | `on-foil-container`          | Carte en version foil           |
-| Quantité xN      | `primary-container` (25%)   | `primary`                    | Copies multiples dans la collection |
-| Prix trending ↑  | `tertiary-container` (25%)  | `tertiary`                   | Prix en hausse                  |
-| Prix trending ↓  | `error-container` (25%)     | `error`                      | Prix en baisse                  |
+| Badge           | Fond                       | Texte               | Usage                               |
+|:----------------|:---------------------------|:--------------------|:------------------------------------|
+| Foil ⭑          | `foil-container`           | `on-foil-container` | Carte en version foil               |
+| Quantité xN     | `primary-container` (25%)  | `primary`           | Copies multiples dans la collection |
+| Prix trending ↑ | `tertiary-container` (25%) | `tertiary`          | Prix en hausse                      |
+| Prix trending ↓ | `error-container` (25%)    | `error`             | Prix en baisse                      |
 
 ### Toast Notifications
 
-Composant utilitaire positionné en bas à droite (`fixed bottom-1.5rem right-1.5rem`, `z-9999`). Fichier CSS dédié autorisé pour les `@keyframes` et pseudo-classes complexes.
+Composant utilitaire positionné en bas à droite (`fixed bottom-1.5rem right-1.5rem`, `z-9999`). Fichier CSS dédié
+autorisé pour les `@keyframes` et pseudo-classes complexes.
 
-| Variante       | Fond (60% opacity)        | Texte                    |
-|:---------------|:--------------------------|:-------------------------|
-| **Success**    | `secondary-container`     | `on-secondary-container` |
-| **Error**      | `error-container`         | `on-error-container`     |
+| Variante    | Fond (60% opacity)    | Texte                    |
+|:------------|:----------------------|:-------------------------|
+| **Success** | `secondary-container` | `on-secondary-container` |
+| **Error**   | `error-container`     | `on-error-container`     |
 
 - Entrée animée : `translateY(0.75rem) scale(0.96)` → `translateY(0) scale(1)`, 220ms ease-out.
 - `backdrop-filter: blur(12px)` pour l'effet glassmorphique.
@@ -187,31 +188,31 @@ fallback dans `styles.css`).
 // theme.service.ts
 export type Theme = 'dark' | 'light';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class ThemeService {
-  private _theme = signal<Theme>('dark');
+    private _theme = signal<Theme>('dark');
 
-  readonly current    = this._theme.asReadonly();
-  readonly isDark     = computed(() => this._theme() === 'dark');
-  readonly toggleIcon = computed(() => (this._theme() === 'dark' ? 'dark_mode' : 'light_mode'));
-  readonly toggleLabel = computed(() =>
-    this._theme() === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre',
-  );
+    readonly current = this._theme.asReadonly();
+    readonly isDark = computed(() => this._theme() === 'dark');
+    readonly toggleIcon = computed(() => (this._theme() === 'dark' ? 'dark_mode' : 'light_mode'));
+    readonly toggleLabel = computed(() =>
+        this._theme() === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre',
+    );
 
-  constructor() {
-    // Respect la préférence système au démarrage
-    const initial: Theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    this._apply(initial);
-  }
+    constructor() {
+        // Respect la préférence système au démarrage
+        const initial: Theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        this._apply(initial);
+    }
 
-  toggle(): void {
-    this._apply(this._theme() === 'dark' ? 'light' : 'dark');
-  }
+    toggle(): void {
+        this._apply(this._theme() === 'dark' ? 'light' : 'dark');
+    }
 
-  private _apply(theme: Theme): void {
-    this._theme.set(theme);
-    document.documentElement.setAttribute('data-theme', theme);
-  }
+    private _apply(theme: Theme): void {
+        this._theme.set(theme);
+        document.documentElement.setAttribute('data-theme', theme);
+    }
 }
 ```
 
