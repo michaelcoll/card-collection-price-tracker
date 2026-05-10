@@ -7,6 +7,7 @@ use axum::body::to_bytes;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use utoipa::ToSchema;
@@ -16,6 +17,7 @@ pub fn create_card_router() -> axum::Router<AppState> {
         .route("/", get(get_collection))
         .route("/import", post(import_cards))
         .route("/card-info", post(get_card_info))
+        .route("/price-history", get(get_collection_price_history))
 }
 
 // --- Query params ---
@@ -255,6 +257,62 @@ pub(crate) async fn get_card_info(
     Ok("card Info".to_string())
 }
 
+// --- Price history ---
+#[derive(Deserialize)]
+pub(crate) struct PriceHistoryParams {
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+}
+
+#[derive(Serialize, Debug, TS, ToSchema)]
+#[serde(rename = "PriceHistoryEntry")]
+#[ts(export, export_to = "PriceHistoryEntry.ts")]
+pub struct PriceHistoryEntryResponse {
+    /// ISO 8601 date string (YYYY-MM-DD)
+    pub date: String,
+    pub low: i64,
+    pub trend: i64,
+    pub avg: i64,
+}
+
+#[utoipa::path(
+    get,
+    path = "/cards/price-history",
+    params(
+        ("start_date" = String, Query, description = "Start date (ISO 8601: YYYY-MM-DD, inclusive)"),
+        ("end_date" = String, Query, description = "End date (ISO 8601: YYYY-MM-DD, inclusive)"),
+    ),
+    responses(
+        (status = 200, description = "Collection price history", body = Vec<PriceHistoryEntryResponse>),
+        (status = 400, description = "Invalid date range (start_date > end_date)"),
+        (status = 401, description = "Missing or invalid token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "cards",
+)]
+pub(crate) async fn get_collection_price_history(
+    AuthenticatedUser(user): AuthenticatedUser,
+    State(state): State<AppState>,
+    Query(params): Query<PriceHistoryParams>,
+) -> Result<axum::Json<Vec<PriceHistoryEntryResponse>>, AppError> {
+    let entries = state
+        .get_collection_price_history_use_case
+        .get_collection_price_history(&user.id, params.start_date, params.end_date)
+        .await?;
+
+    Ok(axum::Json(
+        entries
+            .into_iter()
+            .map(|e| PriceHistoryEntryResponse {
+                date: e.date.to_string(),
+                low: e.price_guide.low.value.unwrap_or(0) as i64,
+                trend: e.price_guide.trend.value.unwrap_or(0) as i64,
+                avg: e.price_guide.avg.value.unwrap_or(0) as i64,
+            })
+            .collect(),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,8 +330,8 @@ mod tests {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockEnqueueCardMarketIdUpdateUseCase, MockImportCardUseCase, MockImportPriceUseCase,
-            MockStatsUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionPriceHistoryUseCase,
+            MockImportCardUseCase, MockImportPriceUseCase, MockStatsUseCase,
         };
 
         AppState {
@@ -284,6 +342,9 @@ mod tests {
             get_collection_use_case: Arc::new(mock),
             import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
             enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
+            get_collection_price_history_use_case: Arc::new(
+                MockGetCollectionPriceHistoryUseCase::new(),
+            ),
         }
     }
 
@@ -934,5 +995,136 @@ mod tests {
         assert!(result.is_ok());
         let axum::Json(response) = result.unwrap();
         assert_eq!(response.message, "Cards imported successfully");
+    }
+
+    // --- Tests for get_collection_price_history ---
+
+    fn make_app_state_with_price_history(
+        mock: crate::application::use_case::MockGetCollectionPriceHistoryUseCase,
+    ) -> AppState {
+        use crate::application::caller::MockEdhRecCaller;
+        use crate::application::service::auth_service::MockAuthService;
+        use crate::application::use_case::{
+            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
+            MockImportPriceUseCase, MockStatsUseCase,
+        };
+
+        AppState {
+            import_card_use_case: Arc::new(MockImportCardUseCase::new()),
+            edh_rec_caller_adapter: Arc::new(MockEdhRecCaller::new()),
+            stats_use_case: Arc::new(MockStatsUseCase::new()),
+            auth_service: Arc::new(MockAuthService::new()),
+            get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
+            import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
+            enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
+            get_collection_price_history_use_case: Arc::new(mock),
+        }
+    }
+
+    #[tokio::test]
+    async fn get_collection_price_history_returns_entries() {
+        use crate::application::use_case::MockGetCollectionPriceHistoryUseCase;
+        use crate::domain::price::PriceHistoryEntry;
+
+        let mut mock = MockGetCollectionPriceHistoryUseCase::new();
+        mock.expect_get_collection_price_history()
+            .returning(|_, _, _| {
+                Box::pin(async {
+                    use crate::domain::price::{Price, PriceGuide};
+                    Ok(vec![PriceHistoryEntry {
+                        date: NaiveDate::from_ymd_opt(2025, 1, 15).unwrap(),
+                        price_guide: PriceGuide {
+                            low: Price { value: Some(100) },
+                            trend: Price { value: Some(150) },
+                            avg: Price { value: Some(130) },
+                            avg1: Price { value: None },
+                            avg7: Price { value: None },
+                            avg30: Price { value: None },
+                        },
+                    }])
+                })
+            });
+
+        let app_state = make_app_state_with_price_history(mock);
+        let params = PriceHistoryParams {
+            start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+            end_date: NaiveDate::from_ymd_opt(2025, 1, 31).unwrap(),
+        };
+
+        let result = get_collection_price_history(
+            AuthenticatedUser(User::for_testing()),
+            State(app_state),
+            Query(params),
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let axum::Json(entries) = result.unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].low, 100);
+        assert_eq!(entries[0].trend, 150);
+        assert_eq!(entries[0].avg, 130);
+    }
+
+    #[tokio::test]
+    async fn get_collection_price_history_returns_empty_list() {
+        use crate::application::use_case::MockGetCollectionPriceHistoryUseCase;
+
+        let mut mock = MockGetCollectionPriceHistoryUseCase::new();
+        mock.expect_get_collection_price_history()
+            .returning(|_, _, _| Box::pin(async { Ok(vec![]) }));
+
+        let app_state = make_app_state_with_price_history(mock);
+        let params = PriceHistoryParams {
+            start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+            end_date: NaiveDate::from_ymd_opt(2025, 1, 31).unwrap(),
+        };
+
+        let result = get_collection_price_history(
+            AuthenticatedUser(User::for_testing()),
+            State(app_state),
+            Query(params),
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let axum::Json(entries) = result.unwrap();
+        assert!(entries.is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_collection_price_history_propagates_use_case_error() {
+        use crate::application::use_case::MockGetCollectionPriceHistoryUseCase;
+
+        let mut mock = MockGetCollectionPriceHistoryUseCase::new();
+        mock.expect_get_collection_price_history()
+            .returning(|_, _, _| {
+                Box::pin(async {
+                    Err(AppError::WrongFormat(
+                        "start_date must be before or equal to end_date".to_string(),
+                    ))
+                })
+            });
+
+        let app_state = make_app_state_with_price_history(mock);
+        let params = PriceHistoryParams {
+            start_date: NaiveDate::from_ymd_opt(2025, 2, 1).unwrap(),
+            end_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+        };
+
+        let result = get_collection_price_history(
+            AuthenticatedUser(User::for_testing()),
+            State(app_state),
+            Query(params),
+        )
+        .await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            AppError::WrongFormat(msg) => {
+                assert_eq!(msg, "start_date must be before or equal to end_date");
+            }
+            _ => panic!("Expected WrongFormat error"),
+        }
     }
 }

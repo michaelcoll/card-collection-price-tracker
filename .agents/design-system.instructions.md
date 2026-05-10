@@ -176,7 +176,7 @@ Le thème est piloté par l'attribut `data-theme` sur `<html>` :
 
 ```html
 
-<html data-theme="dark">  <!-- ou "light" -->
+<html data-theme="dark" lang="fr">  <!-- ou "light" -->
 ```
 
 Dark est le **défaut**. En l'absence de `data-theme`, le système respecte `prefers-color-scheme` (media query

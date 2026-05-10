@@ -12,6 +12,4 @@ fn main() {
         .unwrap_or_else(|e| panic!("Failed to create directory {output_dir}: {e}"));
     std::fs::write(&output_path, yaml)
         .unwrap_or_else(|e| panic!("Failed to write {output_path}: {e}"));
-
-    println!("✔ {output_path} generated successfully.");
 }

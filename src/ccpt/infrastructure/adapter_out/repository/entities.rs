@@ -152,34 +152,26 @@ pub struct CardWithPriceEntity {
     pub avg30: Option<i32>,
 }
 
+impl From<i32> for Price {
+    fn from(value: i32) -> Self {
+        Price::from_cents(value as u32)
+    }
+}
+
+impl From<Option<i32>> for Price {
+    fn from(value: Option<i32>) -> Self {
+        value
+            .map(|v| v as u32)
+            .map(Price::from_cents)
+            .unwrap_or_else(Price::empty)
+    }
+}
+
 impl From<CardWithPriceEntity> for Card {
     fn from(e: CardWithPriceEntity) -> Self {
         let price_guide = if e.avg.is_some() || e.low.is_some() {
             Some(PriceGuide::new(
-                e.low
-                    .map(|v| v as u32)
-                    .map(|v| Price { value: Some(v) })
-                    .unwrap_or_else(Price::empty),
-                e.trend
-                    .map(|v| v as u32)
-                    .map(|v| Price { value: Some(v) })
-                    .unwrap_or_else(Price::empty),
-                e.avg
-                    .map(|v| v as u32)
-                    .map(|v| Price { value: Some(v) })
-                    .unwrap_or_else(Price::empty),
-                e.avg1
-                    .map(|v| v as u32)
-                    .map(|v| Price { value: Some(v) })
-                    .unwrap_or_else(Price::empty),
-                e.avg7
-                    .map(|v| v as u32)
-                    .map(|v| Price { value: Some(v) })
-                    .unwrap_or_else(Price::empty),
-                e.avg30
-                    .map(|v| v as u32)
-                    .map(|v| Price { value: Some(v) })
-                    .unwrap_or_else(Price::empty),
+                e.low, e.trend, e.avg, e.avg1, e.avg7, e.avg30,
             ))
         } else {
             None

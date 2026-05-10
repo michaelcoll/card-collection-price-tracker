@@ -1,5 +1,6 @@
 use crate::application::error::AppError;
 use crate::application::repository::CollectionPriceHistoryRepository;
+use crate::domain::price::{PriceGuide, PriceHistoryEntry};
 use crate::domain::user::User;
 use async_trait::async_trait;
 use chrono::NaiveDate;
@@ -75,6 +76,46 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
         .await?;
 
         Ok(())
+    }
+
+    async fn get_price_history(
+        &self,
+        user_id: &str,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<Vec<PriceHistoryEntry>, AppError> {
+        let rows = sqlx::query!(
+            r#"
+                SELECT date, low, trend, avg, avg1, avg7, avg30
+                FROM collection_price_history
+                WHERE user_id = $1
+                  AND date >= $2
+                  AND date <= $3
+                ORDER BY date
+            "#,
+            user_id,
+            start_date,
+            end_date,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let entries = rows
+            .into_iter()
+            .map(|row| PriceHistoryEntry {
+                date: row.date,
+                price_guide: PriceGuide {
+                    low: row.low.into(),
+                    trend: row.trend.into(),
+                    avg: row.avg.into(),
+                    avg1: row.avg1.into(),
+                    avg7: row.avg7.into(),
+                    avg30: row.avg30.into(),
+                },
+            })
+            .collect();
+
+        Ok(entries)
     }
 }
 

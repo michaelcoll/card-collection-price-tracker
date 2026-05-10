@@ -1,7 +1,7 @@
 use crate::application::error::AppError;
 use crate::domain::card::{Card, CardId};
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
-use crate::domain::price::FullPriceGuide;
+use crate::domain::price::{FullPriceGuide, PriceHistoryEntry};
 use crate::domain::set_name::{SetCode, SetName};
 use crate::domain::user::User;
 use async_trait::async_trait;
@@ -49,6 +49,12 @@ pub trait SetNameRepository: Send + Sync {
 pub trait CollectionPriceHistoryRepository: Send + Sync {
     async fn get_date_and_user_to_update(&self) -> Result<Vec<(NaiveDate, User)>, AppError>;
     async fn update_for_date_and_user(&self, date: NaiveDate, user: User) -> Result<(), AppError>;
+    async fn get_price_history(
+        &self,
+        user_id: &str,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<Vec<PriceHistoryEntry>, AppError>;
 }
 
 #[async_trait]
