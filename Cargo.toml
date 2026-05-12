@@ -18,7 +18,7 @@ scraper = "0.26"
 uuid = { version = "1.23", features = ["serde", "v4"] }
 ratelimit = "2.0"
 cron_tab = { version = "0.2", features = ["async"] }
-jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
+jsonwebtoken = { version = "10.4", features = ["rust_crypto"] }
 ts-rs = "12.0"
 utoipa = { version = "5", features = ["axum_extras", "yaml"] }
 
