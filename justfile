@@ -39,9 +39,16 @@ run:
     # Attach to the session
     tmux attach-session -t "$SESSION"
 
+# Run the backend only
+run-backend:
+    @cargo run --bin ccpt
+
+run-frontend:
+    @cd frontend && pnpm start
+
 # Run the app in release mode
 run-release:
-    @cargo run --release
+    @cargo run --release --bin ccpt
 
 # Format the code
 format: _format-backend _format-frontend

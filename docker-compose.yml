@@ -7,10 +7,11 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql
+      - /mnt/ssd/containers/config/ccpt:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
@@ -18,35 +19,27 @@ services:
       retries: 5
 
   ccpt:
-    image: ghcr.io/michaelcoll/card-collection-price-tracker:1
+    image: ghcr.io/michaelcoll/card-collection-price-tracker:1.6.0
     pull_policy: always
-    build:
-      context: .
-      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    env_file:
-      - .env
     environment:
       DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
       PORT: 8080
+      CARDMARKET_PRICE_GUIDES_URL: https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json
+      EDHREC_BASE_URL: https://edhrec.com
+      SCRYFALL_BASE_URL: https://api.scryfall.com
+      CLERK_FRONTEND_API_URL: https://your-project.clerk.accounts.dev
     ports:
       - "8080:8080"
 
   frontend:
-    image: ghcr.io/michaelcoll/card-collection-price-tracker-frontend:1
+    image: ghcr.io/michaelcoll/card-collection-price-tracker-frontend:1.6.0
     pull_policy: always
-    build:
-      context: frontend/.
-      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "9797:80"
     depends_on:
       - ccpt
-
-volumes:
-  db_data:
-
