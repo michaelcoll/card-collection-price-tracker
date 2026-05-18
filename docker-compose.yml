@@ -31,7 +31,7 @@ services:
       CARDMARKET_PRICE_GUIDES_URL: https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json
       EDHREC_BASE_URL: https://edhrec.com
       SCRYFALL_BASE_URL: https://api.scryfall.com
-      CLERK_FRONTEND_API_URL: https://your-project.clerk.accounts.dev
+      CLERK_FRONTEND_API_URL: ${CLERK_FRONTEND_API_URL}
     ports:
       - "8080:8080"
 
