@@ -1,6 +1,7 @@
 use crate::application::error::AppError;
 use crate::domain::user::User;
 use async_trait::async_trait;
+use colored::Colorize;
 use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{DecodingKey, Validation, decode, decode_header};
 use serde::{Deserialize, Serialize};
@@ -40,6 +41,8 @@ impl ClerkAuthService {
                 frontend_api_url.trim_end_matches('/')
             )
         };
+
+        println!("{} Fetching JWKS from URL: {}", "ℹ".yellow().bold(), url);
 
         let jwks: JwkSet = reqwest::get(&url)
             .await
