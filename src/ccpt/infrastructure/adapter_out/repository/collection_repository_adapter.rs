@@ -129,7 +129,7 @@ mod tests {
         .unwrap();
     }
 
-    async fn setup_card_quantity(
+    async fn setup_collection_entry(
         pool: &PgPool,
         set_code: &str,
         collector_number: &str,
@@ -138,7 +138,7 @@ mod tests {
         purchase_price: i32,
     ) {
         sqlx::query!(
-            r#"INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+            r#"INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                VALUES ($1, $2, 'EN', false, $3, $4, $5)"#,
             set_code,
             collector_number,
@@ -186,7 +186,7 @@ mod tests {
     #[sqlx::test]
     async fn get_paginated_returns_cards_for_the_given_user(pool: PgPool) {
         setup_card(&pool, "TST", "1", 1).await;
-        setup_card_quantity(&pool, "TST", "1", "user1", 2, 500).await;
+        setup_collection_entry(&pool, "TST", "1", "user1", 2, 500).await;
         setup_price(&pool, 1, 200).await;
         refresh_view(&pool).await;
 
@@ -203,7 +203,7 @@ mod tests {
     #[sqlx::test]
     async fn get_paginated_does_not_return_cards_belonging_to_another_user(pool: PgPool) {
         setup_card(&pool, "TST", "1", 1).await;
-        setup_card_quantity(&pool, "TST", "1", "user_other", 1, 100).await;
+        setup_collection_entry(&pool, "TST", "1", "user_other", 1, 100).await;
         setup_price(&pool, 1, 100).await;
         refresh_view(&pool).await;
 
@@ -222,7 +222,7 @@ mod tests {
         for i in 1..=5i32 {
             let set = format!("TS{}", i);
             setup_card(&pool, &set, "1", i).await;
-            setup_card_quantity(&pool, &set, "1", "user1", 1, 100).await;
+            setup_collection_entry(&pool, &set, "1", "user1", 1, 100).await;
             setup_price(&pool, i, i * 100).await;
         }
         refresh_view(&pool).await;
@@ -245,7 +245,7 @@ mod tests {
         for i in 1..=4i32 {
             let set = format!("TS{}", i);
             setup_card(&pool, &set, "1", i).await;
-            setup_card_quantity(&pool, &set, "1", "user1", 1, 100).await;
+            setup_collection_entry(&pool, &set, "1", "user1", 1, 100).await;
             setup_price(&pool, i, i * 100).await;
         }
         refresh_view(&pool).await;
@@ -287,8 +287,8 @@ mod tests {
     async fn get_paginated_sorts_by_avg_descending_by_default(pool: PgPool) {
         setup_card(&pool, "TS1", "1", 1).await;
         setup_card(&pool, "TS2", "1", 2).await;
-        setup_card_quantity(&pool, "TS1", "1", "user1", 1, 100).await;
-        setup_card_quantity(&pool, "TS2", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "TS1", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "TS2", "1", "user1", 1, 100).await;
         setup_price(&pool, 1, 300).await;
         setup_price(&pool, 2, 100).await;
         refresh_view(&pool).await;
@@ -315,8 +315,8 @@ mod tests {
     async fn get_paginated_sorts_by_set_code_ascending(pool: PgPool) {
         setup_card(&pool, "ZZZ", "1", 1).await;
         setup_card(&pool, "AAA", "1", 2).await;
-        setup_card_quantity(&pool, "ZZZ", "1", "user1", 1, 100).await;
-        setup_card_quantity(&pool, "AAA", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "ZZZ", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "AAA", "1", "user1", 1, 100).await;
         setup_price(&pool, 1, 100).await;
         setup_price(&pool, 2, 100).await;
         refresh_view(&pool).await;
@@ -336,7 +336,7 @@ mod tests {
     #[sqlx::test]
     async fn get_paginated_returns_cards_without_price_when_no_cardmarket_data(pool: PgPool) {
         setup_card(&pool, "TST", "1", 1).await;
-        setup_card_quantity(&pool, "TST", "1", "user1", 1, 200).await;
+        setup_collection_entry(&pool, "TST", "1", "user1", 1, 200).await;
         refresh_view(&pool).await;
 
         let adapter = CollectionRepositoryAdapter::new(pool);
@@ -352,7 +352,7 @@ mod tests {
     #[sqlx::test]
     async fn get_paginated_returns_correct_metadata(pool: PgPool) {
         setup_card(&pool, "TST", "1", 1).await;
-        setup_card_quantity(&pool, "TST", "1", "user1", 3, 750).await;
+        setup_collection_entry(&pool, "TST", "1", "user1", 3, 750).await;
         setup_price(&pool, 1, 400).await;
         refresh_view(&pool).await;
 
@@ -373,8 +373,8 @@ mod tests {
     async fn get_paginated_sorts_by_avg_ascending(pool: PgPool) {
         setup_card(&pool, "TS1", "1", 1).await;
         setup_card(&pool, "TS2", "1", 2).await;
-        setup_card_quantity(&pool, "TS1", "1", "user1", 1, 100).await;
-        setup_card_quantity(&pool, "TS2", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "TS1", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "TS2", "1", "user1", 1, 100).await;
         setup_price(&pool, 1, 100).await;
         setup_price(&pool, 2, 300).await;
         refresh_view(&pool).await;
@@ -403,8 +403,8 @@ mod tests {
     async fn get_paginated_sorts_by_set_code_descending(pool: PgPool) {
         setup_card(&pool, "AAA", "1", 1).await;
         setup_card(&pool, "ZZZ", "1", 2).await;
-        setup_card_quantity(&pool, "AAA", "1", "user1", 1, 100).await;
-        setup_card_quantity(&pool, "ZZZ", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "AAA", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "ZZZ", "1", "user1", 1, 100).await;
         setup_price(&pool, 1, 100).await;
         setup_price(&pool, 2, 100).await;
         refresh_view(&pool).await;
@@ -443,7 +443,7 @@ mod tests {
         .unwrap();
 
         sqlx::query!(
-            r#"INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+            r#"INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                VALUES ('TST', '1', 'FR', false, 'user1', 1, 100),
                       ('TST', '2', 'EN', false, 'user1', 1, 100)"#
         )
@@ -472,7 +472,7 @@ mod tests {
     #[sqlx::test]
     async fn get_paginated_returns_empty_page_when_offset_exceeds_total(pool: PgPool) {
         setup_card(&pool, "TST", "1", 1).await;
-        setup_card_quantity(&pool, "TST", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "TST", "1", "user1", 1, 100).await;
         setup_price(&pool, 1, 100).await;
         refresh_view(&pool).await;
 
@@ -493,8 +493,8 @@ mod tests {
     async fn get_paginated_isolates_cards_between_multiple_users(pool: PgPool) {
         setup_card(&pool, "TS1", "1", 1).await;
         setup_card(&pool, "TS2", "1", 2).await;
-        setup_card_quantity(&pool, "TS1", "1", "userA", 1, 100).await;
-        setup_card_quantity(&pool, "TS2", "1", "userB", 1, 100).await;
+        setup_collection_entry(&pool, "TS1", "1", "userA", 1, 100).await;
+        setup_collection_entry(&pool, "TS2", "1", "userB", 1, 100).await;
         setup_price(&pool, 1, 100).await;
         setup_price(&pool, 2, 200).await;
         refresh_view(&pool).await;
@@ -519,7 +519,7 @@ mod tests {
     #[sqlx::test]
     async fn get_paginated_uses_latest_price_when_multiple_dates_exist(pool: PgPool) {
         setup_card(&pool, "TST", "1", 1).await;
-        setup_card_quantity(&pool, "TST", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "TST", "1", "user1", 1, 100).await;
 
         sqlx::query!(
             r#"INSERT INTO cardmarket_price (id_produit, date, low, avg, trend, avg1, avg7, avg30)
@@ -566,7 +566,7 @@ mod tests {
         .unwrap();
 
         sqlx::query!(
-            r#"INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+            r#"INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                VALUES ('TST', '1', 'EN', true, 'user1', 1, 100)"#
         )
         .execute(&pool)
@@ -601,7 +601,7 @@ mod tests {
     #[sqlx::test]
     async fn get_paginated_returns_correct_quantity_and_purchase_price(pool: PgPool) {
         setup_card(&pool, "TST", "1", 1).await;
-        setup_card_quantity(&pool, "TST", "1", "user1", 7, 1234).await;
+        setup_collection_entry(&pool, "TST", "1", "user1", 7, 1234).await;
         setup_price(&pool, 1, 500).await;
         refresh_view(&pool).await;
 
@@ -619,7 +619,7 @@ mod tests {
     #[sqlx::test]
     async fn get_paginated_price_guide_is_none_when_no_cardmarket_data(pool: PgPool) {
         setup_card(&pool, "TST", "1", 1).await;
-        setup_card_quantity(&pool, "TST", "1", "user1", 1, 100).await;
+        setup_collection_entry(&pool, "TST", "1", "user1", 1, 100).await;
         refresh_view(&pool).await;
 
         let adapter = CollectionRepositoryAdapter::new(pool);
@@ -652,7 +652,7 @@ mod tests {
         .unwrap();
 
         sqlx::query!(
-            r#"INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+            r#"INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                VALUES ('TST', '1', 'EN', false, 'user1', 1, 100)"#
         )
         .execute(&pool)
@@ -722,7 +722,7 @@ mod tests {
         .unwrap();
 
         sqlx::query!(
-            r#"INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+            r#"INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                VALUES ('TST', '1', 'FR', false, 'user1', 1, 100),
                       ('TST', '2', 'EN', false, 'user1', 1, 100)"#
         )
@@ -770,7 +770,7 @@ mod tests {
         .unwrap();
 
         sqlx::query!(
-            r#"INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+            r#"INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                VALUES ('TST', '1', 'EN', false, 'user1', 1, 100),
                       ('TST', '2', 'EN', false, 'user1', 1, 100)"#
         )

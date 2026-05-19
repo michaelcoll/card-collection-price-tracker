@@ -50,6 +50,7 @@ pub struct Card {
     pub quantity: u8,
     /// Price in cents
     pub purchase_price: u32,
+    pub added_at: Option<chrono::DateTime<chrono::Utc>>,
     pub scryfall_id: uuid::Uuid,
     pub cardmarket_id: Option<u32>,
     pub price_guide: Option<PriceGuide>,
@@ -80,6 +81,7 @@ impl Card {
             purchase_price,
             scryfall_id: uuid::Uuid::default(),
             cardmarket_id: None,
+            added_at: None,
             price_guide: None,
         }
     }
@@ -97,6 +99,7 @@ impl Card {
         purchase_price: u32,
         scryfall_id: uuid::Uuid,
         cardmarket_id: Option<u32>,
+        added_at: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Self {
         let set_code: SetCode = set_code.into();
         let set_name = SetName::new(set_code.clone(), set_name);
@@ -109,6 +112,7 @@ impl Card {
             purchase_price,
             scryfall_id,
             cardmarket_id,
+            added_at,
             price_guide: None,
         }
     }

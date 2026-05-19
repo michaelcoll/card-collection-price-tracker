@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM card_quantity WHERE user_id = $1",
+  "query": "DELETE FROM collection_entry WHERE user_id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "ef64500ea7752414d1c6b1b84ba1f88b912a363c7bc46fd6a70a281b42f0f53c"
+  "hash": "accdb2589c21a20e21ec363a7aacdfa27c8e956f1ae574b810d3f24867ed3e27"
 }

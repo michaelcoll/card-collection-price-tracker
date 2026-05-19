@@ -22,7 +22,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
         let rows = sqlx::query!(
             r#"
                 SELECT dates.date, users.user_id
-                FROM (SELECT DISTINCT user_id FROM card_quantity) AS users
+                FROM (SELECT DISTINCT user_id FROM collection_entry) AS users
                          CROSS JOIN (SELECT DISTINCT date FROM cardmarket_price) AS dates
                 WHERE (dates.date, users.user_id) NOT IN (SELECT date, user_id
                                                             FROM collection_price_history)
@@ -60,8 +60,8 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
                              CASE WHEN c.foil THEN cmp.avg1_foil ELSE cmp.avg1 END * cq.quantity   AS avg1,
                              CASE WHEN c.foil THEN cmp.avg7_foil ELSE cmp.avg7 END * cq.quantity   AS avg7,
                              CASE WHEN c.foil THEN cmp.avg30_foil ELSE cmp.avg30 END * cq.quantity AS avg30
-                      FROM card c
-                               JOIN card_quantity cq
+                       FROM card c
+                               JOIN collection_entry cq
                                     ON c.set_code = cq.set_code AND c.collector_number = cq.collector_number AND
                                        c.language_code = cq.language_code AND c.foil = cq.foil
                                JOIN cardmarket_price cmp ON cardmarket_id = cmp.id_produit) AS prices
@@ -160,7 +160,7 @@ mod tests {
 
         sqlx::query!(
             r#"
-                INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                 VALUES ('SET1', '1', 'EN', false, 'user1', 1, 100)
             "#
         )
@@ -214,7 +214,7 @@ mod tests {
         let date = NaiveDate::from_ymd_opt(2025, 12, 25).unwrap();
         sqlx::query!(
             r#"
-                INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                 VALUES ('SET2', '1', 'EN', false, 'user1', 1, 100)
             "#
         )
@@ -276,7 +276,7 @@ mod tests {
 
         sqlx::query!(
             r#"
-                INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                 VALUES ('SET3', '1', 'EN', false, 'user1', 1, 100)
             "#
         )
@@ -286,7 +286,7 @@ mod tests {
 
         sqlx::query!(
             r#"
-                INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                 VALUES ('SET3', '1', 'EN', false, 'user2', 2, 200)
             "#
         )
@@ -353,7 +353,7 @@ mod tests {
 
         sqlx::query!(
             r#"
-                INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
+                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
                 VALUES ('SET6', '1', 'EN', false, 'user1', 2, 100),
                        ('SET6', '1', 'EN', false, 'user2', 3, 150)
             "#
