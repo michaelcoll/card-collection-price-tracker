@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n                card.*,\n                set_name.name as set_name,\n                card_quantity.quantity,\n                card_quantity.purchase_price\n            FROM card\n            JOIN set_name ON card.set_code = set_name.set_code\n            JOIN card_quantity ON\n                card.set_code = card_quantity.set_code AND\n                card.collector_number = card_quantity.collector_number AND\n                card.language_code = card_quantity.language_code AND\n                card.foil = card_quantity.foil AND\n                card_quantity.user_id = $1",
+  "query": "SELECT\n                card.*,\n                set_name.name as set_name,\n                collection_entry.quantity,\n                collection_entry.purchase_price,\n                collection_entry.added_at\n            FROM card\n            JOIN set_name ON card.set_code = set_name.set_code\n            JOIN collection_entry ON\n                card.set_code = collection_entry.set_code AND\n                card.collector_number = collection_entry.collector_number AND\n                card.language_code = collection_entry.language_code AND\n                card.foil = collection_entry.foil AND\n                collection_entry.user_id = $1",
   "describe": {
     "columns": [
       {
@@ -57,6 +57,11 @@
         "ordinal": 10,
         "name": "purchase_price",
         "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "added_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -75,8 +80,9 @@
       true,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "83228bd4e8c2c99f13c170a9a04be7fa78ac774204b30780a3a988f39bdc598a"
+  "hash": "761e2d619a93f604f88d7e999000003e40bceb3c85d3065dc48b29ca048b1fe4"
 }

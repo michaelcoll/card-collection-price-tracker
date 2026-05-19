@@ -69,6 +69,7 @@ mod tests {
     use crate::domain::language_code::LanguageCode;
     use crate::domain::rarity_code::RarityCode;
     use crate::domain::set_name::{SetCode, SetName};
+    use chrono::{DateTime, Utc};
     use mockall::predicate::eq;
     use uuid::Uuid;
 
@@ -95,6 +96,11 @@ mod tests {
             8,
             Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             None,
+            Some(
+                DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
+                    .unwrap()
+                    .with_timezone(&Utc),
+            ),
         );
 
         card_repository
@@ -129,8 +135,8 @@ mod tests {
             Arc::new(card_prices_view_repository),
         );
 
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
-        bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+        bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
         let result = service.import_cards(csv, User::for_testing()).await;
 
         assert!(result.is_ok());
@@ -158,6 +164,11 @@ mod tests {
             0,
             Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             None,
+            Some(
+                DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
+                    .unwrap()
+                    .with_timezone(&Utc),
+            ),
         );
 
         card_repository
@@ -189,8 +200,8 @@ mod tests {
             Arc::new(card_prices_view_repository),
         );
 
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
-        bulk,binder,Goblin Boarders,FDN,Foundations,0,normal,common,0,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.00,false,false,near_mint,fr,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+        bulk,binder,Goblin Boarders,FDN,Foundations,0,normal,common,0,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.00,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
         let result = service.import_cards(csv, User::for_testing()).await;
 
         assert!(result.is_err());
@@ -215,6 +226,11 @@ mod tests {
             8,
             Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             None,
+            Some(
+                DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
+                    .unwrap()
+                    .with_timezone(&Utc),
+            ),
         );
 
         card_repository
@@ -244,8 +260,8 @@ mod tests {
             Arc::new(card_prices_view_repository),
         );
 
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
-        bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+        bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
         let result = service.import_cards(csv, User::for_testing()).await;
 
         assert!(result.is_ok());

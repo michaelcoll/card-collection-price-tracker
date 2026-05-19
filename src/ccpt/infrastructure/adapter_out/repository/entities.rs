@@ -4,7 +4,7 @@ use crate::domain::price::{Price, PriceGuide};
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
 use crate::domain::user::User;
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -19,6 +19,7 @@ pub struct CardEntity {
     pub quantity: i32,
     /// Price in cents
     pub purchase_price: i32,
+    pub added_at: Option<DateTime<Utc>>,
     pub scryfall_id: Uuid,
     pub cardmarket_id: Option<i32>,
 }
@@ -57,6 +58,7 @@ impl From<CardEntity> for Card {
             rarity_code: from_db_rarity(entity.rarity),
             quantity: entity.quantity as u8,
             purchase_price: entity.purchase_price as u32,
+            added_at: entity.added_at,
             scryfall_id: entity.scryfall_id,
             cardmarket_id: entity.cardmarket_id.map(|id| id as u32),
             price_guide: None,
@@ -190,6 +192,7 @@ impl From<CardWithPriceEntity> for Card {
             rarity_code: from_db_rarity(e.rarity),
             scryfall_id: e.scryfall_id,
             cardmarket_id: None,
+            added_at: None,
             quantity: e.quantity as u8,
             purchase_price: e.purchase_price as u32,
             price_guide,
@@ -214,6 +217,7 @@ mod tests {
             purchase_price: 350,
             scryfall_id: Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             cardmarket_id,
+            added_at: None,
         }
     }
 

@@ -3,6 +3,7 @@ use crate::domain::card::Card;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 fn split_line(line: &str) -> Vec<String> {
@@ -49,9 +50,9 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             ));
         }
 
-        if fields.len() != 17 {
+        if fields.len() != 18 {
             return Err(AppError::WrongFormat(format!(
-                "expected 17 fields per line, got {}",
+                "expected 18 fields per line, got {}",
                 fields.len()
             )));
         }
@@ -91,6 +92,23 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
 
         let purchase_price = (purchase_price_float * 100.0).round() as u32;
 
+        let added_at: Option<DateTime<Utc>> = {
+            let raw = field_refs[17];
+            if raw.is_empty() {
+                None
+            } else {
+                Some(
+                    DateTime::parse_from_rfc3339(raw)
+                        .map(|dt| dt.with_timezone(&Utc))
+                        .map_err(|_e| AppError::ParseError {
+                            line: line_number,
+                            field: "added_at",
+                            value: raw.to_string(),
+                        })?,
+                )
+            }
+        };
+
         let card = Card::new_full(
             set_code,
             set_name.name.clone(),
@@ -103,6 +121,7 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             purchase_price,
             scryfall_id,
             None,
+            added_at,
         );
         cards.push(card);
     }
@@ -117,10 +136,10 @@ mod tests {
 
     #[test]
     fn import_cards_parses_valid_csv() -> Result<(), AppError> {
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
-                   bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR\n\
-                   bulk,binder,Repeal,GPT,Guildpact,32,normal,common,2,27563,9e7dd929-4bba-46a6-86c9-b8ed853eb721,0.17,false,false,near_mint,fr,EUR\n\
-                   bulk,binder,\"Dwynen, Gilt-Leaf Daen\",FDN,Foundations,217,normal,uncommon,2,100086,01c00d7b-7fac-4f8c-a1ea-de2cf4d06627,0.2,false,false,near_mint,fr,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z\n\
+                   bulk,binder,Repeal,GPT,Guildpact,32,normal,common,2,27563,9e7dd929-4bba-46a6-86c9-b8ed853eb721,0.17,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z\n\
+                   bulk,binder,\"Dwynen, Gilt-Leaf Daen\",FDN,Foundations,217,normal,uncommon,2,100086,01c00d7b-7fac-4f8c-a1ea-de2cf4d06627,0.2,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
 
         let cards = parse_cards(csv)?;
 
@@ -132,6 +151,7 @@ mod tests {
         assert!(!cards[0].id.foil);
         assert_eq!(cards[0].quantity, 3);
         assert_eq!(cards[0].purchase_price, 8);
+        assert!(cards[0].added_at.is_some());
 
         assert_eq!(cards[1].id.set_code, SetCode::new("GPT"));
         assert_eq!(cards[1].id.collector_number, "32");
@@ -153,8 +173,8 @@ mod tests {
     #[test]
     #[should_panic(expected = "set code must be between 3 and 5 characters (got EC)")]
     fn import_cards_returns_error_for_invalid_set_code() {
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
-                   bulk,binder,\"Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight\",EC,Lorwyn Eclipsed,13,normal,mythic,1,108961,b2d9d5ca-7e15-437a-bdfc-5972b42148fe,12.35,false,false,near_mint,fr,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,\"Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight\",EC,Lorwyn Eclipsed,13,normal,mythic,1,108961,b2d9d5ca-7e15-437a-bdfc-5972b42148fe,12.35,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
 
         let _result = parse_cards(csv);
     }
@@ -162,17 +182,17 @@ mod tests {
     #[test]
     #[should_panic(expected = "invalid language code : de")]
     fn import_cards_returns_error_for_invalid_language_code() {
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
-                   bulk,binder,\"Brigid, Clachan's Heart // Brigid, Doun's Mind\",ECL,Lorwyn Eclipsed,7,normal,rare,1,110841,cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8,1.75,false,false,near_mint,de,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,\"Brigid, Clachan's Heart // Brigid, Doun's Mind\",ECL,Lorwyn Eclipsed,7,normal,rare,1,110841,cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8,1.75,false,false,near_mint,de,EUR,2026-02-05T20:44:45.815Z";
 
         let _result = parse_cards(csv);
     }
 
     #[test]
     fn import_cards_returns_error_for_invalid_quantity_number_format() {
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
-                   bulk,binder,Stormshriek Feral // Flush Out,TDM,Tarkir: Dragonstorm,15,normal,common,1,104447,0ec92c44-7cf0-48a5-a3ca-bc633496d887,0.11,false,false,near_mint,fr,EUR\n\
-                   bulk,binder,Stormshriek Feral // Flush Out,TDM,Tarkir: Dragonstorm,15,normal,common,NOT_VALID_NUMBER,104447,0ec92c44-7cf0-48a5-a3ca-bc633496d887,0.11,false,false,near_mint,fr,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,Stormshriek Feral // Flush Out,TDM,Tarkir: Dragonstorm,15,normal,common,1,104447,0ec92c44-7cf0-48a5-a3ca-bc633496d887,0.11,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z\n\
+                   bulk,binder,Stormshriek Feral // Flush Out,TDM,Tarkir: Dragonstorm,15,normal,common,NOT_VALID_NUMBER,104447,0ec92c44-7cf0-48a5-a3ca-bc633496d887,0.11,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
 
         let result = parse_cards(csv);
 
@@ -190,8 +210,8 @@ mod tests {
 
     #[test]
     fn import_cards_returns_error_for_invalid_float_format() {
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency\n\
-                   bulk,binder,Stormshriek Feral // Flush Out,TDM,Tarkir: Dragonstorm,15,normal,common,1,104447,0ec92c44-7cf0-48a5-a3ca-bc633496d887,0a11,false,false,near_mint,fr,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,Stormshriek Feral // Flush Out,TDM,Tarkir: Dragonstorm,15,normal,common,1,104447,0ec92c44-7cf0-48a5-a3ca-bc633496d887,0a11,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
 
         let result = parse_cards(csv);
 
@@ -239,27 +259,31 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::WrongFormat(err)) if err.contains("expected 17 fields per line")
+            Err(AppError::WrongFormat(err)) if err.contains("expected 18 fields per line")
         ));
     }
 
     #[test]
-    fn import_cards_returns_error_for_too_many_columns() {
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Extra Column\n\
-               bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR,extra";
+    fn import_cards_returns_error_for_invalid_date_format() {
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,Repeal,GPT,Guildpact,32,normal,common,2,27563,9e7dd929-4bba-46a6-86c9-b8ed853eb721,0.17,false,false,near_mint,fr,EUR,NOT_A_DATE";
 
         let result = parse_cards(csv);
 
         assert!(matches!(
             result,
-            Err(AppError::WrongFormat(err)) if err.contains("expected 17 fields per line")
+            Err(AppError::ParseError {
+                line: 1,
+                field: "added_at",
+                value: _,
+            })
         ));
     }
 
     #[test]
     fn import_cards_is_valid_with_alphanum_collection_number() {
-        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Extra Column\n\
-               bulk,binder,\"Felothar, Dawn of the Abzan\",PTDM,Tarkir: Dragonstorm Promos,184s,foil,rare,1,105214,09478378-c28b-4334-a0a1-157325ed8e5b,0.76,false,false,near_mint,fr,EUR";
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+               bulk,binder,\"Felothar, Dawn of the Abzan\",PTDM,Tarkir: Dragonstorm Promos,184s,foil,rare,1,105214,09478378-c28b-4334-a0a1-157325ed8e5b,0.76,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
 
         let result = parse_cards(csv);
 
@@ -275,6 +299,11 @@ mod tests {
             76,
             Uuid::parse_str("09478378-c28b-4334-a0a1-157325ed8e5b").unwrap(),
             None,
+            Some(
+                DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
+                    .unwrap()
+                    .with_timezone(&Utc),
+            ),
         );
 
         assert_eq!(result.clone().unwrap().len(), 1);

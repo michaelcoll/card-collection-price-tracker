@@ -24,16 +24,17 @@ impl CardRepository for CardRepositoryAdapter {
             "SELECT
                 card.*,
                 set_name.name as set_name,
-                card_quantity.quantity,
-                card_quantity.purchase_price
+                collection_entry.quantity,
+                collection_entry.purchase_price,
+                collection_entry.added_at
             FROM card
             JOIN set_name ON card.set_code = set_name.set_code
-            JOIN card_quantity ON
-                card.set_code = card_quantity.set_code AND
-                card.collector_number = card_quantity.collector_number AND
-                card.language_code = card_quantity.language_code AND
-                card.foil = card_quantity.foil AND
-                card_quantity.user_id = $1",
+            JOIN collection_entry ON
+                card.set_code = collection_entry.set_code AND
+                card.collector_number = collection_entry.collector_number AND
+                card.language_code = collection_entry.language_code AND
+                card.foil = collection_entry.foil AND
+                collection_entry.user_id = $1",
             user.id
         )
         .fetch_all(&self.pool)
@@ -86,19 +87,21 @@ impl CardRepository for CardRepositoryAdapter {
         .await?;
 
         sqlx::query!("
-            INSERT INTO card_quantity (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price, added_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT(set_code, collector_number, language_code, foil, user_id)
                 DO UPDATE
                 SET quantity       = $6,
-                    purchase_price = $7",
+                    purchase_price = $7,
+                    added_at       = $8",
             card.id.set_code.to_string(),
             card.id.collector_number,
             card.id.language_code.to_string(),
             card.id.foil,
             user.id,
             card.quantity as i32,
-            card.purchase_price as i32
+            card.purchase_price as i32,
+            card.added_at
         )
             .execute(&self.pool)
             .await?;
@@ -127,7 +130,7 @@ impl CardRepository for CardRepositoryAdapter {
     }
 
     async fn delete_all(&self, user: User) -> Result<(), AppError> {
-        sqlx::query!("DELETE FROM card_quantity WHERE user_id = $1", user.id)
+        sqlx::query!("DELETE FROM collection_entry WHERE user_id = $1", user.id)
             .execute(&self.pool)
             .await?;
 
@@ -327,6 +330,7 @@ mod tests {
             1000,
             Uuid::default(),
             Some(123),
+            None,
         );
 
         repository
