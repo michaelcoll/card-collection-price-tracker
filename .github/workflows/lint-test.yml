@@ -1,14 +1,7 @@
 name: lint-test-backend
 
 on:
-  push:
-    paths:
-      - "src/**"
-      - "migrations/**"
-      - "Cargo.toml"
-      - "Cargo.lock"
-      - ".sqlx/**"
-      - ".github/workflows/lint-test.yml"
+  push
 
 env:
   CARGO_TERM_COLOR: always

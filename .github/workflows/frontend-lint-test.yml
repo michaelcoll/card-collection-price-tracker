@@ -1,10 +1,7 @@
 name: lint-test-frontend
 
 on:
-  push:
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-lint-test.yml"
+  push
 
 jobs:
   format:
