@@ -1,3 +1,7 @@
+---
+applyTo: "frontend/**"
+---
+
 # Design System Strategy: The Arcane Exchange
 
 ## 1. Overview & Creative North Star
