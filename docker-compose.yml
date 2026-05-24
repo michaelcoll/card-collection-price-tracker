@@ -36,7 +36,7 @@ services:
       - "8080:8080"
 
   frontend:
-    image: ghcr.io/michaelcoll/card-collection-price-tracker-frontend:1.6.2
+    image: ghcr.io/michaelcoll/card-collection-price-tracker-frontend:1.7.0
     pull_policy: always
     restart: unless-stopped
     ports:
