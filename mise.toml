@@ -1,0 +1,91 @@
+[tools]
+rust = "stable"
+"cargo:sqlx-cli" = "latest"
+"cargo:https://github.com/rtk-ai/rtk" = "latest"
+node = "24"
+pnpm = "11"
+gh = "latest"
+
+[tasks.default]
+description = "Runs all the checks for the project"
+depends = ["openapi", "sqlx-prepare", "format", "test", "lint"]
+
+[tasks.clean-backend]
+run = "cargo clean"
+hide = true
+
+[tasks.clean-frontend]
+dir = "frontend"
+run = "rm -fr dist coverage node_modules .angular"
+hide = true
+
+[tasks.clean]
+description = "Cleans the project artifacts"
+depends = ["clean-backend", "clean-frontend"]
+alias = ["c"]
+
+[tasks.install-frontend-deps]
+dir = "frontend"
+depends = ["clean-frontend"]
+run = "pnpm install"
+hide = true
+
+[tasks.setup]
+description = "Setups the project for development"
+depends = ["clean", "install-frontend-deps"]
+
+[tasks.openapi]
+description = "Generates the OpenAPI specification"
+depends_post = ["format-frontend"]
+run = "rtk cargo run --bin generate-openapi"
+alias = ["o"]
+
+[tasks.sqlx-prepare]
+description = "Generates the SQLx metadata for the project"
+run = "cargo sqlx prepare"
+
+[tasks.test]
+description = "Tests the backend"
+run = "rtk cargo test"
+alias = ["t"]
+
+[tasks.lint-clippy]
+run = "rtk cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all"
+hide = true
+
+[tasks.lint-sqlx]
+depends = ["sqlx-prepare"]
+run = "cargo sqlx prepare --check"
+hide = true
+
+[tasks.lint]
+description = "Lints the backend of project"
+depends = ["lint-clippy", "lint-sqlx"]
+alias = ["l"]
+
+[tasks.format-backend]
+run = "rtk cargo fmt"
+hide = true
+
+[tasks.format-frontend]
+dir = "frontend"
+run = "rtk pnpm lint:fix"
+hide = true
+
+[tasks.format]
+description = "Formats the codebase"
+depends = ["format-backend", "format-frontend"]
+alias = ["f"]
+
+[tasks.migrate]
+description = "Runs the database migrations"
+run = "sqlx migrate run"
+
+[tasks.back]
+description = "Runs the backend server"
+run = "cargo run --bin ccpt"
+
+[tasks.front]
+description = "Runs the frontend development server"
+dir = "frontend"
+run = "pnpm start"
