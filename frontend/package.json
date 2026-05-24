@@ -24,7 +24,7 @@
     "@angular/forms": "^21.2.6",
     "@angular/material": "^21.2.4",
     "@angular/platform-browser": "^21.2.6",
-    "@angular/router": "^21.2.6",
+    "@angular/router": "^21.2.14",
     "@clerk/clerk-js": "^5",
     "@clerk/shared": "3.47.4",
     "@fontsource-variable/inter": "^5.2.8",
