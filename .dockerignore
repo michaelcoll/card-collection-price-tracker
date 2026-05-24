@@ -6,6 +6,5 @@ example-files
 target
 .gitignore
 LICENSE
-justfile
 README.md
 .env

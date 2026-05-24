@@ -11,5 +11,8 @@ updates:
   - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
-      interval: "cron"
-      cronjob: "0 * * * *"
+      interval: "daily"
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "daily"

@@ -1,5 +1,5 @@
 ---
-applyTo: "src/**,migrations/**,Cargo.toml,Cargo.lock,justfile"
+applyTo: "src/**,migrations/**,Cargo.toml,Cargo.lock"
 ---
 
 # Backend Development Guide (Rust)
