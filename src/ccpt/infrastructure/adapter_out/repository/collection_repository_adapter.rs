@@ -4,7 +4,8 @@ use crate::domain::card::Card;
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::infrastructure::adapter_out::repository::entities::CardWithPriceEntity;
 use async_trait::async_trait;
-use sqlx::{Pool, Postgres};
+use sqlx::AssertSqlSafe;
+use sqlx::{Pool, Postgres, query_as, query_scalar};
 
 pub struct CollectionRepositoryAdapter {
     pool: Pool<Postgres>,
@@ -61,7 +62,7 @@ impl CollectionRepository for CollectionRepositoryAdapter {
         let offset = (query.page * query.page_size) as i64;
         let limit = query.page_size as i64;
 
-        let base_query = sqlx::query_as::<_, CardWithPriceEntity>(&sql)
+        let base_query = query_as::<_, CardWithPriceEntity>(AssertSqlSafe(sql.as_str()))
             .bind(user_id)
             .bind(limit)
             .bind(offset);
@@ -79,7 +80,7 @@ impl CollectionRepository for CollectionRepositoryAdapter {
             None => "SELECT COUNT(*) FROM mv_card_prices cp WHERE cp.user_id = $1".to_string(),
         };
 
-        let base_count = sqlx::query_scalar::<_, i64>(&count_sql).bind(user_id);
+        let base_count = query_scalar::<_, i64>(AssertSqlSafe(count_sql.as_str())).bind(user_id);
         let total: i64 = match &query.search_query {
             Some(q) => base_count.bind(q.clone()),
             None => base_count,
