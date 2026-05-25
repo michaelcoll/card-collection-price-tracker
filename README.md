@@ -10,10 +10,10 @@ API consumed by an Angular frontend.
 ## Requirements
 
 - **Rust** (edition 2024, stable toolchain)
-- **Node.js** >= 24 & **pnpm** >= 10.33.0 (Frontend)
+- **Node.js** >= 24 & **pnpm** >= 11 (Frontend)
 - **PostgreSQL** 18
 - **Docker/Compose** (Optional)
-- [`just`](https://github.com/casey/just) — Task runner
+- [`mise`](https://mise.jdx.dev/) — Task runner & toolchain manager
 
 ## Setup
 
@@ -28,12 +28,10 @@ API consumed by an Angular frontend.
 
 1. Start PostgreSQL service (if not using Compose).
 2. Copy/configure `.env`.
-3. Install backend tooling: `just prepare`
-4. Install frontend dependencies: `cd frontend && pnpm install && cd ..`
-5. Run both services together (requires `tmux`): `just run`
-    - This starts a tmux session (`ccpt`) with backend (`cargo run`, API on <http://localhost:8080>) and frontend (
-      `pnpm start`, app on <http://localhost:4200>).
-    - Use `Ctrl+B d` to detach.
+3. Install SDKs and tools `mise install`.
+4. Setup project: `mise run setup`.
+5. Run backend: `mise run back`. (API on <http://localhost:8080>)
+6. Run frontend: `mise run front`. (app on <http://localhost:4200>)
 
 ## Environment Variables
 
@@ -46,20 +44,21 @@ API consumed by an Angular frontend.
 > **Authentication** is handled via [Clerk](https://clerk.com/). Set `CLERK_FRONTEND_API_URL` to your Clerk instance
 > URL.
 
-## Scripts (`justfile`)
+## Scripts (`mise.toml`)
 
-| Command              | Description                                        |
-|----------------------|----------------------------------------------------|
-| `just`               | Format, test, and lint (default)                   |
-| `just build`         | Build backend (debug)                              |
-| `just build-release` | Build backend (release)                            |
-| `just run`           | Run backend & frontend in tmux session (`ccpt`)    |
-| `just run-release`   | Run backend (release)                              |
-| `just test`          | Run tests with coverage (`cargo llvm-cov nextest`) |
-| `just lint`          | Lint backend & frontend                            |
-| `just format`        | Format Rust code (`cargo fmt`)                     |
-| `just prepare`       | Install testing/linting dependencies               |
-| `just clean`         | Remove `target/` directory                         |
+| Command            | Description                                        |
+|--------------------|----------------------------------------------------|
+| `mise run`         | Generate OpenAPI, format, test, and lint (default) |
+| `mise run setup`   | Clean & install all dependencies                   |
+| `mise run back`    | Run backend server (`cargo run`)                   |
+| `mise run front`   | Run frontend dev server (`pnpm start`)             |
+| `mise run test`    | Run backend tests                                  |
+| `mise run lint`    | Lint backend (Clippy + SQLx)                       |
+| `mise run format`  | Format backend & frontend                          |
+| `mise run openapi` | Generate OpenAPI specification                     |
+| `mise run migrate` | Run database migrations                            |
+| `mise run clean`   | Remove build artifacts                             |
+| `mise run upgrade` | Upgrade backend & frontend dependencies            |
 
 ### Frontend Scripts (`frontend/`)
 
@@ -72,7 +71,7 @@ API consumed by an Angular frontend.
 
 ## Tests
 
-- Backend: `just test`
+- Backend: `mise run test`
 - Frontend: `cd frontend && pnpm test`
 
 Coverage reports are uploaded to [Codecov](https://codecov.io/gh/michaelcoll/card-collection-price-tracker).
@@ -94,7 +93,7 @@ Coverage reports are uploaded to [Codecov](https://codecov.io/gh/michaelcoll/car
 ├── example-files/                     # Example CSV and credentials files
 ├── Dockerfile                         # Backend Docker image
 ├── docker-compose.yml                 # Full-stack Compose setup
-├── justfile                           # Task runner commands
+├── mise.toml                          # Task runner & toolchain configuration
 └── Cargo.toml                         # Rust package manifest
 ```
 
