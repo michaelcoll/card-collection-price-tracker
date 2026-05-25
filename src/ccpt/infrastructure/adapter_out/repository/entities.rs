@@ -42,12 +42,14 @@ pub struct SetNameEntity {
 
 impl From<CardEntity> for Card {
     fn from(entity: CardEntity) -> Card {
-        let set_code = SetCode::new(entity.set_code);
+        let set_code =
+            SetCode::try_new(entity.set_code).expect("database contains invalid set_code");
         Card {
             id: CardId {
                 set_code: set_code.clone(),
                 collector_number: entity.collector_number,
-                language_code: LanguageCode::new(entity.language_code),
+                language_code: LanguageCode::try_new(entity.language_code)
+                    .expect("database contains invalid language_code"),
                 foil: entity.foil,
             },
             set_name: SetName {
@@ -67,23 +69,25 @@ impl From<CardEntity> for Card {
 }
 
 fn from_db_rarity<S: AsRef<str>>(s: S) -> RarityCode {
-    let s_ref = s.as_ref();
-    match s_ref {
-        "C" => RarityCode::C,
-        "U" => RarityCode::U,
-        "R" => RarityCode::R,
-        "M" => RarityCode::M,
-        _ => panic!("invalid rarity code : {}", s_ref),
+    let s = s.as_ref().to_uppercase();
+    match s.as_str() {
+        "C" | "c" => RarityCode::C,
+        "U" | "u" => RarityCode::U,
+        "R" | "r" => RarityCode::R,
+        "M" | "m" => RarityCode::M,
+        _ => panic!("invalid rarity code from database: {}", s),
     }
 }
 
 impl From<CardIdEntity> for CardId {
     fn from(entity: CardIdEntity) -> CardId {
-        let set_code = SetCode::new(entity.set_code);
+        let set_code =
+            SetCode::try_new(entity.set_code).expect("database contains invalid set_code");
         CardId {
             set_code: set_code.clone(),
             collector_number: entity.collector_number,
-            language_code: LanguageCode::new(entity.language_code),
+            language_code: LanguageCode::try_new(entity.language_code)
+                .expect("database contains invalid language_code"),
             foil: entity.foil,
         }
     }
@@ -179,12 +183,13 @@ impl From<CardWithPriceEntity> for Card {
             None
         };
 
-        let set_code = SetCode::new(e.set_code.clone());
+        let set_code = SetCode::try_new(&e.set_code).expect("database contains invalid set_code");
         Card {
             id: CardId::new(
                 set_code.clone(),
                 e.collector_number,
-                LanguageCode::new(e.language_code),
+                LanguageCode::try_new(&e.language_code)
+                    .expect("database contains invalid language_code"),
                 e.foil,
             ),
             set_name: SetName::new(set_code, e.set_name),
@@ -307,21 +312,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "invalid rarity code")]
+    fn from_db_rarity_returns_common_for_lowercase() {
+        assert_eq!(from_db_rarity("c"), RarityCode::C);
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid rarity code from database")]
     fn from_db_rarity_panics_on_unknown_code() {
         from_db_rarity("X");
-    }
-
-    #[test]
-    #[should_panic(expected = "invalid rarity code")]
-    fn from_db_rarity_panics_on_lowercase_code() {
-        from_db_rarity("r");
-    }
-
-    #[test]
-    #[should_panic(expected = "invalid rarity code")]
-    fn from_db_rarity_panics_on_empty_string() {
-        from_db_rarity("");
     }
 
     #[test]

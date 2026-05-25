@@ -1,3 +1,4 @@
+use crate::domain::error::CardParsingError;
 use std::fmt::Display;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -9,15 +10,19 @@ pub enum RarityCode {
 }
 
 impl RarityCode {
-    pub fn new<S: AsRef<str>>(s: S) -> Self {
+    pub fn try_new<S: AsRef<str>>(s: S) -> Result<Self, CardParsingError> {
         let s_ref = s.as_ref();
         match s_ref.to_lowercase().as_str() {
-            "common" => RarityCode::C,
-            "uncommon" => RarityCode::U,
-            "rare" => RarityCode::R,
-            "mythic" => RarityCode::M,
-            _ => panic!("invalid rarity code : {}", s_ref),
+            "common" => Ok(RarityCode::C),
+            "uncommon" => Ok(RarityCode::U),
+            "rare" => Ok(RarityCode::R),
+            "mythic" => Ok(RarityCode::M),
+            _ => Err(CardParsingError::InvalidRarityCode(s_ref.to_string())),
         }
+    }
+
+    pub fn new<S: AsRef<str>>(s: S) -> Self {
+        Self::try_new(s).expect("invalid rarity code")
     }
 }
 
@@ -81,15 +86,24 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "invalid rarity code")]
-    fn new_panics_on_unknown_rarity() {
-        RarityCode::new("special");
+    fn new_returns_error_for_unknown_rarity() {
+        let result = RarityCode::try_new("special");
+        assert!(result.is_err());
     }
 
     #[test]
-    #[should_panic(expected = "invalid rarity code")]
-    fn new_panics_on_empty_string() {
-        RarityCode::new("");
+    fn new_returns_error_for_empty_string() {
+        let result = RarityCode::try_new("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn new_returns_invalid_rarity_code_error_variant() {
+        let result = RarityCode::try_new("special");
+        match result {
+            Err(CardParsingError::InvalidRarityCode(msg)) => assert_eq!(msg, "special"),
+            _ => panic!("Expected InvalidRarityCode variant"),
+        }
     }
 
     #[test]

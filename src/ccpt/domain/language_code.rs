@@ -1,3 +1,4 @@
+use crate::domain::error::CardParsingError;
 use std::fmt::Display;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -9,15 +10,19 @@ pub enum LanguageCode {
 }
 
 impl LanguageCode {
-    pub fn new<S: AsRef<str>>(s: S) -> Self {
+    pub fn try_new<S: AsRef<str>>(s: S) -> Result<Self, CardParsingError> {
         let s_ref = s.as_ref();
         match s_ref.to_uppercase().as_str() {
-            "FR" => LanguageCode::FR,
-            "EN" => LanguageCode::EN,
-            "JA" => LanguageCode::JA,
-            "IT" => LanguageCode::IT,
-            _ => panic!("invalid language code : {}", s_ref),
+            "FR" => Ok(LanguageCode::FR),
+            "EN" => Ok(LanguageCode::EN),
+            "JA" => Ok(LanguageCode::JA),
+            "IT" => Ok(LanguageCode::IT),
+            _ => Err(CardParsingError::InvalidLanguageCode(s_ref.to_string())),
         }
+    }
+
+    pub fn new<S: AsRef<str>>(s: S) -> Self {
+        Self::try_new(s).expect("invalid language code")
     }
 }
 
@@ -49,9 +54,18 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "invalid language code : DE")]
-    fn new_language_code_with_invalid_code_panics() {
-        LanguageCode::new("DE");
+    fn try_new_language_code_with_invalid_code_returns_error() {
+        let result = LanguageCode::try_new("DE");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn try_new_language_code_with_invalid_code_contains_msg() {
+        let result = LanguageCode::try_new("DE");
+        match result {
+            Err(CardParsingError::InvalidLanguageCode(msg)) => assert_eq!(msg, "DE"),
+            _ => panic!("Expected InvalidLanguageCode variant"),
+        }
     }
 
     #[test]

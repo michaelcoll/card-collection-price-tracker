@@ -62,6 +62,7 @@ run = "cargo sqlx prepare"
 [tasks.test]
 description = "Tests the backend"
 run = "rtk cargo test"
+depends_post = ["format-frontend"]
 alias = ["t"]
 
 [tasks.lint-clippy]
