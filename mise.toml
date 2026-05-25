@@ -81,6 +81,17 @@ alias = ["f"]
 description = "Runs the database migrations"
 run = "sqlx migrate run"
 
+[tasks.upgrade-backend]
+run = "cargo update --verbose"
+
+[tasks.upgrade-frontend]
+dir = "frontend"
+run = "pnpm update --latest"
+
+[tasks.upgrade]
+description = "Upgrades the project dependencies"
+depends = ["upgrade-backend", "upgrade-frontend"]
+
 [tasks.back]
 description = "Runs the backend server"
 run = "cargo run --bin ccpt"
