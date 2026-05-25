@@ -58,7 +58,11 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
         }
 
         let name = field_refs[2];
-        let set_code = SetCode::new(field_refs[3]);
+        let set_code = SetCode::try_new(field_refs[3]).map_err(|_| AppError::ParseError {
+            line: line_number,
+            field: "set_code",
+            value: field_refs[3].to_string(),
+        })?;
         let set_name = SetName {
             code: set_code.clone(),
             name: field_refs[4].to_string(),
@@ -66,9 +70,18 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
 
         let collector_number = field_refs[5];
 
-        let rarity_code = RarityCode::new(field_refs[7]);
+        let rarity_code = RarityCode::try_new(field_refs[7]).map_err(|_| AppError::ParseError {
+            line: line_number,
+            field: "rarity",
+            value: field_refs[7].to_string(),
+        })?;
 
-        let language_code: LanguageCode = LanguageCode::new(field_refs[15]);
+        let language_code: LanguageCode =
+            LanguageCode::try_new(field_refs[15]).map_err(|_| AppError::ParseError {
+                line: line_number,
+                field: "language_code",
+                value: field_refs[15].to_string(),
+            })?;
         let foil: bool = field_refs[6] != "normal";
 
         let quantity: u8 = field_refs[8].parse().map_err(|_e| AppError::ParseError {
@@ -171,21 +184,35 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "set code must be between 3 and 5 characters (got EC)")]
     fn import_cards_returns_error_for_invalid_set_code() {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
                    bulk,binder,\"Eirdu, Carrier of Dawn // Isilu, Carrier of Twilight\",EC,Lorwyn Eclipsed,13,normal,mythic,1,108961,b2d9d5ca-7e15-437a-bdfc-5972b42148fe,12.35,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
 
-        let _result = parse_cards(csv);
+        let result = parse_cards(csv);
+        assert!(matches!(
+            result,
+            Err(AppError::ParseError {
+                line: 1,
+                field: "set_code",
+                value: _
+            })
+        ));
     }
 
     #[test]
-    #[should_panic(expected = "invalid language code : de")]
     fn import_cards_returns_error_for_invalid_language_code() {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
                    bulk,binder,\"Brigid, Clachan's Heart // Brigid, Doun's Mind\",ECL,Lorwyn Eclipsed,7,normal,rare,1,110841,cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8,1.75,false,false,near_mint,de,EUR,2026-02-05T20:44:45.815Z";
 
-        let _result = parse_cards(csv);
+        let result = parse_cards(csv);
+        assert!(matches!(
+            result,
+            Err(AppError::ParseError {
+                line: 1,
+                field: "language_code",
+                value: _
+            })
+        ));
     }
 
     #[test]

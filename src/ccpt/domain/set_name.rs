@@ -1,16 +1,24 @@
+use crate::domain::error::CardParsingError;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SetCode(String);
 
 impl SetCode {
-    pub fn new(s: impl Into<String>) -> Self {
+    pub fn try_new(s: impl Into<String>) -> Result<Self, CardParsingError> {
         let name = s.into().to_uppercase();
         if name.chars().count() >= 3 && name.chars().count() <= 5 {
-            SetCode(name)
+            Ok(SetCode(name))
         } else {
-            panic!("set code must be between 3 and 5 characters (got {})", name)
+            Err(CardParsingError::InvalidSetCode(format!(
+                "set code must be between 3 and 5 characters (got {})",
+                name
+            )))
         }
+    }
+
+    pub fn new(s: impl Into<String>) -> Self {
+        Self::try_new(s).expect("invalid set code")
     }
 }
 
@@ -53,9 +61,26 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "set code must be between 3 and 5 characters (got AB)")]
-    fn new_set_code_with_invalid_length_panics() {
-        SetCode::new("AB");
+    fn new_set_code_with_invalid_length_returns_error() {
+        let result = SetCode::try_new("AB");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn new_set_code_with_invalid_length_contains_message() {
+        let result = SetCode::try_new("AB");
+        match result {
+            Err(CardParsingError::InvalidSetCode(msg)) => {
+                assert!(msg.contains("set code must be between 3 and 5 characters"))
+            }
+            _ => panic!("Expected InvalidSetCode variant"),
+        }
+    }
+
+    #[test]
+    fn new_set_code_with_too_long_returns_error() {
+        let result = SetCode::try_new("ABCDE1");
+        assert!(result.is_err());
     }
 
     #[test]

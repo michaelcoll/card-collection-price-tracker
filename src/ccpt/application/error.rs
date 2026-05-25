@@ -1,3 +1,5 @@
+use crate::domain::error::CardParsingError;
+
 #[derive(Debug, Clone)]
 pub enum AppError {
     ParseError {
@@ -41,6 +43,28 @@ impl std::fmt::Display for AppError {
 }
 
 impl std::error::Error for AppError {}
+
+impl From<CardParsingError> for AppError {
+    fn from(error: CardParsingError) -> Self {
+        match error {
+            CardParsingError::InvalidLanguageCode(msg) => AppError::ParseError {
+                line: 0,
+                field: "language_code",
+                value: msg,
+            },
+            CardParsingError::InvalidSetCode(msg) => AppError::ParseError {
+                line: 0,
+                field: "set_code",
+                value: msg,
+            },
+            CardParsingError::InvalidRarityCode(msg) => AppError::ParseError {
+                line: 0,
+                field: "rarity",
+                value: msg,
+            },
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
