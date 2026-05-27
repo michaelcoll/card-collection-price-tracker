@@ -28,7 +28,7 @@
     "@clerk/clerk-js": "^6.12.1",
     "@clerk/shared": "4.13.1",
     "@fontsource-variable/inter": "^5.2.8",
-    "material-symbols": "^0.44.9",
+    "material-symbols": "^0.44.10",
     "rxjs": "~7.8.2",
     "tslib": "^2.8.1"
   },
