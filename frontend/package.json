@@ -25,10 +25,10 @@
     "@angular/material": "^21.2.12",
     "@angular/platform-browser": "^21.2.14",
     "@angular/router": "^21.2.14",
-    "@clerk/clerk-js": "^6.12.1",
-    "@clerk/shared": "4.13.1",
+    "@clerk/clerk-js": "^6.13.0",
+    "@clerk/shared": "4.14.0",
     "@fontsource-variable/inter": "^5.2.8",
-    "material-symbols": "^0.44.9",
+    "material-symbols": "^0.44.10",
     "rxjs": "~7.8.2",
     "tslib": "^2.8.1"
   },
