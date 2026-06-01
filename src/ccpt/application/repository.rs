@@ -65,12 +65,23 @@ pub trait CardMarketPriceRepository: Send + Sync {
         date: NaiveDate,
         price_guides: Vec<FullPriceGuide>,
     ) -> Result<(), AppError>;
+
+    async fn find_by_id_and_date(
+        &self,
+        id_product: u32,
+        date: NaiveDate,
+    ) -> Result<Option<FullPriceGuide>, AppError>;
 }
 
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub trait CardPricesViewRepository: Send + Sync {
     async fn refresh(&self) -> Result<(), AppError>;
+    async fn get_paginated(
+        &self,
+        user_id: &str,
+        query: CollectionQuery,
+    ) -> Result<PaginatedCollection, AppError>;
 }
 
 #[async_trait]

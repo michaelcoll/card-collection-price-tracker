@@ -1,0 +1,102 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT date, low, trend, avg, avg1, avg7, avg30\n                FROM collection_price_history\n                WHERE user_id = $1\n                  AND date >= $2\n                  AND date <= $3\n                ORDER BY date",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "date",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "collection_price_history",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "low",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collection_price_history",
+            "name": "low"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "trend",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collection_price_history",
+            "name": "trend"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "avg",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collection_price_history",
+            "name": "avg"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "avg1",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collection_price_history",
+            "name": "avg1"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "avg7",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collection_price_history",
+            "name": "avg7"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "avg30",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collection_price_history",
+            "name": "avg30"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d6fd19cfc8f18bb2301eb120b61d24fee518769f40d14a480c71c9fc03f4f3a2"
+}

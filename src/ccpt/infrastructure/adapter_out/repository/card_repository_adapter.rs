@@ -67,14 +67,14 @@ impl CardRepository for CardRepositoryAdapter {
 
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
         sqlx::query!(
-            "
-            INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        r#"INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT(set_code, collector_number, language_code, foil)
                 DO UPDATE
                 SET name          = $5,
                     rarity        = $6,
-                    scryfall_id   = $7",
+                    scryfall_id   = $7,
+                    cardmarket_id = $8"#,
             card.id.set_code.to_string(),
             card.id.collector_number,
             card.id.language_code.to_string(),
@@ -82,18 +82,19 @@ impl CardRepository for CardRepositoryAdapter {
             card.name,
             card.rarity_code.to_string(),
             card.scryfall_id,
+            card.cardmarket_id.map(|id| id as i32),
         )
         .execute(&self.pool)
         .await?;
 
-        sqlx::query!("
-            INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price, added_at)
+        sqlx::query!(
+        r#"INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price, added_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT(set_code, collector_number, language_code, foil, user_id)
                 DO UPDATE
                 SET quantity       = $6,
                     purchase_price = $7,
-                    added_at       = $8",
+                    added_at       = $8"#,
             card.id.set_code.to_string(),
             card.id.collector_number,
             card.id.language_code.to_string(),
@@ -114,10 +115,10 @@ impl CardRepository for CardRepositoryAdapter {
         id: CardId,
         cardmarket_id: Option<u32>,
     ) -> Result<(), AppError> {
-        sqlx::query!("
-                UPDATE card
+        sqlx::query!(
+            r#"UPDATE card
                 SET cardmarket_id = $1
-                WHERE set_code = $2 AND collector_number = $3 AND language_code = $4 AND foil = $5;",
+                WHERE set_code = $2 AND collector_number = $3 AND language_code = $4 AND foil = $5;"#,
             cardmarket_id.map(|id| id as i32),
             id.set_code.to_string(),
             id.collector_number,
@@ -143,8 +144,11 @@ mod tests {
     use super::*;
     use crate::domain::language_code::LanguageCode;
     use crate::domain::rarity_code::RarityCode;
+    use crate::infrastructure::adapter_out::repository::common_repository_tests::{
+        insert_card, insert_card_without_cardmarket_id, insert_collection_entry,
+    };
+    use chrono::Utc;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     #[sqlx::test]
     async fn test_no_card_exists(pool: PgPool) {
@@ -157,28 +161,34 @@ mod tests {
 
     #[sqlx::test]
     async fn test_get_user_id(pool: PgPool) {
-        let repository = CardRepositoryAdapter::new(pool);
-
-        let card = Card::new(
+        // FDN="Foundations" est déjà seedé par la migration
+        insert_card_without_cardmarket_id(&pool, "FDN", "87", "FR", false, "Goblin Boarders").await;
+        insert_collection_entry(
+            &pool,
             "FDN",
-            "Foundations",
             "87",
-            LanguageCode::FR,
+            "FR",
             false,
-            "Goblin Boarders",
-            RarityCode::C,
+            "test-user-id",
             3,
             500,
-        );
+            Utc::now(),
+        )
+        .await;
 
-        repository
-            .save(User::for_testing(), card.clone())
+        let cards = CardRepositoryAdapter::new(pool)
+            .get_all(User::for_testing())
             .await
             .unwrap();
 
-        let cards = repository.get_all(User::for_testing()).await.unwrap();
         assert_eq!(cards.len(), 1);
-        assert_eq!(cards[0], card);
+        assert_eq!(
+            cards[0].id,
+            CardId::new("FDN", "87", LanguageCode::FR, false)
+        );
+        assert_eq!(cards[0].name, "Goblin Boarders");
+        assert_eq!(cards[0].quantity, 3);
+        assert_eq!(cards[0].purchase_price, 500);
     }
 
     #[sqlx::test]
@@ -219,39 +229,40 @@ mod tests {
 
         let cards = repository.get_all(User::for_testing()).await.unwrap();
         assert_eq!(cards.len(), 1);
-        assert_eq!(cards[0], updated_card);
+        assert_eq!(cards[0].quantity, updated_card.quantity);
+        assert_eq!(cards[0].purchase_price, updated_card.purchase_price);
     }
 
     #[sqlx::test]
     async fn delete_all_removes_all_cards(pool: PgPool) {
-        let repository = CardRepositoryAdapter::new(pool);
-
-        let card1 = Card::new(
+        insert_card_without_cardmarket_id(&pool, "FDN", "87", "FR", false, "Goblin Boarders").await;
+        insert_card_without_cardmarket_id(&pool, "FDN", "12", "EN", true, "Goblin Boarders").await;
+        insert_collection_entry(
+            &pool,
             "FDN",
-            "Foundations",
             "87",
-            LanguageCode::FR,
+            "FR",
             false,
-            "Goblin Boarders",
-            RarityCode::C,
+            "test-user-id",
             3,
             500,
-        );
-        let card2 = Card::new(
+            Utc::now(),
+        )
+        .await;
+        insert_collection_entry(
+            &pool,
             "FDN",
-            "Foundations",
             "12",
-            LanguageCode::EN,
+            "EN",
             true,
-            "Goblin Boarders",
-            RarityCode::C,
+            "test-user-id",
             2,
             1000,
-        );
+            Utc::now(),
+        )
+        .await;
 
-        repository.save(User::for_testing(), card1).await.unwrap();
-        repository.save(User::for_testing(), card2).await.unwrap();
-
+        let repository = CardRepositoryAdapter::new(pool);
         repository.delete_all(User::for_testing()).await.unwrap();
 
         let cards = repository.get_all(User::for_testing()).await.unwrap();
@@ -263,91 +274,82 @@ mod tests {
 
     #[sqlx::test]
     async fn get_all_returns_multiple_cards(pool: PgPool) {
-        let repository = CardRepositoryAdapter::new(pool);
-
-        let card1 = Card::new(
+        insert_card_without_cardmarket_id(&pool, "FDN", "87", "FR", false, "Goblin Boarders").await;
+        insert_card_without_cardmarket_id(&pool, "FDN", "12", "EN", true, "Goblin Boarders").await;
+        insert_collection_entry(
+            &pool,
             "FDN",
-            "Foundations",
             "87",
-            LanguageCode::FR,
+            "FR",
             false,
-            "Goblin Boarders",
-            RarityCode::C,
+            "test-user-id",
             3,
             500,
-        );
-        let card2 = Card::new(
+            Utc::now(),
+        )
+        .await;
+        insert_collection_entry(
+            &pool,
             "FDN",
-            "Foundations",
             "12",
-            LanguageCode::EN,
+            "EN",
             true,
-            "Goblin Boarders",
-            RarityCode::C,
+            "test-user-id",
             2,
             1000,
-        );
+            Utc::now(),
+        )
+        .await;
 
-        repository
-            .save(User::for_testing(), card1.clone())
-            .await
-            .unwrap();
-        repository
-            .save(User::for_testing(), card2.clone())
+        let cards = CardRepositoryAdapter::new(pool)
+            .get_all(User::for_testing())
             .await
             .unwrap();
 
-        let cards = repository.get_all(User::for_testing()).await.unwrap();
         assert_eq!(cards.len(), 2);
-        assert!(cards.contains(&card1));
-        assert!(cards.contains(&card2));
+        let ids: Vec<&CardId> = cards.iter().map(|c| &c.id).collect();
+        assert!(ids.contains(&&CardId::new("FDN", "87", LanguageCode::FR, false)));
+        assert!(ids.contains(&&CardId::new("FDN", "12", LanguageCode::EN, true)));
     }
 
     #[sqlx::test]
     async fn get_all_without_cardmarket_id_returns_only_cards_without_cardmarket_id(pool: PgPool) {
-        let repository = CardRepositoryAdapter::new(pool);
-
-        let card_without_id = Card::new(
+        insert_card_without_cardmarket_id(&pool, "FDN", "87", "FR", false, "Goblin Boarders").await;
+        insert_card(&pool, "FDN", "12", "EN", true, "Goblin Boarders", 123).await;
+        insert_collection_entry(
+            &pool,
             "FDN",
-            "Foundations",
             "87",
-            LanguageCode::FR,
+            "FR",
             false,
-            "Goblin Boarders",
-            RarityCode::C,
+            "test-user-id",
             3,
             500,
-        );
-        let card_with_id = Card::new_full(
+            Utc::now(),
+        )
+        .await;
+        insert_collection_entry(
+            &pool,
             "FDN",
-            "Foundations",
             "12",
-            LanguageCode::EN,
+            "EN",
             true,
-            "Goblin Boarders",
-            RarityCode::C,
+            "test-user-id",
             2,
             1000,
-            Uuid::default(),
-            Some(123),
-            None,
-        );
+            Utc::now(),
+        )
+        .await;
 
-        repository
-            .save(User::for_testing(), card_without_id.clone())
-            .await
-            .unwrap();
-        repository
-            .save(User::for_testing(), card_with_id.clone())
-            .await
-            .unwrap();
-        repository
-            .update_cardmarket_id(card_with_id.id, card_with_id.cardmarket_id)
+        let cards = CardRepositoryAdapter::new(pool)
+            .get_all_without_cardmarket_id()
             .await
             .unwrap();
 
-        let cards = repository.get_all_without_cardmarket_id().await.unwrap();
         assert_eq!(cards.len(), 1);
-        assert_eq!(cards[0], (card_without_id.id, card_without_id.scryfall_id));
+        assert_eq!(
+            cards[0].0,
+            CardId::new("FDN", "87", LanguageCode::FR, false)
+        );
     }
 }

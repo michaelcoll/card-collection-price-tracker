@@ -1,7 +1,8 @@
 use crate::application::error::AppError;
 use crate::application::repository::CollectionPriceHistoryRepository;
-use crate::domain::price::{PriceGuide, PriceHistoryEntry};
+use crate::domain::price::PriceHistoryEntry;
 use crate::domain::user::User;
+use crate::infrastructure::adapter_out::repository::entities::CollectionPriceHistoryEntity;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use sqlx::{Pool, Postgres};
@@ -20,13 +21,10 @@ impl CollectionPriceHistoryRepositoryAdapter {
 impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapter {
     async fn get_date_and_user_to_update(&self) -> Result<Vec<(NaiveDate, User)>, AppError> {
         let rows = sqlx::query!(
-            r#"
-                SELECT dates.date, users.user_id
+            r#"SELECT dates.date, users.user_id
                 FROM (SELECT DISTINCT user_id FROM collection_entry) AS users
                          CROSS JOIN (SELECT DISTINCT date FROM cardmarket_price) AS dates
-                WHERE (dates.date, users.user_id) NOT IN (SELECT date, user_id
-                                                            FROM collection_price_history)
-            "#
+                WHERE (dates.date, users.user_id) NOT IN (SELECT date, user_id FROM collection_price_history)"#
         )
         .fetch_all(&self.pool)
         .await?;
@@ -41,8 +39,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
 
     async fn update_for_date_and_user(&self, date: NaiveDate, user: User) -> Result<(), AppError> {
         sqlx::query!(
-            r#"
-                INSERT INTO collection_price_history
+            r#"INSERT INTO collection_price_history
                 SELECT prices.date,
                        prices.user_id,
                        SUM(prices.low)   AS low,
@@ -67,8 +64,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
                                JOIN cardmarket_price cmp ON cardmarket_id = cmp.id_produit) AS prices
                 WHERE prices.user_id = $1
                   AND prices.date = $2
-                GROUP BY prices.user_id, prices.date
-                "#,
+                GROUP BY prices.user_id, prices.date"#,
             user.id,
             date,
         )
@@ -84,15 +80,14 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<Vec<PriceHistoryEntry>, AppError> {
-        let rows = sqlx::query!(
-            r#"
-                SELECT date, low, trend, avg, avg1, avg7, avg30
+        let entities = sqlx::query_as!(
+            CollectionPriceHistoryEntity,
+            r#"SELECT date, low, trend, avg, avg1, avg7, avg30
                 FROM collection_price_history
                 WHERE user_id = $1
                   AND date >= $2
                   AND date <= $3
-                ORDER BY date
-            "#,
+                ORDER BY date"#,
             user_id,
             start_date,
             end_date,
@@ -100,29 +95,21 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
         .fetch_all(&self.pool)
         .await?;
 
-        let entries = rows
-            .into_iter()
-            .map(|row| PriceHistoryEntry {
-                date: row.date,
-                price_guide: PriceGuide {
-                    low: row.low.into(),
-                    trend: row.trend.into(),
-                    avg: row.avg.into(),
-                    avg1: row.avg1.into(),
-                    avg7: row.avg7.into(),
-                    avg30: row.avg30.into(),
-                },
-            })
-            .collect();
-
-        Ok(entries)
+        Ok(entities.into_iter().map(PriceHistoryEntry::from).collect())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::NaiveDate;
+    use crate::infrastructure::adapter_out::repository::common_repository_tests::{
+        fetch_collection_price_history, insert_card, insert_collection_entry,
+        insert_collection_price_history, insert_price, insert_set,
+    };
+    use crate::infrastructure::adapter_out::repository::entities::{
+        CardMarketPriceEntity, PriceGuideEntity,
+    };
+    use chrono::{NaiveDate, Utc};
     use sqlx::PgPool;
 
     #[sqlx::test]
@@ -137,47 +124,26 @@ mod tests {
     async fn get_date_and_user_to_update_returns_combinations_not_in_history(pool: PgPool) {
         let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
 
-        sqlx::query!(
-            r#"
-                INSERT INTO set_name (set_code, name)
-                VALUES ('SET1', 'Test Set 1')
-            "#
+        insert_set(&pool, "SET1").await;
+        insert_card(&pool, "SET1", "1", "EN", false, "Test Card", 1).await;
+        insert_collection_entry(&pool, "SET1", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_price(
+            &pool,
+            CardMarketPriceEntity {
+                id_produit: 1,
+                date: NaiveDate::from_ymd_opt(2025, 12, 25).unwrap(),
+                normal: PriceGuideEntity {
+                    low: Some(10),
+                    avg: Some(20),
+                    trend: Some(15),
+                    avg1: Some(25),
+                    avg7: Some(18),
+                    avg30: Some(22),
+                },
+                foil: PriceGuideEntity::empty(),
+            },
         )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
-                VALUES ('SET1', '1', 'EN', false, 'Test Card', 'C', $1, 1)
-            "#,
-            uuid::Uuid::nil()
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
-                VALUES ('SET1', '1', 'EN', false, 'user1', 1, 100)
-            "#
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO cardmarket_price (id_produit, date, low, avg, trend, avg1, avg7, avg30)
-                VALUES (1, $1, 10, 20, 15, 25, 18, 22)
-            "#,
-            NaiveDate::from_ymd_opt(2025, 12, 25).unwrap()
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
+        .await;
 
         let result = adapter.get_date_and_user_to_update().await.unwrap();
 
@@ -190,59 +156,30 @@ mod tests {
     async fn get_date_and_user_to_update_excludes_combinations_in_history(pool: PgPool) {
         let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
 
-        sqlx::query!(
-            r#"
-                INSERT INTO set_name (set_code, name)
-                VALUES ('SET2', 'Test Set 2')
-            "#
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
-                VALUES ('SET2', '1', 'EN', false, 'Test Card', 'C', $1, 1)
-            "#,
-            uuid::Uuid::nil()
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
         let date = NaiveDate::from_ymd_opt(2025, 12, 25).unwrap();
-        sqlx::query!(
-            r#"
-                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
-                VALUES ('SET2', '1', 'EN', false, 'user1', 1, 100)
-            "#
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
 
-        sqlx::query!(
-            r#"
-                INSERT INTO cardmarket_price (id_produit, date, low, avg, trend, avg1, avg7, avg30)
-                VALUES (1, $1, 10, 20, 15, 25, 18, 22)
-            "#,
-            date
+        insert_set(&pool, "SET2").await;
+        insert_card(&pool, "SET2", "1", "EN", false, "Test Card", 1).await;
+        insert_collection_entry(&pool, "SET2", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_price(
+            &pool,
+            CardMarketPriceEntity {
+                id_produit: 1,
+                date,
+                normal: PriceGuideEntity {
+                    low: Some(10),
+                    avg: Some(20),
+                    trend: Some(15),
+                    avg1: Some(25),
+                    avg7: Some(18),
+                    avg30: Some(22),
+                },
+                foil: PriceGuideEntity::empty(),
+            },
         )
-        .execute(&pool)
-        .await
-        .unwrap();
+        .await;
 
-        sqlx::query!(
-            r#"
-                INSERT INTO collection_price_history (date, user_id, low, avg, trend, avg1, avg7, avg30)
-                VALUES ($1, 'user1', 100, 200, 150, 250, 180, 220)
-            "#,
-            date
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
+        insert_collection_price_history(&pool, date, "user1", 100, 200, 150, 250, 180, 220).await;
 
         let result = adapter.get_date_and_user_to_update().await.unwrap();
 
@@ -253,71 +190,47 @@ mod tests {
     async fn get_date_and_user_to_update_returns_multiple_combinations(pool: PgPool) {
         let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
 
-        sqlx::query!(
-            r#"
-                INSERT INTO set_name (set_code, name)
-                VALUES ('SET3', 'Test Set 3')
-            "#
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
-                VALUES ('SET3', '1', 'EN', false, 'Test Card', 'C', $1, 1)
-            "#,
-            uuid::Uuid::nil()
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
-                VALUES ('SET3', '1', 'EN', false, 'user1', 1, 100)
-            "#
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
-                VALUES ('SET3', '1', 'EN', false, 'user2', 2, 200)
-            "#
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
         let date1 = NaiveDate::from_ymd_opt(2025, 12, 25).unwrap();
         let date2 = NaiveDate::from_ymd_opt(2025, 12, 26).unwrap();
 
-        sqlx::query!(
-            r#"
-                INSERT INTO cardmarket_price (id_produit, date, low, avg, trend, avg1, avg7, avg30)
-                VALUES (1, $1, 10, 20, 15, 25, 18, 22)
-            "#,
-            date1
+        insert_set(&pool, "SET3").await;
+        insert_card(&pool, "SET3", "1", "EN", false, "Test Card", 1).await;
+        insert_collection_entry(&pool, "SET3", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "SET3", "1", "EN", false, "user2", 2, 200, Utc::now()).await;
+        insert_price(
+            &pool,
+            CardMarketPriceEntity {
+                id_produit: 1,
+                date: date1,
+                normal: PriceGuideEntity {
+                    low: Some(10),
+                    avg: Some(20),
+                    trend: Some(15),
+                    avg1: Some(25),
+                    avg7: Some(18),
+                    avg30: Some(22),
+                },
+                foil: PriceGuideEntity::empty(),
+            },
         )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO cardmarket_price (id_produit, date, low, avg, trend, avg1, avg7, avg30)
-                VALUES (1, $1, 12, 22, 17, 27, 20, 24)
-            "#,
-            date2
+        .await;
+        insert_price(
+            &pool,
+            CardMarketPriceEntity {
+                id_produit: 1,
+                date: date2,
+                normal: PriceGuideEntity {
+                    low: Some(12),
+                    avg: Some(22),
+                    trend: Some(17),
+                    avg1: Some(27),
+                    avg7: Some(20),
+                    avg30: Some(24),
+                },
+                foil: PriceGuideEntity::empty(),
+            },
         )
-        .execute(&pool)
-        .await
-        .unwrap();
+        .await;
 
         let result = adapter.get_date_and_user_to_update().await.unwrap();
 
@@ -330,77 +243,35 @@ mod tests {
         let user1 = User::from_id("user1".to_string());
         let date = NaiveDate::from_ymd_opt(2025, 12, 25).unwrap();
 
-        sqlx::query!(
-            r#"
-                INSERT INTO set_name (set_code, name)
-                VALUES ('SET6', 'Test Set 6')
-            "#
+        insert_set(&pool, "SET6").await;
+        insert_card(&pool, "SET6", "1", "EN", false, "Card 1", 5).await;
+        insert_collection_entry(&pool, "SET6", "1", "EN", false, "user1", 2, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "SET6", "1", "EN", false, "user2", 3, 150, Utc::now()).await;
+        insert_price(
+            &pool,
+            CardMarketPriceEntity {
+                id_produit: 5,
+                date,
+                normal: PriceGuideEntity {
+                    low: Some(10),
+                    avg: Some(20),
+                    trend: Some(15),
+                    avg1: Some(25),
+                    avg7: Some(18),
+                    avg30: Some(22),
+                },
+                foil: PriceGuideEntity::empty(),
+            },
         )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
-                VALUES ('SET6', '1', 'EN', false, 'Card 1', 'C', $1, 5)
-            "#,
-            uuid::Uuid::nil()
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO collection_entry (set_code, collector_number, language_code, foil, user_id, quantity, purchase_price)
-                VALUES ('SET6', '1', 'EN', false, 'user1', 2, 100),
-                       ('SET6', '1', 'EN', false, 'user2', 3, 150)
-            "#
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO cardmarket_price (id_produit, date, low, avg, trend, avg1, avg7, avg30)
-                VALUES (5, $1, 10, 20, 15, 25, 18, 22)
-            "#,
-            date
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
+        .await;
 
         adapter
             .update_for_date_and_user(date, user1.clone())
             .await
             .unwrap();
 
-        let rows_user1 = sqlx::query!(
-            r#"
-                SELECT user_id, low
-                FROM collection_price_history
-                WHERE date = $1 AND user_id = 'user1'
-            "#,
-            date
-        )
-        .fetch_all(&pool)
-        .await
-        .unwrap();
-
-        let rows_user2 = sqlx::query!(
-            r#"
-                SELECT user_id, low
-                FROM collection_price_history
-                WHERE date = $1 AND user_id = 'user2'
-            "#,
-            date
-        )
-        .fetch_all(&pool)
-        .await
-        .unwrap();
+        let rows_user1 = fetch_collection_price_history(&pool, date, "user1").await;
+        let rows_user2 = fetch_collection_price_history(&pool, date, "user2").await;
 
         assert_eq!(rows_user1.len(), 1);
         assert_eq!(rows_user1[0].low, 20i32); // 10 * 2

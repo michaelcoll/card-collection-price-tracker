@@ -1,16 +1,16 @@
 use crate::application::error::AppError;
-use crate::application::repository::CollectionRepository;
+use crate::application::repository::CardPricesViewRepository;
 use crate::application::use_case::GetCollectionUseCase;
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use async_trait::async_trait;
 use std::sync::Arc;
 
 pub struct CollectionService {
-    repository: Arc<dyn CollectionRepository>,
+    repository: Arc<dyn CardPricesViewRepository>,
 }
 
 impl CollectionService {
-    pub fn new(repository: Arc<dyn CollectionRepository>) -> Self {
+    pub fn new(repository: Arc<dyn CardPricesViewRepository>) -> Self {
         Self { repository }
     }
 }
@@ -29,12 +29,12 @@ impl GetCollectionUseCase for CollectionService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::repository::MockCollectionRepository;
+    use crate::application::repository::MockCardPricesViewRepository;
     use crate::domain::collection::{CollectionSortField, SortDirection};
 
     #[tokio::test]
     async fn get_collection_delegates_to_repository_with_correct_args() {
-        let mut mock_repo = MockCollectionRepository::new();
+        let mut mock_repo = MockCardPricesViewRepository::new();
         let expected_query = CollectionQuery {
             page: 1,
             page_size: 10,
@@ -75,7 +75,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_collection_propagates_repository_error() {
-        let mut mock_repo = MockCollectionRepository::new();
+        let mut mock_repo = MockCardPricesViewRepository::new();
         mock_repo.expect_get_paginated().returning(|_, _| {
             Box::pin(async { Err(AppError::RepositoryError("db error".to_string())) })
         });

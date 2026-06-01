@@ -19,7 +19,6 @@ use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCal
 use crate::infrastructure::adapter_out::repository::card_prices_view_repository_adapter::CardPricesViewRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::cardmarket_price_repository_adapter::CardMarketPriceRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::collection_price_history_repository_adapter::CollectionPriceHistoryRepositoryAdapter;
-use crate::infrastructure::adapter_out::repository::collection_repository_adapter::CollectionRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::stats_repository_adapter::StatsRepositoryAdapter;
 use adapter_in::maintenance_controller::create_maintenance_router;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
@@ -72,7 +71,6 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let edh_rec_caller_adapter = Arc::new(EdhRecCallerAdapter::new(edh_rec_base_url));
     let scryfall_caller_adapter = Arc::new(ScryfallCallerAdapter::new(scryfall_base_url));
     let stats_repository_adapter = Arc::new(StatsRepositoryAdapter::new(pool.clone()));
-    let collection_repository_adapter = Arc::new(CollectionRepositoryAdapter::new(pool.clone()));
 
     let auth_service: Arc<dyn AuthService> = Arc::new(
         crate::application::service::auth_service::ClerkAuthService::new(
@@ -116,12 +114,14 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let import_price_service: Arc<dyn ImportPriceUseCase> = Arc::new(ImportPriceService::new(
         card_market_caller_adapter,
         card_market_repository_adapter,
-        card_prices_view_repository_adapter,
+        card_prices_view_repository_adapter.clone(),
         card_collection_service.clone(),
     ));
 
     let stats_service = Arc::new(StatsService::new(stats_repository_adapter));
-    let collection_service = Arc::new(CollectionService::new(collection_repository_adapter));
+    let collection_service = Arc::new(CollectionService::new(
+        card_prices_view_repository_adapter.clone(),
+    ));
     let collection_price_history_service: Arc<dyn GetCollectionPriceHistoryUseCase> =
         Arc::new(CollectionPriceHistoryService::new(Arc::new(
             CollectionPriceHistoryRepositoryAdapter::new(pool.clone()),
