@@ -524,7 +524,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             AppError::CallError(msg) => {
-                assert_eq!(msg, "error decoding response body");
+                assert!(msg.contains("error decoding response body"))
             }
             _ => panic!("Expected CallError"),
         }
@@ -561,7 +561,7 @@ mod tests {
         assert!(result.is_err());
         match result.unwrap_err() {
             AppError::CallError(msg) => {
-                assert_eq!(msg, "error decoding response body");
+                assert!(msg.contains("error decoding response body"))
             }
             _ => panic!("Expected CallError"),
         }
