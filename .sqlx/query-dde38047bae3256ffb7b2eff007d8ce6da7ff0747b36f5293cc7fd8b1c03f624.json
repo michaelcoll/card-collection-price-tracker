@@ -1,0 +1,185 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id_produit, date, low, trend, avg, avg1, avg7, avg30,\n                    low_foil, trend_foil, avg_foil, avg1_foil, avg7_foil, avg30_foil\n             FROM cardmarket_price\n             WHERE id_produit = $1 AND date = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id_produit",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "id_produit"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "date",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "date"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "low",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "low"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "trend",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "trend"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "avg",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "avg"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "avg1",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "avg1"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "avg7",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "avg7"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "avg30",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "avg30"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "low_foil",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "low_foil"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "trend_foil",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "trend_foil"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "avg_foil",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "avg_foil"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "avg1_foil",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "avg1_foil"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "avg7_foil",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "avg7_foil"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "avg30_foil",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cardmarket_price",
+            "name": "avg30_foil"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "dde38047bae3256ffb7b2eff007d8ce6da7ff0747b36f5293cc7fd8b1c03f624"
+}

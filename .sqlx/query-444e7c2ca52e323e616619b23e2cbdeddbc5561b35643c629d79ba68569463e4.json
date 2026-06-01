@@ -6,12 +6,24 @@
       {
         "ordinal": 0,
         "name": "set_code",
-        "type_info": "Varchar"
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "set_name",
+            "name": "set_code"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "name",
-        "type_info": "Varchar"
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "set_name",
+            "name": "name"
+          }
+        }
       }
     ],
     "parameters": {

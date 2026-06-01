@@ -77,10 +77,14 @@ mod tests {
 
         adapter.save(set_name).await.unwrap();
 
-        let result = sqlx::query!("SELECT name FROM set_name WHERE set_code = $1", "ECL")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+        let result = sqlx::query_as!(
+            SetNameEntity,
+            "SELECT * FROM set_name WHERE set_code = $1",
+            "ECL"
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
 
         assert_eq!(
             result.name, "Lorwyn Eclipsed 2",
@@ -99,10 +103,14 @@ mod tests {
 
         adapter.save(set_name).await.unwrap();
 
-        let result = sqlx::query!("SELECT name FROM set_name WHERE set_code = $1", "ECC")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+        let result = sqlx::query_as!(
+            SetNameEntity,
+            "SELECT * FROM set_name WHERE set_code = $1",
+            "ECC"
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
 
         assert_eq!(
             result.name, "Lorwyn Eclipsed Commander",

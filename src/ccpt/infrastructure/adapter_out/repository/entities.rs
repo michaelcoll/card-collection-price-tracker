@@ -1,6 +1,6 @@
 use crate::domain::card::{Card, CardId};
 use crate::domain::language_code::LanguageCode;
-use crate::domain::price::{Price, PriceGuide};
+use crate::domain::price::{FullPriceGuide, Price, PriceGuide, PriceHistoryEntry};
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
 use crate::domain::user::User;
@@ -93,23 +93,104 @@ impl From<CardIdEntity> for CardId {
     }
 }
 
-#[allow(dead_code)]
+/// Flat price guide data as stored in the database (6 optional price fields).
+#[derive(sqlx::FromRow, Clone, Debug, PartialEq, Eq)]
+pub struct PriceGuideEntity {
+    pub low: Option<i32>,
+    pub avg: Option<i32>,
+    pub trend: Option<i32>,
+    pub avg1: Option<i32>,
+    pub avg7: Option<i32>,
+    pub avg30: Option<i32>,
+}
+
+impl PriceGuideEntity {
+    pub fn empty() -> Self {
+        Self {
+            low: None,
+            avg: None,
+            trend: None,
+            avg1: None,
+            avg7: None,
+            avg30: None,
+        }
+    }
+}
+
+impl From<PriceGuideEntity> for PriceGuide {
+    fn from(e: PriceGuideEntity) -> Self {
+        PriceGuide {
+            low: Price::from(e.low),
+            avg: Price::from(e.avg),
+            trend: Price::from(e.trend),
+            avg1: Price::from(e.avg1),
+            avg7: Price::from(e.avg7),
+            avg30: Price::from(e.avg30),
+        }
+    }
+}
+
+/// Raw sqlx row for `cardmarket_price` table — flat field names match DB columns exactly.
+/// Use `CardMarketPriceEntity` (structured) outside of sqlx query context.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct CardMarketPriceRaw {
+    pub id_produit: i32,
+    pub date: NaiveDate,
+    pub low: Option<i32>,
+    pub avg: Option<i32>,
+    pub trend: Option<i32>,
+    pub avg1: Option<i32>,
+    pub avg7: Option<i32>,
+    pub avg30: Option<i32>,
+    pub low_foil: Option<i32>,
+    pub avg_foil: Option<i32>,
+    pub trend_foil: Option<i32>,
+    pub avg1_foil: Option<i32>,
+    pub avg7_foil: Option<i32>,
+    pub avg30_foil: Option<i32>,
+}
+
+impl From<CardMarketPriceRaw> for CardMarketPriceEntity {
+    fn from(r: CardMarketPriceRaw) -> Self {
+        CardMarketPriceEntity {
+            id_produit: r.id_produit,
+            date: r.date,
+            normal: PriceGuideEntity {
+                low: r.low,
+                avg: r.avg,
+                trend: r.trend,
+                avg1: r.avg1,
+                avg7: r.avg7,
+                avg30: r.avg30,
+            },
+            foil: PriceGuideEntity {
+                low: r.low_foil,
+                avg: r.avg_foil,
+                trend: r.trend_foil,
+                avg1: r.avg1_foil,
+                avg7: r.avg7_foil,
+                avg30: r.avg30_foil,
+            },
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CardMarketPriceEntity {
-    pub id_produit: u32,
+    pub id_produit: i32,
     pub date: NaiveDate,
-    pub low: Option<u32>,
-    pub avg: Option<u32>,
-    pub trend: Option<u32>,
-    pub avg1: Option<u32>,
-    pub avg7: Option<u32>,
-    pub avg30: Option<u32>,
-    pub low_foil: Option<u32>,
-    pub avg_foil: Option<u32>,
-    pub trend_foil: Option<u32>,
-    pub avg1_foil: Option<u32>,
-    pub avg7_foil: Option<u32>,
-    pub avg30_foil: Option<u32>,
+    pub normal: PriceGuideEntity,
+    pub foil: PriceGuideEntity,
+}
+
+impl From<CardMarketPriceEntity> for FullPriceGuide {
+    fn from(e: CardMarketPriceEntity) -> Self {
+        FullPriceGuide {
+            id_product: e.id_produit as u32,
+            normal: PriceGuide::from(e.normal),
+            foil: PriceGuide::from(e.foil),
+        }
+    }
 }
 
 impl Price {
@@ -124,6 +205,33 @@ impl User {
             id: id.clone(),
             email: format!("{}@placeholder.local", id),
             name: None,
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+pub struct CollectionPriceHistoryEntity {
+    pub date: NaiveDate,
+    pub low: i32,
+    pub trend: i32,
+    pub avg: i32,
+    pub avg1: i32,
+    pub avg7: i32,
+    pub avg30: i32,
+}
+
+impl From<CollectionPriceHistoryEntity> for PriceHistoryEntry {
+    fn from(e: CollectionPriceHistoryEntity) -> Self {
+        PriceHistoryEntry {
+            date: e.date,
+            price_guide: PriceGuide {
+                low: e.low.into(),
+                trend: e.trend.into(),
+                avg: e.avg.into(),
+                avg1: e.avg1.into(),
+                avg7: e.avg7.into(),
+                avg30: e.avg30.into(),
+            },
         }
     }
 }
@@ -150,12 +258,8 @@ pub struct CardWithPriceEntity {
     pub scryfall_id: Uuid,
     pub quantity: i32,
     pub purchase_price: i32,
-    pub avg: Option<i32>,
-    pub low: Option<i32>,
-    pub trend: Option<i32>,
-    pub avg1: Option<i32>,
-    pub avg7: Option<i32>,
-    pub avg30: Option<i32>,
+    #[sqlx(flatten)]
+    pub price: PriceGuideEntity,
 }
 
 impl From<i32> for Price {
@@ -175,10 +279,8 @@ impl From<Option<i32>> for Price {
 
 impl From<CardWithPriceEntity> for Card {
     fn from(e: CardWithPriceEntity) -> Self {
-        let price_guide = if e.avg.is_some() || e.low.is_some() {
-            Some(PriceGuide::new(
-                e.low, e.trend, e.avg, e.avg1, e.avg7, e.avg30,
-            ))
+        let price_guide = if e.price.avg.is_some() || e.price.low.is_some() {
+            Some(PriceGuide::from(e.price))
         } else {
             None
         };
@@ -391,5 +493,65 @@ mod tests {
 
         assert_eq!(user.id, "google|105262637836230123456");
         assert_eq!(user.email, "google|105262637836230123456@placeholder.local");
+    }
+
+    #[test]
+    fn price_guide_entity_converts_to_price_guide() {
+        let entity = PriceGuideEntity {
+            low: Some(100),
+            avg: Some(200),
+            trend: Some(150),
+            avg1: Some(120),
+            avg7: Some(130),
+            avg30: Some(140),
+        };
+
+        let guide = PriceGuide::from(entity);
+
+        assert_eq!(guide.low.value, Some(100));
+        assert_eq!(guide.avg.value, Some(200));
+        assert_eq!(guide.trend.value, Some(150));
+        assert_eq!(guide.avg1.value, Some(120));
+        assert_eq!(guide.avg7.value, Some(130));
+        assert_eq!(guide.avg30.value, Some(140));
+    }
+
+    #[test]
+    fn price_guide_entity_empty_converts_to_empty_price_guide() {
+        let entity = PriceGuideEntity::empty();
+
+        let guide = PriceGuide::from(entity);
+
+        assert_eq!(guide.low.value, None);
+        assert_eq!(guide.avg.value, None);
+        assert_eq!(guide.trend.value, None);
+    }
+
+    #[test]
+    fn card_market_price_raw_converts_to_entity() {
+        let raw = CardMarketPriceRaw {
+            id_produit: 42,
+            date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            low: Some(10),
+            avg: Some(20),
+            trend: Some(15),
+            avg1: Some(11),
+            avg7: Some(13),
+            avg30: Some(14),
+            low_foil: Some(100),
+            avg_foil: Some(200),
+            trend_foil: Some(150),
+            avg1_foil: Some(110),
+            avg7_foil: Some(130),
+            avg30_foil: Some(140),
+        };
+
+        let entity = CardMarketPriceEntity::from(raw);
+
+        assert_eq!(entity.id_produit, 42);
+        assert_eq!(entity.normal.low, Some(10));
+        assert_eq!(entity.normal.avg, Some(20));
+        assert_eq!(entity.foil.low, Some(100));
+        assert_eq!(entity.foil.avg, Some(200));
     }
 }
