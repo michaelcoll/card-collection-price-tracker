@@ -53,6 +53,17 @@ jobs:
           tags: ${{ steps.meta-back.outputs.tags }}
           labels: ${{ steps.meta-back.outputs.labels }}
 
+      - name: Create Sentry release
+        if: github.event_name == 'release'
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_BACK }}
+        with:
+          environment: production
+          release: ${{ github.event.release.tag_name }}
+
   build-and-push-frontend:
 
     runs-on: ubuntu-latest
@@ -98,3 +109,38 @@ jobs:
           tags: ${{ steps.meta-front.outputs.tags }}
           labels: ${{ steps.meta-front.outputs.labels }}
 
+  publish-frontend-sourcemaps:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build Production
+        working-directory: frontend
+        run: pnpm build
+
+      - name: Create Sentry release and upload source maps
+        if: github.event_name == 'release'
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_FRONT }}
+        with:
+          environment: production
+          release: ${{ github.event.release.tag_name }}
+          sourcemaps: "./frontend/dist"

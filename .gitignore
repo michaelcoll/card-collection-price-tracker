@@ -6,6 +6,7 @@
 example-files
 screens
 plans
+.sentryclirc
 
 # build / tests
 .angular
