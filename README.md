@@ -38,7 +38,7 @@ API consumed by an Angular frontend.
 | Variable                 | Default                                           | Description                                      |
 |--------------------------|---------------------------------------------------|--------------------------------------------------|
 | `DATABASE_URL`           | `postgres://postgres:password@localhost/postgres` | PostgreSQL connection string                     |
-| `PORT`                   | `8080`                                            | Backend API port                                 |
+| `BACKEND_PORT`           | `8080`                                            | Backend API port                                 |
 | `CLERK_FRONTEND_API_URL` | *(required)*                                      | Clerk frontend API URL for JWT validation (JWKS) |
 
 > **Authentication** is handled via [Clerk](https://clerk.com/). Set `CLERK_FRONTEND_API_URL` to your Clerk instance

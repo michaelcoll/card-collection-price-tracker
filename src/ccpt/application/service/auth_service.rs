@@ -1,10 +1,10 @@
 use crate::application::error::AppError;
 use crate::domain::user::User;
 use async_trait::async_trait;
-use colored::Colorize;
 use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{DecodingKey, Validation, decode, decode_header};
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ClerkClaims {
@@ -42,7 +42,7 @@ impl ClerkAuthService {
             )
         };
 
-        println!("{} Fetching JWKS from URL: {}", "ℹ".yellow().bold(), url);
+        info!("Fetching JWKS from URL: {}", url);
 
         let jwks: JwkSet = reqwest::get(&url)
             .await

@@ -31,7 +31,7 @@ applyTo: "src/**,migrations/**,Cargo.toml,Cargo.lock"
 
 ## Configuration & Déploiement
 
-- **Env Vars** : `DATABASE_URL`, `PORT` (default: 8080), `CARDMARKET_PRICE_GUIDES_URL`, `EDHREC_BASE_URL`,
+- **Env Vars** : `DATABASE_URL`, `BACKEND_PORT` (default: 8080), `CARDMARKET_PRICE_GUIDES_URL`, `EDHREC_BASE_URL`,
   `SCRYFALL_BASE_URL`.
 - **Tâches Planifiées** : Importation des prix toutes les 6 heures via `cron_tab` (voir `infrastructure.rs:72`).
 

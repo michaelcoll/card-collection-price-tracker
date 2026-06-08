@@ -6,7 +6,7 @@ POSTGRES_DB = "postgres"
 DATABASE_URL = "postgresql://postgres:password@localhost:5432/postgres"
 
 # Server
-PORT = "8080"
+BACKEND_PORT = "8080"
 
 # External APIs
 CARDMARKET_PRICE_GUIDES_URL = "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json"
@@ -100,11 +100,11 @@ description = "Runs the database migrations"
 run = "sqlx migrate run"
 
 [tasks.upgrade-backend]
-run = "cargo update --verbose"
+run = "cargo update"
 
 [tasks.upgrade-frontend]
 dir = "frontend"
-run = "pnpm update --latest"
+run = "pnpm update"
 
 [tasks.upgrade]
 description = "Upgrades the project dependencies"

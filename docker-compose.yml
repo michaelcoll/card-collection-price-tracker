@@ -27,7 +27,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:password@postgres:5432/postgres
-      PORT: 8080
+      BACKEND_PORT: 8080
       CARDMARKET_PRICE_GUIDES_URL: https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json
       EDHREC_BASE_URL: https://edhrec.com
       SCRYFALL_BASE_URL: https://api.scryfall.com

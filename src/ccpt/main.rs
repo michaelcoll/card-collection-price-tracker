@@ -1,43 +1,72 @@
 use ccpt::infrastructure;
-use colored::Colorize;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+use tracing::info;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::util::SubscriberInitExt;
 
-#[tokio::main]
-async fn main() -> Result<(), sqlx::Error> {
+fn main() -> Result<(), sqlx::Error> {
     dotenv().ok();
 
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(database_url.as_str())
-        .await
-        .expect("Failed to create database connection pool !");
+    let env_filter =
+        tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
+    tracing_subscriber::Registry::default()
+        .with(tracing_subscriber::fmt::layer().with_filter(env_filter))
+        .with(sentry::integrations::tracing::layer())
+        .init();
 
-    println!("{} Database connection pool started.", "✔".green().bold());
+    let _guard = sentry::init((
+        "https://a9de037d8a32f68ba3a9b2fa13ab576f@o4511529669033984.ingest.de.sentry.io/4511529672507472",
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            traces_sample_rate: 1.0,
+            enable_logs: true,
+            // Capture user IPs and potentially sensitive headers when using HTTP server integrations
+            // see https://docs.sentry.io/platforms/rust/data-management/data-collected for more info
+            send_default_pii: true,
+            ..Default::default()
+        },
+    ));
 
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .expect("Failed to migrate schema !");
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database_url = std::env::var("DATABASE_URL")
+                .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
+            let pool = PgPoolOptions::new()
+                .max_connections(5)
+                .connect(database_url.as_str())
+                .await
+                .expect("Failed to create database connection pool !");
 
-    println!("{} Database schema migration done.", "✔".green().bold());
+            info!("Database connection pool started.");
 
-    let infra = infrastructure::create_infra(pool).await;
+            sqlx::migrate!("./migrations")
+                .run(&pool)
+                .await
+                .expect("Failed to migrate schema !");
 
-    let port = std::env::var("PORT").unwrap_or("8080".to_string());
-    let port: u16 = port.parse().expect("Port should be valid range !");
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    let listener = TcpListener::bind(addr)
-        .await
-        .expect("Failed to bind to address !");
+            info!("Database schema migration done.");
 
-    println!("{} Listening on {}.", "✔".green().bold(), addr);
+            let infra = infrastructure::create_infra(pool).await;
 
-    axum::serve(listener, infra.into_make_service()).await?;
+            let port = std::env::var("BACKEND_PORT").unwrap_or("8080".to_string());
+            let port: u16 = port.parse().expect("Port should be valid range !");
+            let addr = SocketAddr::from(([0, 0, 0, 0], port));
+            let listener = TcpListener::bind(addr)
+                .await
+                .expect("Failed to bind to address !");
+
+            info!("Listening on {}.", addr);
+
+            axum::serve(listener, infra.into_make_service())
+                .await
+                .unwrap();
+        });
 
     Ok(())
 }

@@ -25,8 +25,11 @@ use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
 use adapter_out::repository::card_repository_adapter::CardRepositoryAdapter;
 use adapter_out::repository::set_names_repository_adapter::SetNameRepositoryAdapter;
 use axum::Router;
+use axum::body::Body;
+use axum::http::Request;
 use chrono::Utc;
 use cron_tab::AsyncCron;
+use sentry::integrations::tower::{NewSentryLayer, SentryHttpLayer};
 use sqlx::{Pool, Postgres};
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
@@ -158,6 +161,8 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         .nest("/cards", create_card_router())
         .nest("/maintenance", create_maintenance_router())
         .with_state(app_state)
+        .layer(NewSentryLayer::<Request<Body>>::new_from_top())
+        .layer(SentryHttpLayer::new().enable_transaction())
 }
 
 #[cfg(test)]

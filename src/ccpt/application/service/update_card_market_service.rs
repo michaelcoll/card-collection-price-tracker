@@ -2,7 +2,6 @@ use crate::application::caller::ScryfallCaller;
 use crate::application::repository::{CardPricesViewRepository, CardRepository};
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
 use crate::domain::card::CardId;
-use colored::Colorize;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -34,7 +33,7 @@ impl CardMarketIdWorker {
     }
 
     pub async fn run(self, mut receiver: UnboundedReceiver<(CardId, Uuid)>) {
-        println!("{} Card market id updater started.", "✔".green().bold());
+        tracing::info!("Card market id updater started.");
 
         while let Some((card_id, scryfall_id)) = receiver.recv().await {
             let cardmarket_id = self.scryfall_caller.get_card_market_id(scryfall_id).await;
@@ -44,14 +43,15 @@ impl CardMarketIdWorker {
                     .update_cardmarket_id(card_id.clone(), id)
                     .await
                 {
-                    eprintln!("Failed to update card with CardMarket ID: {:?}", e);
+                    tracing::error!("Failed to update card with CardMarket ID: {:?}", e);
                 } else {
-                    println!("Updated card {} with CardMarket ID: {:?}", card_id, id);
+                    tracing::info!("{} -> {:?}", card_id, id);
                 }
             } else if let Err(e) = cardmarket_id {
-                eprintln!(
+                tracing::error!(
                     "Failed to fetch CardMarket ID for card {}: {:?}",
-                    card_id, e
+                    card_id,
+                    e
                 );
             }
 
@@ -63,13 +63,13 @@ impl CardMarketIdWorker {
             if receiver.is_empty()
                 && let Err(e) = self.price_calculation.calculate_total_price().await
             {
-                eprintln!("Failed to calculate total price: {:?}", e);
+                tracing::error!("Failed to calculate total price: {:?}", e);
             }
 
             if receiver.is_empty()
                 && let Err(e) = self.card_prices_view_repository.refresh().await
             {
-                eprintln!("Failed to refresh card price view: {:?}", e);
+                tracing::error!("Failed to refresh card price view: {:?}", e);
             }
         }
     }

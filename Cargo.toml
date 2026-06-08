@@ -9,7 +9,6 @@ tokio = { version = "1", features = ["full"] }
 sqlx = { version = "0.9", features = ["postgres", "runtime-tokio", "chrono", "uuid"] }
 async-trait = "0.1"
 axum = "0.8"
-colored = "3.1"
 dotenv = "0.15"
 reqwest = { version = "0.13", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -20,7 +19,10 @@ ratelimit = "2.0"
 cron_tab = { version = "0.2", features = ["async"] }
 jsonwebtoken = { git = "https://github.com/michaelcoll/jsonwebtoken", branch = "fix/headers-cant-accept-integer-field", features = ["rust_crypto"] }
 ts-rs = "12.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "tracing"] }
 utoipa = { version = "5", features = ["axum_extras", "yaml"] }
+sentry = { version = "0.48", features = ["tracing", "logs", "tower-axum-matched-path"] }
 
 [dev-dependencies]
 mockall = "0.14"
@@ -38,4 +40,3 @@ path = "src/ccpt/generate_openapi.rs"
 [lib]
 name = "ccpt"
 path = "src/ccpt/lib.rs"
-
