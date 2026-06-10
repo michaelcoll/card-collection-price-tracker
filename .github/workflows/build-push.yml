@@ -59,7 +59,7 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_BACK }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_BACK }}
         with:
           environment: production
           release: ${{ github.event.release.tag_name }}
@@ -112,6 +112,7 @@ jobs:
   publish-frontend-sourcemaps:
 
     runs-on: ubuntu-latest
+    if: github.event_name == 'release'
 
     steps:
       - uses: actions/checkout@v6
@@ -134,12 +135,11 @@ jobs:
         run: pnpm build
 
       - name: Create Sentry release and upload source maps
-        if: github.event_name == 'release'
         uses: getsentry/action-release@v3
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_FRONT }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_FRONT }}
         with:
           environment: production
           release: ${{ github.event.release.tag_name }}
