@@ -43,6 +43,12 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
+      - name: Bump version for release
+        if: github.event_name == 'release'
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          sed -i "s/^version = \".*\"/version = \"$TAG\"/" Cargo.toml
+
       - name: Build and push Docker backend image
         uses: docker/build-push-action@v7
         with:
@@ -52,6 +58,11 @@ jobs:
           push: true
           tags: ${{ steps.meta-back.outputs.tags }}
           labels: ${{ steps.meta-back.outputs.labels }}
+
+      - name: Restore Cargo.toml version
+        if: github.event_name == 'release'
+        run: |
+          sed -i 's/^version = ".*"/version = "0.1.0"/' Cargo.toml
 
       - name: Create Sentry release
         if: github.event_name == 'release'
@@ -99,6 +110,12 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
+      - name: Bump version for release
+        if: github.event_name == 'release'
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          sed -i "s/\"version\": \".*\"/\"version\": \"$TAG\"/" frontend/package.json
+
       - name: Build and push Docker frontend image
         uses: docker/build-push-action@v7
         with:
@@ -108,6 +125,11 @@ jobs:
           push: true
           tags: ${{ steps.meta-front.outputs.tags }}
           labels: ${{ steps.meta-front.outputs.labels }}
+
+      - name: Restore package.json version
+        if: github.event_name == 'release'
+        run: |
+          sed -i 's/\"version\": \".*\"/\"version\": \"0.0.0\"/' frontend/package.json
 
   publish-frontend-sourcemaps:
 
