@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:24-alpine3.22 AS build
+FROM node:lts-alpine AS build
 
 WORKDIR /app
 
@@ -15,13 +15,13 @@ COPY pnpm-workspace.yaml .
 COPY . .
 
 # Install dependencies
-RUN CI=true pnpm install --frozen-lockfile
+RUN pnpm ci
 
 # Build Angular application
 RUN pnpm build
 
 # Stage 2: Runtime
-FROM nginx:1.28.0-alpine3.21
+FROM nginx:stable-alpine
 
 # Copy nginx configuration for SPA routing
 COPY nginx.conf /etc/nginx/nginx.conf
