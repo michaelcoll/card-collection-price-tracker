@@ -1,0 +1,6 @@
+.nuxt
+.output
+maquettes
+node_modules
+.env
+.sentryclirc

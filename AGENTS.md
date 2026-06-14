@@ -25,13 +25,24 @@
 - Never wait for one tool's result before calling another tool that doesn't depend on it
 - Limit to 3 Explore agents max per task to balance speed and coverage
 
+## SUBAGENTS
+
+- File search, grep, code location → spawn `caveman:cavecrew-investigator` with `model: "haiku"` — never use Bash
+  grep/find/cat in main thread for exploration
+- 1-2 file edits (typo, rename, single function) → spawn `caveman:cavecrew-builder` with `model: "haiku"`
+- Diff/PR review → spawn `caveman:cavecrew-reviewer` with `model: "haiku"`
+- Use `Read` directly only when the exact file path and line range are already known
+- Use `Edit`/`Write` directly in main thread for code changes after research is done
+
+## PLAYWRIGHT
+
+- Save your screen captures and logs from playwright in the `.playwright-mcp` folder at the root of the repository
+
 ## Instructions
 
 - **Authentication**: [authentication.instructions.md](.agents/authentication.instructions.md)
 - **Backend**: [backend.instructions.md](.agents/backend.instructions.md)
 - **CI/CD**: [ci.instructions.md](.agents/ci.instructions.md)
 - **Database Schema**: [database-schema.instructions.md](.agents/database-schema.instructions.md)
-- **Frontend**: [frontend.instructions.md](.agents/frontend.instructions.md)
-- **Design System**: [design-system.instructions.md](.agents/design-system.instructions.md)
 - **API Endpoints**: [endpoints.instructions.md](.agents/endpoints.instructions.md)
 - **Mise & Workflow**: [mise.instructions.md](.agents/mise.instructions.md)
