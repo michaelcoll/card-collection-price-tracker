@@ -22,6 +22,7 @@ rust = "stable"
 node = "24"
 pnpm = "11"
 gh = "latest"
+"npm:typescript-language-server" = "latest"
 
 [tasks.default]
 description = "Runs all the checks for the project"
@@ -32,8 +33,8 @@ run = "cargo clean"
 hide = true
 
 [tasks.clean-frontend]
-dir = "frontend"
-run = "rm -fr dist coverage node_modules .angular"
+dir = "frontend-vue"
+run = "rm -fr .nuxt .output node_modules"
 hide = true
 
 [tasks.clean]
@@ -42,7 +43,7 @@ depends = ["clean-backend", "clean-frontend"]
 alias = ["c"]
 
 [tasks.install-frontend-deps]
-dir = "frontend"
+dir = "frontend-vue"
 depends = ["clean-frontend"]
 run = "pnpm install"
 hide = true
@@ -86,7 +87,7 @@ run = "rtk cargo fmt"
 hide = true
 
 [tasks.format-frontend]
-dir = "frontend"
+dir = "frontend-vue"
 run = "rtk pnpm lint:fix"
 hide = true
 
@@ -103,7 +104,7 @@ run = "sqlx migrate run"
 run = "cargo update"
 
 [tasks.upgrade-frontend]
-dir = "frontend"
+dir = "frontend-vue"
 run = "pnpm update"
 
 [tasks.upgrade]

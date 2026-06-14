@@ -1,0 +1,37 @@
+{
+  "name": "frontend-vue",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev --host",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "prettier --check \"**/*.{ts,mjs,vue,json,css,yml}\"",
+    "lint:fix": "prettier --write \"**/*.{ts,mjs,vue,json,css,yml}\"",
+    "typecheck": "nuxi typecheck"
+  },
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@clerk/nuxt": "~2.6.5",
+    "@nuxt/eslint": "~1.16.0",
+    "@nuxt/fonts": "~0.14.0",
+    "@nuxt/icon": "~2.2.3",
+    "@nuxtjs/tailwindcss": "~6.14.0",
+    "@sentry/nuxt": "~10.58.0",
+    "@vueuse/nuxt": "~14.3.0",
+    "eslint": "~10.5.0",
+    "nuxt": "~4.4.8",
+    "vue": "~3.5.38",
+    "vue-router": "~5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "~24.1.0",
+    "eslint-config-prettier": "~10.1.8",
+    "prettier": "~3.8.4"
+  }
+}

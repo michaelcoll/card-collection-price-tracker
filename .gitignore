@@ -7,11 +7,20 @@ example-files
 screens
 plans
 .sentryclirc
+.playwright-mcp
+
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+.clerk
+dist
 
 # build / tests
 .angular
 node_modules
-dist
 target
 lcov.info
 coverage
