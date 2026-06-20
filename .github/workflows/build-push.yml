@@ -73,6 +73,7 @@ jobs:
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT_BACK }}
         with:
           environment: production
+          ignore_missing: 'true'
           release: ${{ github.event.release.tag_name }}
 
   build-and-push-frontend:
@@ -114,7 +115,7 @@ jobs:
         if: github.event_name == 'release'
         run: |
           TAG="${{ github.event.release.tag_name }}"
-          sed -i "s/\"version\": \".*\"/\"version\": \"$TAG\"/" frontend/package.json
+          sed -i "s/\"version\": \".*\"/\"version\": \"$TAG\"/" frontend-vue/package.json
 
       - name: Build and push Docker frontend image
         uses: docker/build-push-action@v7
@@ -150,7 +151,7 @@ jobs:
           cache-dependency-path: frontend-vue/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
-        working-directory: frontend
+        working-directory: frontend-vue
 
       - name: Create Sentry release and upload source maps
         working-directory: frontend-vue
