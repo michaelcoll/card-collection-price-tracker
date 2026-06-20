@@ -25,6 +25,10 @@ updates:
     schedule:
       interval: "daily"
     open-pull-requests-limit: 5
+    groups:
+      docker-compose-dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker-compose"
     directory: "/ccpt_local"
@@ -39,13 +43,13 @@ updates:
     open-pull-requests-limit: 5
 
   - package-ecosystem: "docker"
-    directory: "/frontend"
+    directory: "/frontend-vue"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 5
 
   - package-ecosystem: "npm"
-    directory: "/frontend"
+    directory: "/frontend-vue"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
