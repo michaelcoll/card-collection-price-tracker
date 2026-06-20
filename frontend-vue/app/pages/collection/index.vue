@@ -16,7 +16,7 @@ type CardDisplay = {
 
 const GRAPH_DATA = [4132, 4118, 4140, 4096, 4150, 4172, 4160, 4188, 4176, 4205, 4192, 4218];
 
-const { getCollection } = useCardsService();
+const { getCollection, importCards } = useCardsService();
 
 const q = ref('');
 const qDebounced = refDebounced(q, 200);
@@ -109,7 +109,11 @@ const graph = ref<'compact' | 'expanded'>('compact');
 const graphRange = ref('30 j');
 const sheet = ref(false);
 const importOpen = ref(false);
-const importStep = ref<'drop' | 'reconcile'>('drop');
+const importStep = ref<'drop'>('drop');
+const importLoading = ref(false);
+const importError = ref<string | null>(null);
+const isDragging = ref(false);
+const fileInputRef = ref<HTMLInputElement | null>(null);
 const active = ref({ rar: [] as string[], sets: [] as string[] });
 
 const toggle = (k: 'rar' | 'sets', v: string) => {
@@ -154,13 +158,53 @@ const sizeOptions = [
 
 const openImport = () => {
   importStep.value = 'drop';
+  importError.value = null;
   importOpen.value = true;
 };
 
-const RECONCILE_ITEMS = [
-  { name: "Lim-Dûl's Vault", warn: 'Édition ambiguë' },
-  { name: 'Fyndhorn Elves', warn: 'Langue à confirmer' },
-];
+const handleFile = async (file: File) => {
+  if (!file.name.endsWith('.csv')) {
+    importError.value = 'Le fichier doit être au format .csv';
+    return;
+  }
+  importError.value = null;
+  importLoading.value = true;
+  try {
+    const csv = await file.text();
+    await importCards(csv);
+    importOpen.value = false;
+    allCards.value = [];
+    params.value.page = 0;
+    refresh();
+  } catch (e: unknown) {
+    const err = e as { data?: { message?: string } };
+    importError.value = err?.data?.message ?? "Erreur lors de l'import";
+  } finally {
+    importLoading.value = false;
+    if (fileInputRef.value) fileInputRef.value.value = '';
+  }
+};
+
+const onFileInputChange = (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (file) handleFile(file);
+};
+
+const onDrop = (e: DragEvent) => {
+  e.preventDefault();
+  isDragging.value = false;
+  const file = e.dataTransfer?.files[0];
+  if (file) handleFile(file);
+};
+
+const onDragOver = (e: DragEvent) => {
+  e.preventDefault();
+  isDragging.value = true;
+};
+
+const onDragLeave = () => {
+  isDragging.value = false;
+};
 </script>
 
 <template>
@@ -427,83 +471,43 @@ const RECONCILE_ITEMS = [
 
         <!-- Step: drop zone -->
         <template v-if="importStep === 'drop'">
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept=".csv"
+            class="hidden"
+            @change="onFileInputChange"
+          />
           <div
-            class="[border-width:1.5px] border-dashed border-[var(--line-2)] rounded-[14px] bg-[color-mix(in_srgb,black_16%,transparent)] transition-all duration-200 flex flex-col items-center gap-[12px] p-[34px] mt-[8px] cursor-pointer hover:border-[var(--cyan-line)] hover:bg-[var(--cyan-fill)]"
+            class="[border-width:1.5px] border-dashed rounded-[14px] transition-all duration-200 flex flex-col items-center gap-[12px] p-[34px] mt-[8px] cursor-pointer"
+            :class="
+              isDragging
+                ? 'border-[var(--cyan-line)] bg-[var(--cyan-fill)]'
+                : 'border-[var(--line-2)] bg-[color-mix(in_srgb,black_16%,transparent)] hover:border-[var(--cyan-line)] hover:bg-[var(--cyan-fill)]'
+            "
+            @click="fileInputRef?.click()"
+            @drop="onDrop"
+            @dragover="onDragOver"
+            @dragleave="onDragLeave"
           >
-            <Icon name="lucide:upload" :size="30" class="text-[var(--cyan)]" />
+            <Icon
+              :name="importLoading ? 'lucide:loader-2' : 'lucide:upload'"
+              :size="30"
+              class="text-[var(--cyan)]"
+              :class="{ 'animate-spin': importLoading }"
+            />
             <div class="flex flex-col items-center gap-[3px]">
-              <span class="font-semibold">Glisse ton fichier .csv ici</span>
-              <span class="text-[var(--ink-3)] text-[12.5px]">ou clique pour parcourir</span>
+              <span class="font-semibold">{{
+                importLoading ? 'Import en cours…' : 'Glisse ton fichier .csv ici'
+              }}</span>
+              <span v-if="!importLoading" class="text-[var(--ink-3)] text-[12.5px]"
+                >ou clique pour parcourir</span
+              >
             </div>
           </div>
-          <button
-            class="inline-flex items-center gap-[8px] justify-center px-[15px] py-[9px] rounded-[10px] text-[13.5px] font-bold text-[var(--on-accent)] bg-[var(--cyan)] border border-solid border-transparent shadow-[0_8px_20px_-14px_var(--cyan-glow)] transition-all duration-[160ms] ease whitespace-nowrap leading-none w-full mt-[16px] hover:bg-[var(--cyan-soft)] hover:shadow-[0_0_0_3px_var(--cyan-fill),0_10px_22px_-14px_var(--cyan-glow)] hover:-translate-y-px active:translate-y-0"
-            @click="importStep = 'reconcile'"
-          >
-            Simuler un fichier importé
-          </button>
-        </template>
-
-        <!-- Step: reconcile -->
-        <template v-else>
-          <div class="flex gap-[12px] mt-[12px]">
-            <div
-              class="bg-[var(--cyan-fill)] [backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] border border-solid border-[var(--cyan-line)] rounded-[var(--r-lg)] shadow-[var(--shadow)] flex-1 min-w-0 p-[14px]"
-            >
-              <span
-                class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
-                >Reconnues</span
-              >
-              <div
-                class="[font-family:var(--font-mono)] font-bold tracking-[-0.02em] whitespace-nowrap text-[var(--cyan)] text-[26px]"
-              >
-                1 198
-              </div>
-            </div>
-            <div
-              class="bg-[var(--violet-fill)] [backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] border border-solid border-[var(--violet-line)] rounded-[var(--r-lg)] shadow-[var(--shadow)] flex-1 min-w-0 p-[14px]"
-            >
-              <span
-                class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
-                >À vérifier</span
-              >
-              <div
-                class="[font-family:var(--font-mono)] font-bold tracking-[-0.02em] whitespace-nowrap text-[var(--violet)] text-[26px]"
-              >
-                50
-              </div>
-            </div>
-          </div>
-          <div class="flex flex-col gap-[7px] mt-[14px]">
-            <div
-              v-for="item in RECONCILE_ITEMS"
-              :key="item.name"
-              class="flex items-center gap-[13px] px-[12px] py-[9px] rounded-[12px] border border-solid border-[var(--line)] bg-[var(--surface)] transition-all duration-[150ms] ease hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]"
-            >
-              <MtgCard color="b" :mini="true" class="w-[26px] flex-none" />
-              <div class="flex-1 min-w-0">
-                <div
-                  class="text-[13px] font-semibold text-[var(--ink)] overflow-hidden text-ellipsis whitespace-nowrap"
-                >
-                  {{ item.name }}
-                </div>
-                <div class="text-[12px] text-[var(--violet)] flex items-center gap-[8px] flex-wrap">
-                  {{ item.warn }}
-                </div>
-              </div>
-              <button
-                class="inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] rounded-[8px] text-[12px] font-semibold border border-solid border-[var(--line)] text-[var(--ink-2)] bg-transparent transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--line-3)] hover:-translate-y-px active:translate-y-0"
-              >
-                Corriger
-              </button>
-            </div>
-          </div>
-          <button
-            class="inline-flex items-center gap-[8px] justify-center px-[15px] py-[9px] rounded-[10px] text-[13.5px] font-bold text-[var(--on-accent)] bg-[var(--cyan)] border border-solid border-transparent shadow-[0_8px_20px_-14px_var(--cyan-glow)] transition-all duration-[160ms] ease whitespace-nowrap leading-none w-full mt-[16px] hover:bg-[var(--cyan-soft)] hover:shadow-[0_0_0_3px_var(--cyan-fill),0_10px_22px_-14px_var(--cyan-glow)] hover:-translate-y-px active:translate-y-0"
-            @click="importOpen = false"
-          >
-            Valider l'import (1 248 cartes)
-          </button>
+          <p v-if="importError" class="text-[var(--red,#f87171)] text-[13px] mt-[10px] mb-0">
+            {{ importError }}
+          </p>
         </template>
       </div>
     </div>

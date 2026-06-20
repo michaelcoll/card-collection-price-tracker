@@ -65,7 +65,7 @@ export default defineNuxtConfig({
     routeRules: {
       '/api/v1/**': {
         proxy: {
-          to: `${process.env.NUXT_BACKEND_URL ?? 'http://localhost:8080'}/**`,
+          to: `http://${process.env.NUXT_BACKEND_HOSTNAME}:8080/**`,
         },
       },
     },
