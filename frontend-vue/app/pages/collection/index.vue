@@ -357,6 +357,24 @@ const onDragLeave = () => {
           Chargement…
         </div>
 
+        <!-- Empty state -->
+        <div
+          v-else-if="!pending && allCards.length === 0"
+          class="flex flex-col items-center justify-center py-[80px] gap-[16px] text-[var(--ink-3)]"
+        >
+          <Icon name="lucide:inbox" :size="48" class="opacity-40" />
+          <p class="text-[15px] [font-family:var(--font-mono)] text-center">
+            Aucune carte dans la collection.
+          </p>
+          <button
+            class="mt-[4px] flex items-center gap-[8px] px-[16px] py-[8px] rounded-[var(--r-md)] bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[13px] [font-family:var(--font-mono)] transition-colors cursor-pointer"
+            @click="openImport()"
+          >
+            <Icon name="lucide:upload" :size="14" />
+            Importer depuis Manabox
+          </button>
+        </div>
+
         <!-- Grid view -->
         <template v-else-if="view === 'grid'">
           <div
