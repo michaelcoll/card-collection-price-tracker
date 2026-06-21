@@ -1,13 +1,13 @@
 meta {
   name: cards - by setCode/collectorNumber/language
   type: http
-  seq: 2
+  seq: 3
 }
 
 get {
   url: https://api.scryfall.com/cards/:setCode/:number
   body: none
-  auth: inherit
+  auth: none
 }
 
 params:path {

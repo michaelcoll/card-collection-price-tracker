@@ -67,14 +67,13 @@ impl CardRepository for CardRepositoryAdapter {
 
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
         sqlx::query!(
-        r#"INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        r#"INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT(set_code, collector_number, language_code, foil)
                 DO UPDATE
                 SET name          = $5,
                     rarity        = $6,
-                    scryfall_id   = $7,
-                    cardmarket_id = $8"#,
+                    scryfall_id   = $7"#,
             card.id.set_code.to_string(),
             card.id.collector_number,
             card.id.language_code.to_string(),
@@ -82,7 +81,6 @@ impl CardRepository for CardRepositoryAdapter {
             card.name,
             card.rarity_code.to_string(),
             card.scryfall_id,
-            card.cardmarket_id.map(|id| id as i32),
         )
         .execute(&self.pool)
         .await?;
