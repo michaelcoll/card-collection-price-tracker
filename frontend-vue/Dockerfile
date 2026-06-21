@@ -12,7 +12,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm build
+RUN NUXT_BACKEND_HOSTNAME=backend pnpm build
 
 FROM node:lts-alpine AS runner
 WORKDIR /app
