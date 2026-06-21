@@ -21,7 +21,6 @@ rust = "stable"
 "cargo:https://github.com/rtk-ai/rtk" = "latest"
 node = "24"
 pnpm = "11"
-gh = "latest"
 
 [tasks.default]
 description = "Runs all the checks for the project"
