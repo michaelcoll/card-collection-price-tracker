@@ -387,3 +387,9 @@ input[type='range'] {
     transform: translateY(100%);
   }
 }
+
+@keyframes foilSlide {
+  to {
+    background-position: 200% 0;
+  }
+}

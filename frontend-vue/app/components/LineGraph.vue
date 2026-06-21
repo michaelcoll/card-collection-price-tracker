@@ -5,13 +5,13 @@ const props = withDefaults(
     height?: number;
     hi?: string;
     lo?: string;
-    valueFmt?: (v: number) => string;
+    valueFmt?: (v?: number) => string;
   }>(),
   {
     height: 200,
     hi: '€4,3k',
     lo: '€4,1k',
-    valueFmt: (v: number) => '€' + v.toLocaleString('fr-FR'),
+    valueFmt: (v?: number) => '€' + (v ?? 0).toLocaleString('fr-FR'),
   },
 );
 
@@ -43,8 +43,8 @@ const onMove = (e: MouseEvent) => {
   hover.value = {
     i,
     px: (xs(i) / W) * 100,
-    py: (ys(props.data[i]) / H) * 100,
-    v: props.data[i],
+    py: (ys(props.data[i] ?? 0) / H) * 100,
+    v: props.data[i] ?? 0,
   };
 };
 </script>
@@ -103,7 +103,7 @@ const onMove = (e: MouseEvent) => {
       class="absolute pointer-events-none bg-[var(--surface-2)] border border-solid border-[var(--line-2)] rounded-[8px] px-[9px] py-[5px] [font-family:var(--font-mono)] text-[11px] whitespace-nowrap shadow-[0_8px_20px_-8px_rgba(0,0,0,0.8)] [transform:translate(-50%,-130%)]"
       :style="{ left: hover.px + '%', top: hover.py + '%' }"
     >
-      {{ valueFmt(hover.v) }}
+      {{ valueFmt?.(hover.v) }}
     </div>
   </div>
 </template>
