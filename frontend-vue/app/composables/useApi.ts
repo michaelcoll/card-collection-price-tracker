@@ -8,6 +8,7 @@ export const useApi = () => {
   ): Promise<T> => {
     // @ts-ignore
     const token = await getToken.value();
+    // @ts-ignore
     return $fetch<T>(`${config.public.apiBase}${path}`, {
       ...options,
       headers: {

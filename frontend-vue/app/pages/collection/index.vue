@@ -115,6 +115,14 @@ const importError = ref<string | null>(null);
 const isDragging = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const active = ref({ rar: [] as string[], sets: [] as string[] });
+const detail = ref<CollectionCard | null>(null);
+
+const detailDelta = (card: CollectionCard) => {
+  const u = card.purchase_price;
+  const t = card.price_guide?.trend ?? 0;
+  if (!u) return 0;
+  return Math.round(((t - u) / u) * 100);
+};
 
 const toggle = (k: 'rar' | 'sets', v: string) => {
   const arr = active.value[k];
@@ -266,7 +274,7 @@ const onDragLeave = () => {
           :data="GRAPH_DATA"
           hi="€4,3k"
           lo="€4,1k"
-          :value-fmt="(v) => '€' + v.toLocaleString('fr-FR')"
+          :value-fmt="(v) => '€' + (v ?? 0).toLocaleString('fr-FR')"
         />
       </div>
     </div>
@@ -400,7 +408,9 @@ const onDragLeave = () => {
               :purchased="c.purchase_price"
               :trend="c.price_guide?.trend ?? 0"
               deal="compare"
+              :foil="c.foil"
               :size="size"
+              @click="detail = c"
             />
           </div>
 
@@ -452,6 +462,155 @@ const onDragLeave = () => {
         >
           Voir les résultats
         </button>
+      </div>
+    </div>
+
+    <!-- ── CARD DETAIL MODAL ── -->
+    <div
+      v-if="detail"
+      class="fixed inset-0 z-[80] bg-[color-mix(in_srgb,black_58%,transparent)] [backdrop-filter:blur(4px)] [-webkit-backdrop-filter:blur(4px)] animate-[fade_0.2s_ease] grid place-items-center p-[20px]"
+      @click="detail = null"
+    >
+      <div
+        class="relative w-full max-w-[840px] p-0 overflow-hidden max-h-[calc(100dvh-40px)] bg-[var(--surface)] border border-solid border-[var(--line-2)] rounded-[var(--r-xl)] shadow-[0_30px_70px_-30px_rgba(0,0,0,1)] animate-[pop_0.26s_cubic-bezier(0.3,1.2,0.4,1)] max-[720px]:max-w-[440px]"
+        @click.stop
+      >
+        <!-- close -->
+        <button
+          class="absolute top-[14px] right-[14px] z-[5] w-[34px] h-[34px] rounded-[9px] grid place-items-center border border-solid border-[var(--line)] text-[var(--ink-2)] bg-[var(--line-3)] transition-all duration-[180ms] hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]"
+          @click="detail = null"
+        >
+          <Icon name="lucide:x" :size="16" />
+        </button>
+
+        <!-- body grid -->
+        <div
+          class="grid [grid-template-columns:minmax(300px,360px)_1fr] max-h-[calc(100dvh-40px)] overflow-y-auto max-[720px]:[grid-template-columns:1fr]"
+        >
+          <!-- art -->
+          <div
+            class="relative p-[30px] flex items-center justify-center border-r border-solid border-[var(--line)] [background:radial-gradient(80%_70%_at_50%_36%,color-mix(in_srgb,var(--cyan)_16%,transparent),transparent_72%),var(--surface-2)] max-[720px]:border-r-0 max-[720px]:border-b max-[720px]:p-[24px]"
+          >
+            <MtgCard
+              :scryfall-id="detail?.scryfall_id"
+              :name="detail?.name"
+              class="w-full max-w-[300px] [filter:drop-shadow(0_18px_40px_rgba(0,0,0,.55))] max-[720px]:max-w-[260px]"
+            />
+          </div>
+
+          <!-- info -->
+          <div class="p-[30px_26px] flex flex-col gap-[16px] min-w-0">
+            <!-- header -->
+            <div>
+              <h3
+                class="[font-family:var(--font-display)] font-semibold text-[20px] tracking-[-0.015em] mb-[6px]"
+              >
+                {{ detail.name }}
+              </h3>
+              <span
+                class="text-[var(--ink-3)] text-[13px] inline-flex items-center gap-[7px] flex-wrap"
+              >
+                {{ detail.set_code.toUpperCase() }} · {{ detail.rarity_code }}
+                <span
+                  v-if="detail?.foil"
+                  class="inline-flex items-center ml-[7px] text-[10px] font-bold tracking-[0.04px] px-[7px] py-[1.5px] rounded-full text-[#1a1320] [background:linear-gradient(110deg,#ffd84d,#4dffd0,#4db4ff,#b85dff,#ff5db8)] [background-size:200%_100%] [animation:foilSlide_4s_linear_infinite]"
+                >
+                  ✦ Foil
+                </span>
+              </span>
+            </div>
+
+            <!-- stats -->
+            <div class="grid grid-cols-3 gap-[10px]">
+              <div
+                class="flex flex-col gap-[3px] px-[13px] py-[11px] border border-solid border-[var(--line)] rounded-[12px] bg-[var(--surface)]"
+              >
+                <span
+                  class="[font-family:var(--font-mono)] text-[9.5px] tracking-[0.13em] uppercase text-[var(--ink-3)]"
+                  >Quantité</span
+                >
+                <span
+                  class="[font-family:var(--font-mono)] text-[17px] font-bold tracking-[-0.02em]"
+                  >×{{ detail.quantity }}</span
+                >
+              </div>
+              <div
+                class="flex flex-col gap-[3px] px-[13px] py-[11px] border border-solid border-[var(--line)] rounded-[12px] bg-[var(--surface)]"
+              >
+                <span
+                  class="[font-family:var(--font-mono)] text-[9.5px] tracking-[0.13em] uppercase text-[var(--ink-3)]"
+                  >Prix unit.</span
+                >
+                <span
+                  class="[font-family:var(--font-mono)] text-[17px] font-bold tracking-[-0.02em]"
+                  >{{ formatPrice(detail.purchase_price) }}</span
+                >
+              </div>
+              <div
+                class="flex flex-col gap-[3px] px-[13px] py-[11px] border border-solid border-[var(--line)] rounded-[12px] bg-[var(--surface)]"
+              >
+                <span
+                  class="[font-family:var(--font-mono)] text-[9.5px] tracking-[0.13em] uppercase text-[var(--ink-3)]"
+                  >Total</span
+                >
+                <span
+                  class="[font-family:var(--font-mono)] text-[17px] font-bold tracking-[-0.02em] text-[var(--cyan)]"
+                  >{{ formatPrice(detail.quantity * detail.purchase_price) }}</span
+                >
+              </div>
+            </div>
+
+            <!-- market -->
+            <div
+              class="[background:color-mix(in_srgb,black_22%,transparent)] border border-solid border-[var(--line)] rounded-[14px] px-[14px] py-[13px]"
+            >
+              <div class="flex items-center justify-between">
+                <span
+                  class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
+                  >Marché · CardMarket</span
+                >
+                <span
+                  :class="[
+                    '[font-family:var(--font-mono)] text-[12.5px]',
+                    detailDelta(detail) >= 0 ? 'text-[var(--cyan)]' : 'text-[var(--down)]',
+                  ]"
+                >
+                  {{ detailDelta(detail) >= 0 ? '▴' : '▾' }}
+                  {{ Math.abs(detailDelta(detail)) }} %
+                </span>
+              </div>
+              <div class="flex items-center gap-[10px] mt-[8px]">
+                <span class="[font-family:var(--font-mono)] text-[19px] font-bold">{{
+                  formatPrice(detail.price_guide?.trend ?? 0)
+                }}</span>
+                <Sparkline
+                  :data="
+                    detailDelta(detail) >= 0
+                      ? [40, 46, 42, 55, 52, 64, 60, 78]
+                      : [78, 66, 70, 58, 60, 50, 52, 40]
+                  "
+                />
+              </div>
+            </div>
+
+            <!-- actions -->
+            <div class="flex flex-col gap-[9px] mt-auto">
+              <button
+                class="inline-flex items-center gap-[8px] justify-center px-[15px] py-[9px] rounded-[10px] text-[13.5px] font-bold text-[var(--on-accent)] bg-[var(--cyan)] border border-solid border-transparent shadow-[0_8px_20px_-14px_var(--cyan-glow)] transition-all duration-[160ms] ease whitespace-nowrap leading-none w-full hover:bg-[var(--cyan-soft)] hover:shadow-[0_0_0_3px_var(--cyan-fill),0_10px_22px_-14px_var(--cyan-glow)] hover:-translate-y-px active:translate-y-0"
+                @click="navigateTo('/find')"
+              >
+                <Icon name="lucide:user" :size="16" />
+                Voir qui la possède
+              </button>
+              <button
+                class="inline-flex items-center gap-[8px] justify-center py-[9px] px-[15px] rounded-[10px] text-[13.5px] font-semibold border border-solid border-[var(--line)] text-[var(--ink-2)] bg-transparent transition-all duration-[160ms] ease whitespace-nowrap leading-none w-full hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--line-3)] hover:-translate-y-px active:translate-y-0"
+                @click="navigateTo('/trade')"
+              >
+                Proposer en échange
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

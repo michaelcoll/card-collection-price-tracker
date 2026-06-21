@@ -12,7 +12,7 @@
 ## CHANGE / EDIT MODE
 
 - After completing features (large or small), always run commands like lint, type check and next build to check code
-  quality
+  quality and format the code with `mise format`
 
 ## TESTING
 

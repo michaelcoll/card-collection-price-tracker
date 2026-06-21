@@ -9,6 +9,7 @@ const props = withDefaults(
     trend?: number;
     deal?: 'none' | 'compare';
     clickable?: boolean;
+    foil?: boolean;
     size?: 'sm' | 'md' | 'lg';
   }>(),
   {
@@ -46,6 +47,7 @@ const dealTagClass = computed(() => {
       :scryfall-id="scryfallId"
       :name="name"
       :clickable="clickable ?? true"
+      :foil="foil"
       :size="size"
       @click="emit('click')"
     />

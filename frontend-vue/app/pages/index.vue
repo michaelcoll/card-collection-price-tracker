@@ -56,13 +56,54 @@ const selectRecent = (name: string) => {
         2 418 joueurs · 1,2 M cartes indexées
       </span>
 
-      <!-- Title -->
-      <h1
-        class="[font-family:var(--font-display)] font-semibold text-[clamp(28px,4vw,42px)] max-[860px]:text-[30px] tracking-[-0.025em] leading-[1.04] max-w-[620px] mt-[0.67em] mb-[0.67em]"
-      >
-        Trouve la carte.<br />
-        <span class="text-[var(--cyan)]">Trouve le joueur.</span>
-      </h1>
+      <!-- Hero logo lockup -->
+      <div class="flex flex-col items-center gap-[10px]">
+        <div class="flex items-center gap-[clamp(12px,2.4vw,20px)]">
+          <span
+            class="[font-family:var(--font-display)] font-semibold leading-none text-[clamp(30px,5.2vw,46px)] tracking-[-0.012em] text-[var(--ink)]"
+            >Arcane</span
+          >
+          <span
+            class="flex-none grid place-items-center [filter:drop-shadow(0_0_14px_var(--cyan-glow))]"
+            aria-hidden="true"
+          >
+            <svg
+              viewBox="0 0 28 28"
+              fill="none"
+              stroke-width="2.2"
+              stroke-linejoin="round"
+              class="w-[clamp(36px,5.4vw,50px)] h-[clamp(36px,5.4vw,50px)]"
+            >
+              <rect
+                x="5"
+                y="8.5"
+                width="11"
+                height="11"
+                rx="3"
+                transform="rotate(45 10.5 14)"
+                stroke="var(--cyan)"
+              />
+              <rect
+                x="12"
+                y="8.5"
+                width="11"
+                height="11"
+                rx="3"
+                transform="rotate(45 17.5 14)"
+                stroke="var(--violet)"
+              />
+            </svg>
+          </span>
+          <span
+            class="[font-family:var(--font-display)] font-semibold leading-none text-[clamp(30px,5.2vw,46px)] tracking-[-0.012em] text-[var(--cyan)]"
+            >Exchange</span
+          >
+        </div>
+        <span
+          class="[font-family:var(--font-mono)] text-[clamp(10px,1.3vw,11.5px)] tracking-[0.26em] uppercase text-[var(--ink-3)]"
+          >Le marché des joueurs</span
+        >
+      </div>
 
       <!-- Subtitle -->
       <p

@@ -4,6 +4,7 @@ const props = defineProps<{
   qty?: number;
   clickable?: boolean;
   mini?: boolean;
+  foil?: boolean;
   name?: string;
   size?: 'sm' | 'md' | 'lg';
 }>();
@@ -16,15 +17,50 @@ const src = computed(
       `https://api.scryfall.com/cards/${props.scryfallId}?format=image&version=normal`) ||
     '',
 );
+
+const cardRef = ref<HTMLElement | null>(null);
+
+let raf: number | null = null;
+
+const updateFoil = () => {
+  const el = cardRef.value;
+  if (!el || !props.foil) return;
+  const r = el.getBoundingClientRect();
+  const vh = window.innerHeight || 1;
+  const p = (r.top + r.height / 2) / vh;
+  el.style.setProperty('--foil', Math.max(-0.5, Math.min(1.5, p)).toFixed(4));
+};
+
+const onScroll = () => {
+  if (!raf)
+    raf = requestAnimationFrame(() => {
+      raf = null;
+      updateFoil();
+    });
+};
+
+onMounted(() => {
+  if (!props.foil) return;
+  updateFoil();
+  window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+  window.addEventListener('resize', onScroll);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll, { capture: true });
+  window.removeEventListener('resize', onScroll);
+  if (raf) cancelAnimationFrame(raf);
+});
 </script>
 
 <template>
   <div
+    ref="cardRef"
     :class="[
       'relative aspect-[5/7] flex flex-col gap-0 overflow-hidden',
       'transition-[transform,box-shadow,border-color] duration-200 ease',
       'border border-solid',
-      mini ? 'rounded-[2px]' : size === 'lg' ? 'rounded-[20px]' : 'rounded-[8px]',
+      'rounded-[4%]',
       src
         ? 'p-0 bg-[#0a0a0a] border-[color-mix(in_srgb,black_55%,transparent)]'
         : [
@@ -34,6 +70,7 @@ const src = computed(
       clickable
         ? 'cursor-pointer hover:-translate-y-1 hover:border-[var(--cyan-line)] hover:shadow-[0_0_0_1px_var(--cyan-fill),0_22px_40px_-20px_rgba(0,0,0,1),0_0_30px_-14px_var(--cyan-glow)]'
         : '',
+      foil ? 'foil' : '',
     ]"
     :title="name"
     @click="emit('click')"
@@ -119,5 +156,65 @@ const src = computed(
         <span class="h-[3.5px] rounded-[2px] bg-[var(--ink-4)] opacity-50 block w-[85%]" />
       </div>
     </template>
+
+    <!-- foil holographic overlay -->
+    <span v-if="foil" class="foil-fx" aria-hidden="true" />
   </div>
 </template>
+
+<style scoped>
+.foil-fx {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 4;
+  background:
+    linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.45) 44%, transparent 52%),
+    linear-gradient(
+      60deg,
+      hsla(190, 95%, 68%, 0.55),
+      hsla(265, 95%, 72%, 0.55) 22%,
+      hsla(325, 95%, 70%, 0.55) 42%,
+      hsla(45, 95%, 68%, 0.55) 62%,
+      hsla(140, 90%, 66%, 0.55) 82%,
+      hsla(190, 95%, 68%, 0.55)
+    );
+  background-size:
+    230% 230%,
+    260% 260%;
+  background-position:
+    calc(var(--foil, 0.5) * 100%) calc(var(--foil, 0.5) * 100%),
+    calc((1 - var(--foil, 0.5)) * 100%) calc(var(--foil, 0.5) * 100%);
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+  transition: background-position 0.12s linear;
+}
+
+.foil::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.55) 47%,
+    transparent 56%
+  );
+  background-size: 300% 300%;
+  background-position: calc(140% - var(--foil, 0.5) * 240%) 0;
+  mix-blend-mode: screen;
+  opacity: 0.5;
+  transition: background-position 0.12s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foil-fx,
+  .foil::before {
+    transition: none;
+  }
+}
+</style>

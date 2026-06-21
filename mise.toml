@@ -115,5 +115,5 @@ run = "cargo run --bin ccpt"
 
 [tasks.front]
 description = "Runs the frontend development server"
-dir = "frontend"
-run = "pnpm start"
+dir = "frontend-vue"
+run = "pnpm dev"
