@@ -53,7 +53,7 @@ depends = ["clean", "install-frontend-deps"]
 [tasks.openapi]
 description = "Generates the OpenAPI specification"
 depends_post = ["format-frontend"]
-run = "rtk cargo run --bin generate-openapi"
+run = "cargo run --bin generate-openapi"
 alias = ["o"]
 
 [tasks.sqlx-prepare]
@@ -62,12 +62,11 @@ run = "rm -fr .sqlx && cargo sqlx prepare"
 
 [tasks.test]
 description = "Tests the backend"
-run = "rtk cargo test"
-depends_post = ["format-frontend"]
+run = "cargo test"
 alias = ["t"]
 
 [tasks.lint-clippy]
-run = "rtk cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all"
+run = "cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all"
 hide = true
 
 [tasks.lint-sqlx]
@@ -81,12 +80,12 @@ depends = ["lint-clippy", "lint-sqlx"]
 alias = ["l"]
 
 [tasks.format-backend]
-run = "rtk cargo fmt"
+run = "cargo fmt"
 hide = true
 
 [tasks.format-frontend]
 dir = "frontend-vue"
-run = "rtk pnpm lint:fix"
+run = "pnpm lint:fix"
 hide = true
 
 [tasks.format]

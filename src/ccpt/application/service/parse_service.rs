@@ -1,9 +1,10 @@
 use crate::application::error::AppError;
-use crate::domain::card::Card;
+use crate::domain::card::{Card, CardId};
 use crate::domain::language_code::LanguageCode;
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 fn split_line(line: &str) -> Vec<String> {
@@ -138,7 +139,30 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
         );
         cards.push(card);
     }
-    Ok(cards)
+
+    let mut seen: HashMap<CardId, Card> = HashMap::new();
+    let mut order: Vec<CardId> = Vec::new();
+    for card in cards {
+        if let Some(existing) = seen.get_mut(&card.id) {
+            let new_qty = existing.quantity as u32 + card.quantity as u32;
+            let total_cost = existing.purchase_price * existing.quantity as u32
+                + card.purchase_price * card.quantity as u32;
+            existing.purchase_price = total_cost / new_qty;
+            existing.quantity = new_qty.min(u8::MAX as u32) as u8;
+            existing.added_at = match (existing.added_at, card.added_at) {
+                (Some(a), Some(b)) => Some(a.min(b)),
+                (a, b) => a.or(b),
+            };
+        } else {
+            order.push(card.id.clone());
+            seen.insert(card.id.clone(), card);
+        }
+    }
+
+    Ok(order
+        .into_iter()
+        .map(|id| seen.remove(&id).unwrap())
+        .collect())
 }
 
 #[cfg(test)]
@@ -288,6 +312,27 @@ mod tests {
             result,
             Err(AppError::WrongFormat(err)) if err.contains("expected 18 fields per line")
         ));
+    }
+
+    #[test]
+    fn import_cards_deduplicates_by_set_code_collector_number_language_foil() {
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,Goblin Boarders,FDN,Foundations,87,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z\n\
+                   My Deck,deck,Goblin Boarders,FDN,Foundations,87,normal,common,2,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.10,false,false,near_mint,fr,EUR,2026-03-01T10:00:00.000Z";
+
+        let cards = parse_cards(csv).unwrap();
+
+        assert_eq!(cards.len(), 1);
+        assert_eq!(cards[0].id.set_code, SetCode::new("FDN"));
+        assert_eq!(cards[0].id.collector_number, "87");
+        assert_eq!(cards[0].quantity, 5);
+        // weighted average: (3*8 + 2*10) / 5 = (24+20)/5 = 44/5 = 8
+        assert_eq!(cards[0].purchase_price, 8);
+        // earliest date kept
+        assert_eq!(
+            cards[0].added_at.unwrap().to_rfc3339(),
+            "2026-02-05T20:44:45.815+00:00"
+        );
     }
 
     #[test]

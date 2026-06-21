@@ -1,0 +1,29 @@
+meta {
+  name: card info - by scryfallId
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://api.scryfall.com/cards/:scryfallId?format=json
+  body: none
+  auth: none
+}
+
+params:query {
+  format: json
+}
+
+params:path {
+  scryfallId: b2d9d5ca-7e15-437a-bdfc-5972b42148fe
+}
+
+headers {
+  User-Agent: Bruno
+  Accept: application/json
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
