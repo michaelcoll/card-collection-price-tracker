@@ -2,6 +2,7 @@ use crate::application::error::AppError;
 use async_trait::async_trait;
 
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
+use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::PriceHistoryEntry;
 use crate::domain::stats::Stats;
 use crate::domain::user::User;
@@ -57,4 +58,10 @@ pub trait GetCollectionPriceHistoryUseCase: Send + Sync {
         start_date: chrono::NaiveDate,
         end_date: chrono::NaiveDate,
     ) -> Result<Vec<PriceHistoryEntry>, AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait GetCollectionStatsUseCase: Send + Sync {
+    async fn get_collection_stats(&self, user_id: &str) -> Result<CollectionStats, AppError>;
 }

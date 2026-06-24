@@ -4,13 +4,14 @@ use crate::application::service::card_collection_service::CardCollectionService;
 use crate::application::service::cardmarket_id_enqueue_service::CardMarketIdEnqueueService;
 use crate::application::service::collection_price_history_service::CollectionPriceHistoryService;
 use crate::application::service::collection_service::CollectionService;
+use crate::application::service::collection_stats_service::CollectionStatsService;
 use crate::application::service::import_card_service::ImportCardService;
 use crate::application::service::import_price_service::ImportPriceService;
 use crate::application::service::stats_service::StatsService;
 use crate::application::service::update_card_market_service::CardMarketIdWorker;
 use crate::application::use_case::{
-    EnqueueCardMarketIdUpdateUseCase, GetCollectionPriceHistoryUseCase, GetCollectionUseCase,
-    ImportCardUseCase, ImportPriceUseCase, StatsUseCase,
+    EnqueueCardMarketIdUpdateUseCase, GetCollectionPriceHistoryUseCase, GetCollectionStatsUseCase,
+    GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase, StatsUseCase,
 };
 use crate::domain::card::CardId;
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
@@ -19,6 +20,7 @@ use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCal
 use crate::infrastructure::adapter_out::repository::card_prices_view_repository_adapter::CardPricesViewRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::cardmarket_price_repository_adapter::CardMarketPriceRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::collection_price_history_repository_adapter::CollectionPriceHistoryRepositoryAdapter;
+use crate::infrastructure::adapter_out::repository::collection_stats_repository_adapter::CollectionStatsRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::stats_repository_adapter::StatsRepositoryAdapter;
 use adapter_in::maintenance_controller::create_maintenance_router;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
@@ -49,6 +51,7 @@ pub struct AppState {
     pub import_price_use_case: Arc<dyn ImportPriceUseCase>,
     pub enqueue_cardmarket_id_use_case: Arc<dyn EnqueueCardMarketIdUpdateUseCase>,
     pub get_collection_price_history_use_case: Arc<dyn GetCollectionPriceHistoryUseCase>,
+    pub get_collection_stats_use_case: Arc<dyn GetCollectionStatsUseCase>,
 }
 
 pub async fn create_infra(pool: Pool<Postgres>) -> Router {
@@ -129,6 +132,10 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         Arc::new(CollectionPriceHistoryService::new(Arc::new(
             CollectionPriceHistoryRepositoryAdapter::new(pool.clone()),
         )));
+    let collection_stats_service: Arc<dyn GetCollectionStatsUseCase> =
+        Arc::new(CollectionStatsService::new(Arc::new(
+            CollectionStatsRepositoryAdapter::new(pool.clone()),
+        )));
 
     let app_state = AppState {
         import_card_use_case: import_card_service,
@@ -139,6 +146,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         import_price_use_case: import_price_service.clone(),
         enqueue_cardmarket_id_use_case: enqueue_cardmarket_id_service,
         get_collection_price_history_use_case: collection_price_history_service,
+        get_collection_stats_use_case: collection_stats_service,
     };
 
     let mut cron = AsyncCron::new(Utc);
@@ -184,7 +192,7 @@ impl AppState {
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
             MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionPriceHistoryUseCase,
-            MockGetCollectionUseCase, MockImportCardUseCase,
+            MockGetCollectionStatsUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
         };
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
@@ -224,6 +232,7 @@ impl AppState {
             get_collection_price_history_use_case: Arc::new(
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
+            get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
         }
     }
 

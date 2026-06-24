@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import type { SetInfo } from '~/bindings/SetInfo';
+
 const props = defineProps<{
   active: { rar: string[]; sets: string[] };
-  setCounts: Record<string, number>;
-  setList: string[];
+  setList: SetInfo[];
+  priceMin?: number;
+  priceMax?: number;
 }>();
 
 const emit = defineEmits<{
@@ -13,13 +16,27 @@ const RARITIES = ['Mythique', 'Rare', 'Unco', 'Commune'];
 
 const q = defineModel<string>('q', { default: '' });
 
-const setScrollEl = ref<HTMLElement | null>(null);
-const { arrivedState: setArrived } = useScroll(setScrollEl);
+const sliderMax = computed(() => props.priceMax ?? 150);
 
-const lo = ref(0);
-const hi = ref(150);
+const lo = ref(props.priceMin ?? 0);
+const hi = ref(props.priceMax ?? 150);
 
-const pricePct = (v: number) => (v / 150) * 100;
+watch(
+  () => props.priceMin,
+  (v) => {
+    if (v != null) lo.value = v;
+  },
+  { immediate: true },
+);
+watch(
+  () => props.priceMax,
+  (v) => {
+    if (v != null) hi.value = v;
+  },
+  { immediate: true },
+);
+
+const pricePct = (v: number) => (v / sliderMax.value) * 100;
 
 const onLoInput = (e: Event) => {
   const val = Number((e.target as HTMLInputElement).value);
@@ -30,28 +47,46 @@ const onHiInput = (e: Event) => {
   hi.value = Math.max(val, lo.value + 1);
 };
 
-const setTitle = (code: string) => {
-  const name = code.toUpperCase();
-  const count = props.setCounts[code] || 0;
-  return `${name} · ${count} carte${count > 1 ? 's' : ''}`;
-};
-
 const chipClass = (r: string) =>
   props.active.rar.includes(r)
     ? 'text-[var(--cyan-ink)] border-[var(--cyan-line)] bg-[var(--cyan-fill)] shadow-[inset_0_0_0_1px_var(--cyan-fill)] hover:text-[var(--cyan-ink)] hover:border-[var(--cyan-line)] hover:bg-[var(--cyan-fill)]'
     : 'text-[var(--ink-2)] bg-[var(--line-3)] border-[var(--line)] hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]';
 
-const setPipClass = (code: string) =>
-  props.active.sets.includes(code)
-    ? 'text-[var(--accent)] border-[var(--accent)] bg-[var(--cyan-fill)] shadow-[0_2px_10px_-3px_var(--accent)] hover:text-[var(--accent)] hover:border-[var(--accent)]'
-    : 'text-[var(--ink-2)] border-[var(--line)] hover:text-[var(--ink)] hover:border-[var(--line-2)]';
+/* ── Combobox set selector ── */
+const cbxOpen = ref(false);
+const cbxQuery = ref('');
+const cbxEl = ref<HTMLElement | null>(null);
+
+onClickOutside(cbxEl, () => {
+  cbxOpen.value = false;
+});
+
+const filteredSets = computed(() => {
+  const qLower = cbxQuery.value.toLowerCase();
+  if (!qLower) return props.setList;
+  return props.setList.filter(
+    (s) => s.name.toLowerCase().includes(qLower) || s.code.toLowerCase().includes(qLower),
+  );
+});
+
+const setNameByCode = (code: string) =>
+  props.setList.find((s) => s.code === code)?.name ?? code.toUpperCase();
+
+const toggleCbx = () => {
+  cbxOpen.value = !cbxOpen.value;
+  if (!cbxOpen.value) cbxQuery.value = '';
+};
+
+const clearSets = () => {
+  [...props.active.sets].forEach((code) => emit('toggle', 'sets', code));
+};
 </script>
 
 <template>
   <div class="flex flex-col gap-[18px] h-full">
     <!-- Search -->
     <div
-      class="flex items-center gap-[10px] px-3 py-[9px] rounded-[12px] bg-[color-mix(in_srgb,black_22%,transparent)] border border-[var(--line-2)] transition-all duration-[180ms] ease focus-within:border-[var(--cyan-line)] focus-within:shadow-[0_0_0_4px_var(--cyan-fill),0_0_28px_-8px_var(--cyan-glow)] focus-within:bg-[color-mix(in_srgb,black_14%,transparent)]"
+      class="flex items-center gap-[10px] px-3 py-[9px] rounded-[12px] bg-[color-mix(in_srgb,black_4%,transparent)] border border-[var(--line-2)] transition-all duration-[180ms] ease focus-within:border-[var(--cyan-line)] focus-within:shadow-[0_0_0_4px_var(--cyan-fill),0_0_28px_-8px_var(--cyan-glow)] focus-within:bg-[color-mix(in_srgb,black_14%,transparent)]"
     >
       <Icon name="lucide:search" :size="16" class="text-[var(--ink-3)] shrink-0" />
       <input
@@ -102,9 +137,9 @@ const setPipClass = (code: string) =>
           <input
             type="range"
             min="0"
-            max="150"
+            :max="sliderMax"
             :value="lo"
-            :style="{ zIndex: lo > 138 ? 5 : 3 }"
+            :style="{ zIndex: lo > sliderMax * 0.92 ? 5 : 3 }"
             class="z-[3]"
             aria-label="Prix minimum"
             @input="onLoInput"
@@ -112,7 +147,7 @@ const setPipClass = (code: string) =>
           <input
             type="range"
             min="0"
-            max="150"
+            :max="sliderMax"
             :value="hi"
             class="z-[4]"
             aria-label="Prix maximum"
@@ -127,50 +162,131 @@ const setPipClass = (code: string) =>
           <span class="[font-family:var(--font-mono)] text-[var(--ink-3)] text-[11px]">—</span>
           <span
             class="text-[12px] px-[9px] py-[3px] rounded-[7px] bg-[var(--cyan-fill)] border border-[var(--cyan-line)] text-[var(--cyan-ink)]"
-            >€{{ hi }}{{ hi >= 150 ? '+' : '' }}</span
+            >€{{ hi }}{{ hi >= sliderMax ? '+' : '' }}</span
           >
         </div>
       </div>
     </div>
 
-    <!-- Set / Extension -->
-    <div class="flex flex-col gap-[9px] flex-1 min-h-0">
+    <!-- Set / Extension — combobox -->
+    <div class="flex flex-col gap-[9px]">
       <span
         class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
         >Set / Extension</span
       >
-      <div class="relative flex-1 min-h-0">
-        <Transition name="fade-grad">
-          <div
-            v-if="!setArrived.top"
-            class="absolute top-0 inset-x-0 h-[22px] z-10 pointer-events-none"
-            style="background: linear-gradient(to bottom, var(--glass-bg), transparent)"
-          />
-        </Transition>
-        <div ref="setScrollEl" class="set-scroll h-full overflow-y-auto">
-          <div class="grid grid-cols-4 gap-[6px] justify-items-center pb-[2px]">
-            <button
-              v-for="code in setList"
+      <div ref="cbxEl" class="relative">
+        <!-- Trigger -->
+        <button
+          type="button"
+          :class="[
+            'w-full min-h-[42px] flex items-center gap-2 py-[7px] pr-[10px] pl-3 rounded-[12px] text-left cursor-pointer border border-[var(--line-2)] bg-[var(--line-3)] hover:bg-[var(--surface-2)] transition-[border-color,box-shadow,background] duration-[160ms] ease',
+            cbxOpen
+              ? 'border-[var(--cyan-line)] shadow-[0_0_0_4px_var(--cyan-fill),0_0_28px_-8px_var(--cyan-glow)]'
+              : '',
+          ]"
+          aria-haspopup="listbox"
+          :aria-expanded="cbxOpen"
+          @click="toggleCbx"
+        >
+          <span v-if="active.sets.length === 0" class="flex-1 text-[var(--ink-3)] text-[13.5px]"
+            >Toutes les extensions</span
+          >
+          <span v-else class="flex-1 flex flex-wrap gap-[6px] min-w-0">
+            <span
+              v-for="code in active.sets"
               :key="code"
-              :class="[
-                'relative grid place-items-center w-[34px] h-[34px] shrink-0 border border-solid bg-[var(--surface-2)] rounded-[9px] cursor-pointer transition-[color,border-color,background,transform,box-shadow] duration-[140ms] ease hover:-translate-y-px',
-                setPipClass(code),
-              ]"
-              :title="setTitle(code)"
-              :aria-label="code.toUpperCase()"
-              :aria-pressed="active.sets.includes(code)"
-              @click="emit('toggle', 'sets', code)"
+              class="inline-flex items-center gap-[6px] py-[3px] pr-1 pl-2 rounded-[8px] bg-[var(--cyan-fill)] border border-[var(--cyan-line)] text-[var(--cyan-ink)] text-[12px] font-medium max-w-full"
             >
-              <i :class="['ss text-[19px]', `ss-${code.toLowerCase()}`]" />
+              <i :class="['ss', 'text-[14px]', `ss-${code.toLowerCase()}`]" />
+              <span class="overflow-hidden text-ellipsis whitespace-nowrap max-w-[120px]">{{
+                setNameByCode(code)
+              }}</span>
+              <i
+                class="grid place-items-center w-4 h-4 rounded-[5px] text-[var(--cyan-ink)] opacity-65 flex-none cursor-pointer hover:opacity-100 hover:bg-[color-mix(in_srgb,var(--accent)_22%,transparent)]"
+                role="button"
+                :aria-label="`Retirer ${setNameByCode(code)}`"
+                @click.stop="emit('toggle', 'sets', code)"
+              >
+                <Icon name="lucide:x" :size="11" />
+              </i>
+            </span>
+          </span>
+          <span
+            :class="[
+              'inline-flex text-[var(--ink-3)] flex-none transition-transform duration-200 ease',
+              cbxOpen ? 'rotate-180' : '',
+            ]"
+          >
+            <Icon name="lucide:chevron-down" :size="16" />
+          </span>
+        </button>
+
+        <!-- Popover -->
+        <Transition name="cbx-pop">
+          <div
+            v-if="cbxOpen"
+            class="absolute left-0 right-0 top-[calc(100%+8px)] z-40 rounded-[13px] border border-[var(--line-2)] bg-[var(--surface-2)] shadow-[0_22px_48px_-26px_rgba(0,0,0,0.92)] p-[9px]"
+            role="listbox"
+            aria-multiselectable="true"
+          >
+            <!-- Search inside popup -->
+            <div
+              class="flex items-center gap-2 px-[11px] py-2 rounded-[10px] bg-[color-mix(in_srgb,black_14%,transparent)] border border-[var(--line-2)]"
+            >
+              <Icon name="lucide:search" :size="15" class="text-[var(--ink-3)] shrink-0" />
+              <input
+                v-model="cbxQuery"
+                placeholder="Filtrer une extension…"
+                class="flex-1 border-0 bg-transparent outline-none text-[13.5px] text-[var(--ink)] min-w-0 placeholder:text-[var(--ink-3)]"
+              />
+            </div>
+
+            <!-- Options list -->
+            <div
+              class="flex flex-col gap-[2px] max-h-[240px] overflow-y-auto overflow-x-hidden mt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              <div
+                v-if="filteredSets.length === 0"
+                class="py-4 px-1 text-center text-[var(--ink-4)] text-[12.5px]"
+              >
+                Aucune extension
+              </div>
+              <button
+                v-for="set in filteredSets"
+                :key="set.code"
+                type="button"
+                :class="[
+                  'group grid grid-cols-[24px_1fr] items-center gap-[10px] w-full text-left py-2 px-[9px] rounded-[8px] cursor-pointer transition-colors duration-[120ms] ease',
+                  active.sets.includes(set.code)
+                    ? 'on bg-[var(--cyan-fill)]'
+                    : 'hover:bg-[var(--surface-3)]',
+                ]"
+                role="option"
+                :aria-selected="active.sets.includes(set.code)"
+                @click="emit('toggle', 'sets', set.code)"
+              >
+                <span
+                  class="grid place-items-center text-[var(--ink-2)] group-[.on]:text-[var(--cyan-ink)]"
+                >
+                  <i :class="['ss', 'text-[18px]', `ss-${set.code.toLowerCase()}`]" />
+                </span>
+                <span
+                  class="text-[13.5px] text-[var(--ink)] min-w-0 overflow-hidden text-ellipsis whitespace-nowrap group-[.on]:text-[var(--cyan-ink)] group-[.on]:font-medium"
+                  >{{ set.name }}</span
+                >
+              </button>
+            </div>
+
+            <!-- Clear all -->
+            <button
+              v-if="active.sets.length > 0"
+              type="button"
+              class="w-full mt-2 p-2 rounded-[9px] border border-[var(--line)] [font-family:var(--font-mono)] text-[11px] font-semibold tracking-[0.03em] text-[var(--ink-3)] bg-[color-mix(in_srgb,black_14%,transparent)] transition-all duration-[140ms] ease cursor-pointer hover:text-[var(--cyan-ink)] hover:border-[var(--cyan-line)] hover:bg-[var(--cyan-fill)]"
+              @click="clearSets"
+            >
+              Tout effacer ({{ active.sets.length }})
             </button>
           </div>
-        </div>
-        <Transition name="fade-grad">
-          <div
-            v-if="!setArrived.bottom"
-            class="absolute bottom-0 inset-x-0 h-[22px] z-10 pointer-events-none"
-            style="background: linear-gradient(to top, var(--glass-bg), transparent)"
-          />
         </Transition>
       </div>
     </div>
@@ -178,7 +294,7 @@ const setPipClass = (code: string) =>
 </template>
 
 <style scoped>
-/* Range inputs — pseudo-element styling can't be done with Tailwind */
+/* Range inputs */
 input[type='range'] {
   position: absolute;
   left: 0;
@@ -229,20 +345,17 @@ input[type='range']::-moz-range-thumb {
     0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
-.set-scroll {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.set-scroll::-webkit-scrollbar {
-  display: none;
+/* Popover transition */
+.cbx-pop-enter-active,
+.cbx-pop-leave-active {
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease;
 }
 
-.fade-grad-enter-active,
-.fade-grad-leave-active {
-  transition: opacity 0.15s ease;
-}
-.fade-grad-enter-from,
-.fade-grad-leave-to {
+.cbx-pop-enter-from,
+.cbx-pop-leave-to {
   opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

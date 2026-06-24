@@ -14,7 +14,6 @@ EDHREC_BASE_URL = "https://edhrec.com"
 SCRYFALL_BASE_URL = "https://api.scryfall.com"
 
 [tools]
-rust = "stable"
 "cargo:cargo-llvm-cov" = { version = "latest", features = "llvm-tools-preview" }
 "cargo:cargo-nextest" = "latest"
 "cargo:sqlx-cli" = "latest"
