@@ -1,5 +1,6 @@
-import type { PaginatedCollection } from '~/bindings/PaginatedCollection';
+import type { CollectionStats } from '~/bindings/CollectionStats';
 import type { Message } from '~/bindings/Message';
+import type { PaginatedCollection } from '~/bindings/PaginatedCollection';
 import type { SortBy } from '~/bindings/SortBy';
 import type { SortDir } from '~/bindings/SortDir';
 
@@ -33,5 +34,10 @@ export const useCardsService = () => {
 
   const getCardInfo = () => apiCall('/cards/card-info', { method: 'POST' });
 
-  return { getCollection, getCollection2, importCards, getCardInfo };
+  const getCollectionStats = () =>
+    useAsyncData('cards-collection-stats', () => apiCall<CollectionStats>('/cards/stats'), {
+      lazy: true,
+    });
+
+  return { getCollection, getCollection2, importCards, getCardInfo, getCollectionStats };
 };

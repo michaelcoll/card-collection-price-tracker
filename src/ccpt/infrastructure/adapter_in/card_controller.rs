@@ -1,6 +1,7 @@
 use crate::application::error::AppError;
 use crate::domain::card::Card;
 use crate::domain::collection::{CollectionQuery, CollectionSortField, SortDirection};
+use crate::domain::collection_stats::CollectionStats;
 use crate::infrastructure::AppState;
 use crate::infrastructure::adapter_in::auth_extractor::AuthenticatedUser;
 use axum::body::to_bytes;
@@ -18,6 +19,7 @@ pub fn create_card_router() -> axum::Router<AppState> {
         .route("/import", post(import_cards))
         .route("/card-info", post(get_card_info))
         .route("/price-history", get(get_collection_price_history))
+        .route("/stats", get(get_collection_stats))
 }
 
 // --- Query params ---
@@ -256,6 +258,66 @@ pub(crate) async fn get_card_info(
     Ok("card Info".to_string())
 }
 
+// --- Collection stats ---
+#[derive(Serialize, Debug, TS, ToSchema)]
+#[serde(rename = "SetInfo")]
+#[ts(export, export_to = "SetInfo.ts")]
+pub struct SetInfoResponse {
+    pub code: String,
+    pub name: String,
+}
+
+#[derive(Serialize, Debug, TS, ToSchema)]
+#[serde(rename = "CollectionStats")]
+#[ts(export, export_to = "CollectionStats.ts")]
+pub struct CollectionStatsResponse {
+    pub total_cards: u64,
+    pub unique_cards: u64,
+    pub price_trend_min: Option<u32>,
+    pub price_trend_max: Option<u32>,
+    pub sets: Vec<SetInfoResponse>,
+}
+
+impl From<CollectionStats> for CollectionStatsResponse {
+    fn from(s: CollectionStats) -> Self {
+        Self {
+            total_cards: s.total_cards,
+            unique_cards: s.unique_cards,
+            price_trend_min: s.price_trend_min.value,
+            price_trend_max: s.price_trend_max.value,
+            sets: s
+                .sets
+                .into_iter()
+                .map(|sn| SetInfoResponse {
+                    code: sn.code.to_string(),
+                    name: sn.name,
+                })
+                .collect(),
+        }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/cards/stats",
+    responses(
+        (status = 200, description = "Collection stats for the authenticated user", body = CollectionStatsResponse),
+        (status = 401, description = "Missing or invalid token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "cards",
+)]
+pub(crate) async fn get_collection_stats(
+    AuthenticatedUser(user): AuthenticatedUser,
+    State(state): State<AppState>,
+) -> Result<axum::Json<CollectionStatsResponse>, AppError> {
+    let stats = state
+        .get_collection_stats_use_case
+        .get_collection_stats(&user.id)
+        .await?;
+    Ok(axum::Json(CollectionStatsResponse::from(stats)))
+}
+
 // --- Price history ---
 #[derive(Deserialize)]
 pub(crate) struct PriceHistoryParams {
@@ -330,7 +392,8 @@ mod tests {
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
             MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionPriceHistoryUseCase,
-            MockImportCardUseCase, MockImportPriceUseCase, MockStatsUseCase,
+            MockGetCollectionStatsUseCase, MockImportCardUseCase, MockImportPriceUseCase,
+            MockStatsUseCase,
         };
 
         AppState {
@@ -344,6 +407,33 @@ mod tests {
             get_collection_price_history_use_case: Arc::new(
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
+            get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
+        }
+    }
+
+    fn make_app_state_with_stats(
+        mock: crate::application::use_case::MockGetCollectionStatsUseCase,
+    ) -> AppState {
+        use crate::application::caller::MockEdhRecCaller;
+        use crate::application::service::auth_service::MockAuthService;
+        use crate::application::use_case::{
+            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionPriceHistoryUseCase,
+            MockGetCollectionUseCase, MockImportCardUseCase, MockImportPriceUseCase,
+            MockStatsUseCase,
+        };
+
+        AppState {
+            import_card_use_case: Arc::new(MockImportCardUseCase::new()),
+            edh_rec_caller_adapter: Arc::new(MockEdhRecCaller::new()),
+            stats_use_case: Arc::new(MockStatsUseCase::new()),
+            auth_service: Arc::new(MockAuthService::new()),
+            get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
+            import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
+            enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
+            get_collection_price_history_use_case: Arc::new(
+                MockGetCollectionPriceHistoryUseCase::new(),
+            ),
+            get_collection_stats_use_case: Arc::new(mock),
         }
     }
 
@@ -1004,8 +1094,9 @@ mod tests {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
-            MockImportPriceUseCase, MockStatsUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionStatsUseCase,
+            MockGetCollectionUseCase, MockImportCardUseCase, MockImportPriceUseCase,
+            MockStatsUseCase,
         };
 
         AppState {
@@ -1017,6 +1108,7 @@ mod tests {
             import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
             enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
             get_collection_price_history_use_case: Arc::new(mock),
+            get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
         }
     }
 
@@ -1124,6 +1216,95 @@ mod tests {
                 assert_eq!(msg, "start_date must be before or equal to end_date");
             }
             _ => panic!("Expected WrongFormat error"),
+        }
+    }
+
+    // --- Tests for get_collection_stats ---
+
+    #[tokio::test]
+    async fn get_collection_stats_returns_stats_from_use_case() {
+        use crate::application::use_case::MockGetCollectionStatsUseCase;
+        use crate::domain::collection_stats::CollectionStats;
+        use crate::domain::price::Price;
+        use crate::domain::set_name::{SetCode, SetName};
+
+        let mut mock = MockGetCollectionStatsUseCase::new();
+        mock.expect_get_collection_stats().returning(|_| {
+            Box::pin(async {
+                Ok(CollectionStats {
+                    total_cards: 42,
+                    unique_cards: 10,
+                    price_trend_min: Price::from_cents(100),
+                    price_trend_max: Price::from_cents(5000),
+                    sets: vec![SetName::new(SetCode::new("FDN"), "Foundations")],
+                })
+            })
+        });
+
+        let app_state = make_app_state_with_stats(mock);
+        let result =
+            get_collection_stats(AuthenticatedUser(User::for_testing()), State(app_state)).await;
+
+        assert!(result.is_ok());
+        let axum::Json(response) = result.unwrap();
+        assert_eq!(response.total_cards, 42);
+        assert_eq!(response.unique_cards, 10);
+        assert_eq!(response.price_trend_min, Some(100));
+        assert_eq!(response.price_trend_max, Some(5000));
+        assert_eq!(response.sets.len(), 1);
+        assert_eq!(response.sets[0].code, "FDN");
+        assert_eq!(response.sets[0].name, "Foundations");
+    }
+
+    #[tokio::test]
+    async fn get_collection_stats_returns_empty_for_empty_collection() {
+        use crate::application::use_case::MockGetCollectionStatsUseCase;
+        use crate::domain::collection_stats::CollectionStats;
+        use crate::domain::price::Price;
+
+        let mut mock = MockGetCollectionStatsUseCase::new();
+        mock.expect_get_collection_stats().returning(|_| {
+            Box::pin(async {
+                Ok(CollectionStats {
+                    total_cards: 0,
+                    unique_cards: 0,
+                    price_trend_min: Price::empty(),
+                    price_trend_max: Price::empty(),
+                    sets: vec![],
+                })
+            })
+        });
+
+        let app_state = make_app_state_with_stats(mock);
+        let result =
+            get_collection_stats(AuthenticatedUser(User::for_testing()), State(app_state)).await;
+
+        assert!(result.is_ok());
+        let axum::Json(response) = result.unwrap();
+        assert_eq!(response.total_cards, 0);
+        assert_eq!(response.unique_cards, 0);
+        assert_eq!(response.price_trend_min, None);
+        assert_eq!(response.price_trend_max, None);
+        assert!(response.sets.is_empty());
+    }
+
+    #[tokio::test]
+    async fn get_collection_stats_propagates_error_from_use_case() {
+        use crate::application::use_case::MockGetCollectionStatsUseCase;
+
+        let mut mock = MockGetCollectionStatsUseCase::new();
+        mock.expect_get_collection_stats().returning(|_| {
+            Box::pin(async { Err(AppError::RepositoryError("db failure".to_string())) })
+        });
+
+        let app_state = make_app_state_with_stats(mock);
+        let result =
+            get_collection_stats(AuthenticatedUser(User::for_testing()), State(app_state)).await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            AppError::RepositoryError(msg) => assert_eq!(msg, "db failure"),
+            _ => panic!("Expected RepositoryError"),
         }
     }
 }

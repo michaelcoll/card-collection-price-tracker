@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { CollectionCard } from '~/bindings/CollectionCard';
 import type { SortBy } from '~/bindings/SortBy';
 import type { SortDir } from '~/bindings/SortDir';
-import type { CollectionCard } from '~/bindings/CollectionCard';
 
 type CardDisplay = {
   name: string;
@@ -16,7 +16,7 @@ type CardDisplay = {
 
 const GRAPH_DATA = [4132, 4118, 4140, 4096, 4150, 4172, 4160, 4188, 4176, 4205, 4192, 4218];
 
-const { getCollection, importCards } = useCardsService();
+const { getCollection, getCollectionStats, importCards } = useCardsService();
 
 const q = ref('');
 const qDebounced = refDebounced(q, 200);
@@ -30,6 +30,7 @@ const params = ref({
 });
 
 const { data: collectionData, pending, refresh } = await getCollection(params);
+const { data: statsData } = await getCollectionStats();
 
 const allCards = ref<CollectionCard[]>([]);
 
@@ -129,17 +130,13 @@ const toggle = (k: 'rar' | 'sets', v: string) => {
   active.value[k] = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 };
 
-const setCounts = computed(() => {
-  const c: Record<string, number> = {};
-  cards.value.forEach((card) => {
-    c[card.set] = (c[card.set] || 0) + 1;
-  });
-  return c;
-});
-const setList = computed(() =>
-  Object.keys(setCounts.value).sort(
-    (a, b) => (setCounts.value[b] ?? 0) - (setCounts.value[a] ?? 0),
-  ),
+const setList = computed(() => statsData.value?.sets ?? []);
+
+const priceMin = computed(() =>
+  statsData.value?.price_trend_min != null ? Math.floor(statsData.value.price_trend_min / 100) : 0,
+);
+const priceMax = computed(() =>
+  statsData.value?.price_trend_max != null ? Math.ceil(statsData.value.price_trend_max / 100) : 150,
 );
 
 const graphOptions = [
@@ -316,8 +313,9 @@ const onDragLeave = () => {
           <CollectionFilters
             v-model:q="q"
             :active="active"
-            :set-counts="setCounts"
             :set-list="setList"
+            :price-min="priceMin"
+            :price-max="priceMax"
             @toggle="toggle"
           />
         </aside>
@@ -326,9 +324,9 @@ const onDragLeave = () => {
       <!-- Main content -->
       <div class="flex-1 min-w-0">
         <!-- Header row -->
-        <div class="flex items-center justify-between mb-[14px]">
-          <span v-if="collectionData" class="text-[var(--ink-3)] text-[13px]">{{
-            `1 248 cartes · ${collectionData.total} uniques`
+        <div class="flex items-center justify-between mb-[14px] min-h-[22px]">
+          <span v-if="statsData" class="text-[var(--ink-3)] text-[13px]">{{
+            `${statsData.total_cards.toLocaleString('fr-FR')} cartes · ${statsData.unique_cards} uniques`
           }}</span>
           <div class="flex items-center gap-[10px]">
             <SegToggle
@@ -452,8 +450,9 @@ const onDragLeave = () => {
         </div>
         <CollectionFilters
           :active="active"
-          :set-counts="setCounts"
           :set-list="setList"
+          :price-min="priceMin"
+          :price-max="priceMax"
           @toggle="toggle"
         />
         <button

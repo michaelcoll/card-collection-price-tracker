@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                MIN(cp.trend)::INT AS price_trend_min,\n                MAX(cp.trend)::INT AS price_trend_max\n            FROM collection_entry ce\n            LEFT JOIN mv_card_prices cp\n                ON  cp.set_code         = ce.set_code\n                AND cp.collector_number = ce.collector_number\n                AND cp.language_code    = ce.language_code\n                AND cp.foil             = ce.foil\n                AND cp.user_id          = ce.user_id\n            WHERE ce.user_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "price_trend_min",
+        "type_info": "Int4",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "price_trend_max",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "da938ea71f8fbd04af64c487dd5b184a27666dc63e4914bbdcd62eaa95be3de3"
+}

@@ -1,6 +1,7 @@
 use crate::application::error::AppError;
 use crate::domain::card::{Card, CardId};
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
+use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::{FullPriceGuide, PriceHistoryEntry};
 use crate::domain::set_name::{SetCode, SetName};
 use crate::domain::user::User;
@@ -100,4 +101,10 @@ pub trait CollectionRepository: Send + Sync {
         user_id: &str,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait CollectionStatsRepository: Send + Sync {
+    async fn get_collection_stats(&self, user_id: &str) -> Result<CollectionStats, AppError>;
 }
