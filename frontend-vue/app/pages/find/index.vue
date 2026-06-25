@@ -41,12 +41,10 @@ const decklist = ref(
 </script>
 
 <template>
-  <div
-    class="max-w-[var(--maxw)] mx-auto px-[22px] pt-[28px] pb-[40px] max-[860px]:px-[16px] max-[860px]:pt-[20px] max-[860px]:pb-[30px]"
-  >
+  <div class="max-w-[1180px] mx-auto px-5 pt-7 pb-10 max-md:px-4 max-md:pt-5 max-md:pb-8">
     <!-- HEADER -->
-    <div class="flex items-center justify-between flex-wrap gap-[14px] mb-[18px]">
-      <h2 class="[font-family:var(--font-display)] font-semibold text-[20px] tracking-[-0.015em]">
+    <div class="flex items-center justify-between flex-wrap gap-3.5 mb-4">
+      <h2 class="font-display font-semibold text-xl tracking-tight">
         Cartes chez les autres joueurs
       </h2>
       <SegToggle v-model="mode" :options="modeOptions" />
@@ -56,75 +54,73 @@ const decklist = ref(
     <div v-if="mode === 'name'">
       <!-- Search field -->
       <div
-        class="flex items-center gap-[10px] pl-[16px] pr-[8px] py-[8px] rounded-[15px] bg-[color-mix(in_srgb,black_22%,transparent)] border border-solid border-[var(--line-2)] transition-all duration-[180ms] ease focus-within:border-[var(--cyan-line)] focus-within:shadow-[0_0_0_4px_var(--cyan-fill)] focus-within:bg-[color-mix(in_srgb,black_14%,transparent)] mb-[20px]"
+        class="flex items-center gap-2.5 pl-4 pr-2 py-2 rounded-2xl bg-black/20 border border-slate-300 dark:border-white/15 transition-all duration-200 focus-within:border-cyan-500/40 dark:focus-within:border-cyan-400/40 focus-within:ring-4 focus-within:ring-cyan-500/10 focus-within:bg-black/10 mb-5"
       >
-        <Icon name="lucide:search" size="20" class="text-[var(--ink-3)] flex-none" />
+        <Icon name="lucide:search" size="20" class="text-slate-400 dark:text-slate-500 flex-none" />
         <input
           value="Sire of Seven Deaths"
           placeholder="Nom de la carte…"
-          class="flex-1 border-0 bg-transparent outline-none text-[16px] min-w-0 placeholder:text-[var(--ink-3)]"
+          class="flex-1 border-0 bg-transparent outline-none text-base min-w-0 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
         />
       </div>
 
       <!-- Card header -->
       <div
-        class="bg-[var(--glass-bg)] [backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] border border-solid border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow)] p-[18px] mb-[18px]"
+        class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg p-4 mb-4"
       >
-        <div class="flex gap-[18px]">
-          <MtgCard color="m" name="Sire of Seven Deaths" class="w-[96px] flex-none" />
-          <div class="flex flex-col flex-1 min-w-0 gap-[10px]">
+        <div class="flex gap-4">
+          <MtgCard color="m" name="Sire of Seven Deaths" class="w-24 flex-none" />
+          <div class="flex flex-col flex-1 min-w-0 gap-2.5">
             <div>
-              <h3
-                class="[font-family:var(--font-display)] font-semibold text-[20px] tracking-[-0.015em] mb-[4px]"
-              >
+              <h3 class="font-display font-semibold text-xl tracking-tight mb-1">
                 Sire of Seven Deaths
               </h3>
-              <span class="text-[var(--ink-3)] text-[13px]">Creature — Eldrazi · Foundations</span>
+              <span class="text-slate-400 dark:text-slate-500 text-sm"
+                >Creature — Eldrazi · Foundations</span
+              >
             </div>
-            <div class="flex flex-wrap gap-[8px]">
+            <div class="flex flex-wrap gap-2">
               <span
-                class="inline-flex items-center gap-[6px] px-[11px] py-[5px] rounded-full text-[12.5px] font-medium border border-solid border-[var(--line)] text-[var(--ink-2)] bg-[var(--line-3)] whitespace-nowrap cursor-default select-none"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 whitespace-nowrap cursor-default select-none"
               >
                 Prix réf.
-                <span
-                  class="[font-family:var(--font-mono)] [font-feature-settings:'tnum'_1,'ss01'_1] tracking-[-0.01em] text-[var(--cyan)] ml-[4px]"
+                <span class="font-mono tracking-tight text-cyan-600 dark:text-cyan-400 ml-1"
                   >€31</span
                 >
               </span>
               <span
-                class="inline-flex items-center gap-[6px] px-[11px] py-[5px] rounded-full text-[12.5px] font-medium border border-solid border-[var(--violet-line)] text-[var(--violet-ink)] bg-[var(--violet-fill)] whitespace-nowrap cursor-default select-none"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-violet-500/30 dark:border-violet-400/30 text-violet-700 dark:text-violet-300 bg-violet-500/10 dark:bg-violet-400/10 whitespace-nowrap cursor-default select-none"
               >
                 EDHREC
-                <span
-                  class="[font-family:var(--font-mono)] [font-feature-settings:'tnum'_1,'ss01'_1] tracking-[-0.01em] ml-[4px]"
-                  >41 %</span
-                >
+                <span class="font-mono tracking-tight ml-1">41 %</span>
               </span>
             </div>
-            <span class="text-[var(--ink-3)] text-[13px]">14 joueurs possèdent cette carte</span>
+            <span class="text-slate-400 dark:text-slate-500 text-sm"
+              >14 joueurs possèdent cette carte</span
+            >
           </div>
         </div>
       </div>
 
       <!-- Sort row -->
-      <div class="flex items-center justify-between flex-wrap gap-[10px] mb-[14px]">
-        <span class="text-[var(--ink-3)] text-[13px]"
+      <div class="flex items-center justify-between flex-wrap gap-2.5 mb-3.5">
+        <span class="text-slate-400 dark:text-slate-500 text-sm"
           >{{ owners.length }} résultats à proximité</span
         >
-        <div class="flex items-center gap-[8px]">
+        <div class="flex items-center gap-2">
           <span
-            class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
+            class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
             >trier</span
           >
-          <div class="flex gap-[6px]">
+          <div class="flex gap-1.5">
             <button
               v-for="chip in sortChips"
               :key="chip.key"
               :class="[
-                'inline-flex items-center gap-[6px] px-[11px] py-[5px] rounded-full text-[12.5px] font-medium border border-solid whitespace-nowrap cursor-pointer select-none transition-all duration-[150ms] ease',
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap cursor-pointer select-none transition-all duration-150',
                 sort === chip.key
-                  ? 'border-[var(--cyan-line)] text-[var(--cyan-ink)] bg-[var(--cyan-fill)] shadow-[inset_0_0_0_1px_var(--cyan-fill)]'
-                  : 'border-[var(--line)] text-[var(--ink-2)] bg-[var(--line-3)] hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]',
+                  ? 'border-cyan-500/30 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10'
+                  : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800',
               ]"
               @click="sort = chip.key as typeof sort"
             >
@@ -135,22 +131,28 @@ const decklist = ref(
       </div>
 
       <!-- Owner rows -->
-      <div class="flex flex-col gap-[8px]">
+      <div class="flex flex-col gap-2">
         <div
           v-for="o in sorted"
           :key="o.u"
-          class="flex items-center gap-[13px] px-[14px] py-[11px] rounded-[12px] border border-solid border-[var(--line)] bg-[var(--surface)] transition-all duration-[150ms] ease hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]"
+          class="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 transition-all duration-150 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
         >
           <PlayerAvatar :initials="o.init" :online="o.online" />
           <div class="flex-1 min-w-0">
             <div
-              class="text-[14px] font-semibold text-[var(--ink)] overflow-hidden text-ellipsis whitespace-nowrap"
+              class="text-sm font-semibold text-slate-800 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap"
             >
               {{ o.u }}
             </div>
-            <div class="text-[12px] text-[var(--ink-3)] flex items-center gap-[8px] flex-wrap">
+            <div
+              class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-2 flex-wrap"
+            >
               <span>
-                <Icon name="mdi:star" size="11" class="text-[var(--violet)] align-[-1px]" />
+                <Icon
+                  name="mdi:star"
+                  size="11"
+                  class="text-violet-500 dark:text-violet-300 align-[-1px]"
+                />
                 {{ o.rep.toLocaleString('fr-FR') }}
               </span>
               <span>
@@ -160,13 +162,12 @@ const decklist = ref(
               <span>×{{ o.qty }} dispo</span>
             </div>
           </div>
-          <span
-            class="[font-family:var(--font-mono)] text-[14.5px] text-[var(--cyan)] font-semibold"
+          <span class="font-mono text-sm text-cyan-600 dark:text-cyan-400 font-semibold"
             >€{{ o.price }}</span
           >
           <NuxtLink
             to="/trade"
-            class="inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] rounded-[8px] text-[12px] font-bold text-[var(--on-accent)] bg-[var(--cyan)] border border-solid border-transparent shadow-[0_8px_20px_-14px_var(--cyan-glow)] transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:bg-[var(--cyan-soft)] hover:shadow-[0_0_0_3px_var(--cyan-fill),0_10px_22px_-14px_var(--cyan-glow)] hover:-translate-y-px active:translate-y-0"
+            class="inline-flex items-center gap-2 justify-center py-1.5 px-3 rounded-lg text-xs font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
             >Échanger</NuxtLink
           >
         </div>
@@ -176,46 +177,44 @@ const decklist = ref(
     <!-- MODE: PAR DECKLIST -->
     <div
       v-else
-      class="grid gap-[22px] items-start [grid-template-columns:minmax(240px,320px)_1fr] max-[860px]:[grid-template-columns:1fr]"
+      class="grid gap-6 items-start [grid-template-columns:minmax(240px,320px)_1fr] max-md:[grid-template-columns:1fr]"
     >
       <!-- Left: paste zone -->
       <div
-        class="bg-[var(--glass-bg)] [backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] border border-solid border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow)] p-[18px] flex flex-col gap-[12px] self-start"
+        class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg p-4 flex flex-col gap-3 self-start"
       >
         <span
-          class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
+          class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
           >Coller ma decklist</span
         >
         <textarea
           v-model="decklist"
           rows="9"
-          class="w-full resize-y [font-family:var(--font-mono)] text-[12.5px] p-[13px] leading-[1.7]"
+          class="w-full resize-y font-mono text-xs p-3 leading-relaxed text-slate-800 dark:text-slate-100"
         />
         <div class="flex items-center justify-between">
-          <span class="text-[var(--ink-3)] text-[12px]">99 cartes détectées</span>
+          <span class="text-slate-400 dark:text-slate-500 text-xs">99 cartes détectées</span>
           <span
-            class="inline-flex items-center gap-[6px] px-[11px] py-[5px] rounded-full text-[12.5px] font-medium border border-solid border-[var(--line)] text-[var(--ink-2)] bg-[var(--line-3)] whitespace-nowrap cursor-default select-none"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 whitespace-nowrap cursor-default select-none"
           >
-            <span class="w-[7px] h-[7px] rounded-full bg-[var(--violet)]" /> 2 non reconnues
+            <span class="w-2 h-2 rounded-full bg-violet-500 dark:bg-violet-400" /> 2 non reconnues
           </span>
         </div>
         <button
-          class="inline-flex items-center gap-[8px] justify-center px-[15px] py-[9px] rounded-[10px] text-[13.5px] font-bold text-[var(--on-accent)] bg-[var(--cyan)] border border-solid border-transparent shadow-[0_8px_20px_-14px_var(--cyan-glow)] transition-all duration-[160ms] ease whitespace-nowrap leading-none w-full hover:bg-[var(--cyan-soft)] hover:shadow-[0_0_0_3px_var(--cyan-fill),0_10px_22px_-14px_var(--cyan-glow)] hover:-translate-y-px active:translate-y-0"
+          class="inline-flex items-center gap-2 justify-center px-4 py-2.5 rounded-xl text-sm font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none w-full hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
         >
           <Icon name="lucide:search" size="15" /> Trouver les joueurs
         </button>
       </div>
 
       <!-- Right: coverage results -->
-      <div class="flex-1 min-w-0 flex flex-col gap-[14px]">
+      <div class="flex-1 min-w-0 flex flex-col gap-3.5">
         <div class="flex items-center justify-between">
-          <h3
-            class="[font-family:var(--font-display)] font-semibold text-[16px] tracking-[-0.01em]"
-          >
+          <h3 class="font-display font-semibold text-base tracking-tight">
             12 joueurs couvrent ta liste
           </h3>
           <button
-            class="inline-flex items-center gap-[6px] px-[11px] py-[5px] rounded-full text-[12.5px] font-medium border border-solid border-[var(--cyan-line)] text-[var(--cyan-ink)] bg-[var(--cyan-fill)] shadow-[inset_0_0_0_1px_var(--cyan-fill)] whitespace-nowrap cursor-pointer select-none transition-all duration-[150ms] ease"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-cyan-500/30 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10 whitespace-nowrap cursor-pointer select-none transition-all duration-150"
           >
             % couverture <Icon name="lucide:chevron-down" size="13" />
           </button>
@@ -225,60 +224,57 @@ const decklist = ref(
           v-for="(c, i) in coverers"
           :key="c.u"
           :class="[
-            '[backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] rounded-[var(--r-lg)] shadow-[var(--shadow)] p-[15px]',
+            'backdrop-blur-md rounded-2xl shadow-lg p-4',
             i === 0
-              ? 'bg-[var(--cyan-fill)] border border-solid border-[var(--cyan-line)]'
-              : 'bg-[var(--glass-bg)] border border-solid border-[var(--line)]',
+              ? 'bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/30 dark:border-cyan-400/30'
+              : 'bg-white/60 dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10',
           ]"
         >
-          <div class="flex items-center justify-between mb-[10px]">
-            <div class="flex items-center gap-[10px]">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2.5">
               <PlayerAvatar :initials="c.init" :online="c.online" />
               <span
-                class="text-[14.5px] font-semibold text-[var(--ink)] overflow-hidden text-ellipsis whitespace-nowrap"
+                class="text-sm font-semibold text-slate-800 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap"
                 >{{ c.u }}</span
               >
             </div>
             <span
               :class="[
-                '[font-family:var(--font-mono)] font-bold tracking-[-0.02em] whitespace-nowrap text-[var(--cyan)]',
-                i === 0 ? 'text-[24px]' : 'text-[19px]',
+                'font-mono font-bold tracking-tight whitespace-nowrap text-cyan-600 dark:text-cyan-400',
+                i === 0 ? 'text-2xl' : 'text-xl',
               ]"
               >{{ c.pct }}%</span
             >
           </div>
           <div
-            class="h-[8px] rounded-full bg-[color-mix(in_srgb,black_30%,transparent)] overflow-hidden border border-solid border-[var(--line-3)]"
+            class="h-2 rounded-full bg-black/30 overflow-hidden border border-slate-200 dark:border-white/5"
           >
             <i
-              class="block h-full rounded-full bg-[linear-gradient(90deg,var(--cyan-dim),var(--cyan))] shadow-[0_0_12px_-2px_var(--cyan-glow)] transition-[width] duration-[600ms] [transition-timing-function:cubic-bezier(0.4,0,0.1,1)]"
+              class="block h-full rounded-full bg-cyan-500 dark:bg-cyan-400 transition-[width] duration-700 ease-out"
               :style="{ width: c.pct + '%' }"
             />
           </div>
-          <div class="flex items-center justify-between mt-[10px]">
-            <span class="text-[var(--ink-3)] text-[12.5px]">
+          <div class="flex items-center justify-between mt-2.5">
+            <span class="text-slate-400 dark:text-slate-500 text-xs">
               couvre {{ c.n }}/99 cartes · valeur ≈
-              <span
-                class="[font-family:var(--font-mono)] [font-feature-settings:'tnum'_1,'ss01'_1] tracking-[-0.01em]"
-                >€{{ c.val }}</span
-              >
+              <span class="font-mono tracking-tight">€{{ c.val }}</span>
             </span>
-            <div v-if="i === 0" class="flex items-center gap-[8px]">
+            <div v-if="i === 0" class="flex items-center gap-2">
               <button
-                class="max-[860px]:hidden inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] rounded-[8px] text-[12px] font-semibold border border-solid border-[var(--line)] text-[var(--ink-2)] bg-transparent transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--line-3)] hover:-translate-y-px active:translate-y-0"
+                class="max-md:hidden inline-flex items-center gap-2 justify-center py-1.5 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
               >
                 Voir les {{ c.n }}
               </button>
               <NuxtLink
                 to="/trade"
-                class="inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] rounded-[8px] text-[12px] font-bold text-[var(--on-accent)] bg-[var(--cyan)] border border-solid border-transparent shadow-[0_8px_20px_-14px_var(--cyan-glow)] transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:bg-[var(--cyan-soft)] hover:shadow-[0_0_0_3px_var(--cyan-fill),0_10px_22px_-14px_var(--cyan-glow)] hover:-translate-y-px active:translate-y-0"
+                class="inline-flex items-center gap-2 justify-center py-1.5 px-3 rounded-lg text-xs font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
                 >Composer l'échange</NuxtLink
               >
             </div>
             <NuxtLink
               v-else
               to="/trade"
-              class="inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] rounded-[8px] text-[12px] font-semibold border border-solid border-[var(--line)] text-[var(--ink-2)] bg-transparent transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--line-3)] hover:-translate-y-px active:translate-y-0"
+              class="inline-flex items-center gap-2 justify-center py-1.5 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
               >Composer</NuxtLink
             >
           </div>

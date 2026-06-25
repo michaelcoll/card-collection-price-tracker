@@ -43,30 +43,25 @@ const selectRecent = (name: string) => {
 </script>
 
 <template>
-  <div
-    class="max-w-[var(--maxw)] mx-auto px-[22px] pb-[40px] pt-[28px] max-[860px]:px-[16px] max-[860px]:pt-[20px] max-[860px]:pb-[30px]"
-  >
+  <div class="max-w-[1180px] mx-auto px-5 pb-10 pt-7 max-md:px-4 max-md:pt-5 max-md:pb-8">
     <!-- ── HERO ── -->
-    <div class="flex flex-col items-center text-center gap-[22px] pt-[38px] pb-[30px]">
+    <div class="flex flex-col items-center text-center gap-6 pt-10 pb-8">
       <!-- Status badge -->
       <span
-        class="inline-flex items-center gap-[6px] px-[11px] py-[5px] rounded-full text-[12.5px] font-medium border border-solid border-[var(--cyan-line)] text-[var(--cyan-ink)] bg-[var(--cyan-fill)] whitespace-nowrap cursor-default select-none"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-cyan-500/30 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10 whitespace-nowrap cursor-default select-none"
       >
-        <span class="w-[7px] h-[7px] rounded-full bg-current" />
+        <span class="w-2 h-2 rounded-full bg-current" />
         2 418 joueurs · 1,2 M cartes indexées
       </span>
 
       <!-- Hero logo lockup -->
-      <div class="flex flex-col items-center gap-[10px]">
+      <div class="flex flex-col items-center gap-2.5">
         <div class="flex items-center gap-[clamp(12px,2.4vw,20px)]">
           <span
-            class="[font-family:var(--font-display)] font-semibold leading-none text-[clamp(30px,5.2vw,46px)] tracking-[-0.012em] text-[var(--ink)]"
+            class="font-display font-semibold leading-none text-[clamp(30px,5.2vw,46px)] tracking-tight text-slate-800 dark:text-slate-100"
             >Arcane</span
           >
-          <span
-            class="flex-none grid place-items-center [filter:drop-shadow(0_0_14px_var(--cyan-glow))]"
-            aria-hidden="true"
-          >
+          <span class="flex-none grid place-items-center" aria-hidden="true">
             <svg
               viewBox="0 0 28 28"
               fill="none"
@@ -95,48 +90,52 @@ const selectRecent = (name: string) => {
             </svg>
           </span>
           <span
-            class="[font-family:var(--font-display)] font-semibold leading-none text-[clamp(30px,5.2vw,46px)] tracking-[-0.012em] text-[var(--cyan)]"
+            class="font-display font-semibold leading-none text-[clamp(30px,5.2vw,46px)] tracking-tight text-cyan-600 dark:text-cyan-400"
             >Exchange</span
           >
         </div>
         <span
-          class="[font-family:var(--font-mono)] text-[clamp(10px,1.3vw,11.5px)] tracking-[0.26em] uppercase text-[var(--ink-3)]"
+          class="font-mono text-[clamp(10px,1.3vw,11.5px)] tracking-[0.26em] uppercase text-slate-400 dark:text-slate-500"
           >Le marché des joueurs</span
         >
       </div>
 
       <!-- Subtitle -->
       <p
-        class="text-[var(--ink-2)] max-w-[460px] text-[15.5px] mt-[-8px] mb-[15.5px] leading-[1.6]"
+        class="text-slate-600 dark:text-slate-300 max-w-[460px] text-base -mt-2 mb-4 leading-relaxed"
       >
         Recherche une carte ou colle une decklist. On te montre qui la possède, à quel prix, et tu
         composes l'échange.
       </p>
 
       <!-- Search area -->
-      <div class="flex flex-col w-full max-w-[540px] gap-[14px] items-center">
+      <div class="flex flex-col w-full max-w-[540px] gap-3.5 items-center">
         <SegToggle v-model="mode" :options="searchOptions" />
 
         <!-- search-hero: glow via real child div + group-focus-within -->
         <div class="relative w-full group">
           <div
-            class="absolute -inset-x-[10px] -inset-y-[30px] -z-[1] rounded-[40px] bg-[radial-gradient(60%_80%_at_50%_50%,var(--cyan-glow),transparent_70%)] opacity-50 blur-[20px] transition-opacity duration-300 pointer-events-none group-focus-within:opacity-90"
+            class="absolute -inset-x-2.5 -inset-y-8 -z-10 rounded-[40px] bg-cyan-500/20 dark:bg-cyan-400/20 opacity-50 blur-xl transition-opacity duration-300 pointer-events-none group-focus-within:opacity-90"
           />
 
           <!-- Name search -->
           <div
             v-if="mode === 'name'"
-            class="flex items-center gap-[10px] pl-[18px] pr-[8px] py-[8px] rounded-[15px] min-h-[62px] bg-[color-mix(in_srgb,black_22%,transparent)] border border-solid border-[var(--line-2)] transition-all duration-[180ms] ease focus-within:border-[var(--cyan-line)] focus-within:shadow-[0_0_0_4px_var(--cyan-fill),0_0_28px_-8px_var(--cyan-glow)] focus-within:bg-[color-mix(in_srgb,black_14%,transparent)]"
+            class="flex items-center gap-2.5 pl-4 pr-2 py-2 rounded-2xl min-h-[62px] bg-black/20 border border-slate-300 dark:border-white/15 transition-all duration-200 focus-within:border-cyan-500/40 dark:focus-within:border-cyan-400/40 focus-within:ring-4 focus-within:ring-cyan-500/10 focus-within:bg-black/10"
           >
-            <AppIcon name="search" :size="20" class="text-[var(--ink-3)] flex-none" />
+            <AppIcon
+              name="search"
+              :size="20"
+              class="text-slate-400 dark:text-slate-500 flex-none"
+            />
             <input
               v-model="q"
-              class="flex-1 border-0 bg-transparent outline-none text-[16px] min-w-0 placeholder:text-[var(--ink-3)]"
+              class="flex-1 border-0 bg-transparent outline-none text-base min-w-0 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               placeholder="Vampiric Tutor, Sire of Seven Deaths…"
               @keydown.enter="navigateTo('/find')"
             />
             <button
-              class="inline-flex items-center gap-[8px] justify-center px-[22px] self-stretch rounded-[11px] text-[16px] font-bold text-[var(--on-accent)] bg-[var(--cyan)] border border-solid border-transparent shadow-[0_8px_20px_-14px_var(--cyan-glow)] transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:bg-[var(--cyan-soft)] hover:shadow-[0_0_0_3px_var(--cyan-fill),0_10px_22px_-14px_var(--cyan-glow)] hover:-translate-y-px active:translate-y-0"
+              class="inline-flex items-center gap-2 justify-center px-6 self-stretch rounded-xl text-base font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
               @click="navigateTo('/find')"
             >
               Chercher
@@ -146,21 +145,25 @@ const selectRecent = (name: string) => {
           <!-- Decklist search -->
           <div
             v-else
-            class="flex flex-col items-start gap-[12px] pl-[18px] pr-[8px] py-[8px] rounded-[15px] bg-[color-mix(in_srgb,black_22%,transparent)] border border-solid border-[var(--line-2)] transition-all duration-[180ms] ease focus-within:border-[var(--cyan-line)] focus-within:shadow-[0_0_0_4px_var(--cyan-fill),0_0_28px_-8px_var(--cyan-glow)] focus-within:bg-[color-mix(in_srgb,black_14%,transparent)]"
+            class="flex flex-col items-start gap-3 pl-4 pr-2 py-2 rounded-2xl bg-black/20 border border-slate-300 dark:border-white/15 transition-all duration-200 focus-within:border-cyan-500/40 dark:focus-within:border-cyan-400/40 focus-within:ring-4 focus-within:ring-cyan-500/10 focus-within:bg-black/10"
           >
-            <div class="flex items-center w-full gap-[10px]">
-              <AppIcon name="layers" :size="20" class="text-[var(--ink-3)] flex-none" />
-              <span class="text-[var(--ink-3)] text-[14.5px]"
+            <div class="flex items-center w-full gap-2.5">
+              <AppIcon
+                name="layers"
+                :size="20"
+                class="text-slate-400 dark:text-slate-500 flex-none"
+              />
+              <span class="text-slate-400 dark:text-slate-500 text-sm"
                 >Colle ta decklist (Moxfield · Archidekt · texte)</span
               >
             </div>
             <textarea
               :rows="4"
-              class="w-full resize-y [font-family:var(--font-mono)] text-[13px]"
+              class="w-full resize-y font-mono text-sm text-slate-800 dark:text-slate-100"
               placeholder="1x Vampiric Tutor&#10;1x Black Market Connections&#10;1x The Soul Stone…"
             />
             <button
-              class="inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] self-end rounded-[8px] text-[12px] font-bold text-[var(--on-accent)] bg-[var(--cyan)] border border-solid border-transparent shadow-[0_8px_20px_-14px_var(--cyan-glow)] transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:bg-[var(--cyan-soft)] hover:shadow-[0_0_0_3px_var(--cyan-fill),0_10px_22px_-14px_var(--cyan-glow)] hover:-translate-y-px active:translate-y-0"
+              class="inline-flex items-center gap-2 justify-center py-1.5 px-3 self-end rounded-lg text-xs font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
               @click="navigateTo('/find')"
             >
               Trouver les joueurs
@@ -169,15 +172,15 @@ const selectRecent = (name: string) => {
         </div>
 
         <!-- Recent searches -->
-        <div v-if="mode === 'name'" class="flex items-center flex-wrap gap-[8px] justify-center">
+        <div v-if="mode === 'name'" class="flex items-center flex-wrap gap-2 justify-center">
           <span
-            class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap mr-[2px]"
+            class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap mr-0.5"
             >récents</span
           >
           <button
             v-for="r in recents"
             :key="r"
-            class="inline-flex items-center gap-[6px] px-[11px] py-[5px] rounded-full text-[12.5px] font-medium border border-solid border-[var(--line)] text-[var(--ink-2)] bg-[var(--line-3)] transition-all duration-[150ms] ease whitespace-nowrap cursor-pointer select-none hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 whitespace-nowrap cursor-pointer select-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
             @click="selectRecent(r)"
           >
             <AppIcon name="clock" :size="12" />
@@ -188,18 +191,18 @@ const selectRecent = (name: string) => {
     </div>
 
     <!-- ── TRENDS ── -->
-    <div class="mt-[26px]">
-      <div class="flex items-center justify-between gap-[12px] mb-[14px]">
-        <div class="flex items-center gap-[9px]">
-          <span class="text-[var(--cyan)]"><AppIcon name="trending" :size="18" /></span>
-          <h2
-            class="[font-family:var(--font-display)] font-semibold text-[16px] tracking-[-0.01em] m-0"
-          >
+    <div class="mt-6">
+      <div class="flex items-center justify-between gap-3 mb-3.5">
+        <div class="flex items-center gap-2">
+          <span class="text-cyan-600 dark:text-cyan-400"
+            ><AppIcon name="trending" :size="18"
+          /></span>
+          <h2 class="font-display font-semibold text-base tracking-tight m-0">
             Tendances cette semaine
           </h2>
         </div>
         <a
-          class="text-[13px] text-[var(--ink-2)] inline-flex items-center gap-[4px] transition-colors duration-[150ms] hover:text-[var(--cyan)]"
+          class="text-sm text-slate-600 dark:text-slate-300 inline-flex items-center gap-1 transition-colors duration-150 hover:text-cyan-600 dark:hover:text-cyan-400"
           href="#"
         >
           voir tout
@@ -208,7 +211,7 @@ const selectRecent = (name: string) => {
       </div>
 
       <div
-        class="grid gap-[18px] [grid-template-columns:repeat(auto-fill,minmax(118px,1fr))] max-[860px]:[grid-template-columns:repeat(auto-fill,minmax(96px,1fr))] max-[860px]:gap-[14px]"
+        class="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(118px,1fr))] max-md:[grid-template-columns:repeat(auto-fill,minmax(96px,1fr))] max-md:gap-3.5"
       >
         <CardCell
           v-for="t in trends"
@@ -222,29 +225,26 @@ const selectRecent = (name: string) => {
     </div>
 
     <!-- ── SECONDARY DISCOVERY ── -->
-    <div class="flex flex-wrap gap-[var(--d-gap)] mt-[28px]">
+    <div class="flex flex-wrap gap-4 mt-7">
       <!-- Collection panel -->
       <div
-        class="bg-[var(--glass-bg)] [backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] border border-solid border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow)] flex-1 p-[20px] min-w-[260px]"
+        class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg flex-1 p-5 min-w-[260px]"
       >
-        <div class="flex items-center justify-between gap-[var(--d-gap)]">
-          <div class="flex flex-col gap-[2px]">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-col gap-0.5">
             <span
-              class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
+              class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
               >Ta collection</span
             >
-            <span
-              class="[font-family:var(--font-mono)] font-bold tracking-[-0.02em] whitespace-nowrap text-[26px]"
+            <span class="font-mono font-bold tracking-tight whitespace-nowrap text-2xl"
               >€ 4 218,60</span
             >
-            <span class="text-[var(--cyan)] text-[13px] [font-family:var(--font-mono)]"
-              >▴ €86,20 (30 j)</span
-            >
+            <span class="text-cyan-600 dark:text-cyan-400 text-sm font-mono">▴ €86,20 (30 j)</span>
           </div>
           <Sparkline />
         </div>
         <button
-          class="inline-flex items-center gap-[8px] justify-center py-[9px] px-[15px] rounded-[10px] text-[13.5px] font-semibold border border-solid border-[var(--line)] text-[var(--ink-2)] bg-transparent transition-all duration-[160ms] ease whitespace-nowrap leading-none w-full mt-[16px] hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--line-3)] hover:-translate-y-px active:translate-y-0"
+          class="inline-flex items-center gap-2 justify-center py-2.5 px-4 rounded-xl text-sm font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none w-full mt-4 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
           @click="navigateTo('/collection')"
         >
           Ouvrir ma collection
@@ -254,28 +254,32 @@ const selectRecent = (name: string) => {
 
       <!-- Trades panel -->
       <div
-        class="bg-[var(--glass-bg)] [backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] border border-solid border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow)] flex-1 p-[20px] min-w-[260px]"
+        class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg flex-1 p-5 min-w-[260px]"
       >
         <span
-          class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
+          class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
           >Échanges en cours</span
         >
-        <div class="flex flex-col gap-[9px] mt-[12px]">
+        <div class="flex flex-col gap-2 mt-3">
           <button
             v-for="e in trades"
             :key="e.u"
-            class="flex items-center gap-[13px] px-[14px] py-[11px] rounded-[12px] border border-solid border-[var(--line)] bg-[var(--surface)] transition-all duration-[150ms] ease w-full text-left hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]"
+            class="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 transition-all duration-150 w-full text-left hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
             @click="navigateTo('/trade')"
           >
             <PlayerAvatar :initials="e.u.slice(1, 3).toUpperCase()" :online="e.t === 'me'" />
             <span class="flex-1 min-w-0 flex flex-col">
               <span
-                class="text-[14px] font-semibold text-[var(--ink)] overflow-hidden text-ellipsis whitespace-nowrap"
+                class="text-sm font-semibold text-slate-800 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap"
                 >{{ e.u }}</span
               >
-              <span class="text-[12px] text-[var(--ink-3)]">{{ e.s }}</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500">{{ e.s }}</span>
             </span>
-            <AppIcon name="chevron" :size="16" class="-rotate-90 text-[var(--ink-3)] flex-none" />
+            <AppIcon
+              name="chevron"
+              :size="16"
+              class="-rotate-90 text-slate-400 dark:text-slate-500 flex-none"
+            />
           </button>
         </div>
       </div>

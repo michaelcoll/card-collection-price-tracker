@@ -7,12 +7,12 @@ defineProps<{
 
 <template>
   <div
-    class="w-[30px] h-[30px] rounded-full shrink-0 relative bg-[radial-gradient(circle_at_35%_28%,var(--surface-3),var(--surface))] border border-solid border-[var(--line-2)] grid place-items-center [font-family:var(--font-mono)] text-[11px] text-[var(--ink-2)]"
+    class="w-8 h-8 rounded-full shrink-0 relative bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 grid place-items-center font-mono text-xs text-slate-600 dark:text-slate-300"
   >
     {{ initials }}
     <span
       v-if="online"
-      class="absolute right-[-1px] bottom-[-1px] w-[9px] h-[9px] rounded-full bg-[var(--cyan)] border-2 border-solid border-[var(--bg)] shadow-[0_0_6px_var(--cyan-glow)]"
+      class="absolute -right-px -bottom-px w-2.5 h-2.5 rounded-full bg-cyan-500 dark:bg-cyan-400 border-2 border-slate-100 dark:border-zinc-950"
     />
   </div>
 </template>
