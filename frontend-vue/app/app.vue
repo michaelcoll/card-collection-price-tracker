@@ -6,8 +6,10 @@ if (import.meta.client) {
   if (saved === 'light' || saved === 'dark') theme.value = saved;
 }
 
+const htmlClass = computed(() => (theme.value === 'dark' ? 'dark' : ''));
+
 useHead({
-  htmlAttrs: { 'data-theme': theme },
+  htmlAttrs: { class: htmlClass },
   bodyAttrs: { 'data-bg': 'aurora' },
 });
 
@@ -25,39 +27,34 @@ const route = useRoute();
 const isActive = (path: string) => route.path === path;
 
 const navLinkClass = (path: string) => [
-  'relative flex items-center px-[16px] text-[13.5px] font-medium transition-[color,background] duration-[180ms] whitespace-nowrap',
+  'relative flex items-center px-4 text-sm font-medium transition-[color,background] duration-200 whitespace-nowrap',
   isActive(path)
-    ? 'text-[var(--cyan)] bg-[linear-gradient(180deg,color-mix(in_oklch,var(--cyan)_22%,transparent),color-mix(in_oklch,var(--cyan)_4%,transparent))] shadow-[inset_0_-2px_0_var(--cyan),inset_0_1px_0_color-mix(in_oklch,var(--cyan)_30%,transparent),0_8px_22px_-16px_var(--cyan-glow)]'
-    : 'text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--line-3)]',
+    ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 dark:bg-cyan-400/10 shadow-[inset_0_-2px_0_currentColor]'
+    : 'text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/5',
 ];
 
 const bottomNavLinkClass = (path: string) => [
-  'flex-1 flex flex-col items-center gap-[3px] text-[10px] p-[4px] font-semibold [font-family:var(--font-mono)] tracking-[0.02em] transition-colors duration-[150ms]',
-  isActive(path) ? 'text-[var(--cyan)]' : 'text-[var(--ink-3)]',
+  'flex-1 flex flex-col items-center gap-1 text-2xs p-1 font-semibold font-mono tracking-wide transition-colors duration-150',
+  isActive(path) ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500',
 ];
 </script>
 
 <template>
-  <div class="min-h-screen pb-[96px]">
+  <div class="min-h-screen pb-24">
     <NuxtRouteAnnouncer />
 
     <!-- HEADER -->
     <header
-      class="sticky top-0 z-[40] [backdrop-filter:blur(var(--glass-blur))_saturate(140%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(140%)] bg-[color-mix(in_srgb,var(--bg)_62%,transparent)] border-b border-solid border-[var(--line)]"
+      class="sticky top-0 z-40 backdrop-blur-md bg-slate-100/60 dark:bg-zinc-950/60 border-b border-slate-200 dark:border-white/10"
     >
-      <div
-        class="max-w-[var(--maxw)] mx-auto px-[22px] max-[860px]:px-[16px] h-[62px] max-[860px]:h-[56px] flex items-center gap-[18px]"
-      >
-        <NuxtLink
-          to="/"
-          class="flex items-center gap-[10px] [font-family:var(--font-display)] cursor-pointer"
-        >
+      <div class="max-w-[1180px] mx-auto px-5 max-md:px-4 h-16 max-md:h-14 flex items-center gap-4">
+        <NuxtLink to="/" class="flex items-center gap-2.5 font-display cursor-pointer">
           <span
-            class="w-[30px] h-[30px] rounded-[9px] shrink-0 grid place-items-center overflow-hidden bg-[linear-gradient(150deg,color-mix(in_oklch,var(--cyan)_30%,var(--surface)),var(--surface-2))] border border-solid border-[var(--cyan-line)] shadow-[0_0_18px_-6px_var(--cyan-glow)]"
+            class="w-8 h-8 rounded-lg shrink-0 grid place-items-center overflow-hidden bg-cyan-500/15 dark:bg-cyan-400/15 border border-cyan-500/30 dark:border-cyan-400/30"
           >
             <svg
               viewBox="0 0 28 28"
-              class="w-[17px] h-[17px]"
+              class="w-4 h-4"
               fill="none"
               stroke-width="2.2"
               stroke-linejoin="round"
@@ -83,12 +80,12 @@ const bottomNavLinkClass = (path: string) => [
               />
             </svg>
           </span>
-          <span class="font-semibold text-[16px] tracking-[-0.01em]"
-            >Arcane <b class="text-[var(--cyan)] font-semibold">Exchange</b></span
+          <span class="font-semibold text-base tracking-tight"
+            >Arcane <b class="text-cyan-600 dark:text-cyan-400 font-semibold">Exchange</b></span
           >
         </NuxtLink>
 
-        <nav class="flex gap-[2px] ml-[8px] self-stretch max-[860px]:hidden">
+        <nav class="flex gap-0.5 ml-2 self-stretch max-md:hidden">
           <NuxtLink to="/collection" :class="navLinkClass('/collection')">Collection</NuxtLink>
           <NuxtLink to="/trade" :class="navLinkClass('/trade')">Échanges</NuxtLink>
           <NuxtLink to="/find" :class="navLinkClass('/find')">Rechercher</NuxtLink>
@@ -101,13 +98,13 @@ const bottomNavLinkClass = (path: string) => [
           <NuxtLink
             v-if="!isSignedIn"
             to="/sign-in"
-            class="inline-flex items-center gap-[8px] justify-center px-[11px] py-[6px] rounded-[8px] text-[12px] font-semibold border border-solid border-[var(--line)] text-[var(--ink-2)] bg-transparent transition-all duration-[160ms] whitespace-nowrap leading-none hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--line-3)] hover:-translate-y-px active:translate-y-0"
+            class="inline-flex items-center gap-2 justify-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
             >Connexion
           </NuxtLink>
         </template>
 
         <button
-          class="w-[34px] h-[34px] rounded-[9px] grid place-items-center border border-solid border-[var(--line)] text-[var(--ink-2)] bg-[var(--line-3)] transition-all duration-[180ms] hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]"
+          class="w-9 h-9 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
           @click="toggleTheme"
           :aria-label="theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'"
           :title="theme === 'dark' ? 'Mode clair' : 'Mode sombre'"
@@ -116,13 +113,13 @@ const bottomNavLinkClass = (path: string) => [
         </button>
 
         <button
-          class="w-[34px] h-[34px] rounded-[9px] grid place-items-center border border-solid border-[var(--line)] text-[var(--ink-2)] bg-[var(--line-3)] transition-all duration-[180ms] hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--surface-2)] max-[860px]:hidden"
+          class="w-9 h-9 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800 max-md:hidden"
           aria-label="Notifications"
         >
           <Icon name="lucide:bell" size="17" />
         </button>
 
-        <div v-if="isLoaded && isSignedIn" class="user-btn-wrap flex items-center h-[34px]">
+        <div v-if="isLoaded && isSignedIn" class="user-btn-wrap flex items-center h-9">
           <UserButton :appearance="clerkAppearance" />
         </div>
       </div>
@@ -135,7 +132,7 @@ const bottomNavLinkClass = (path: string) => [
 
     <!-- MOBILE BOTTOM NAV -->
     <nav
-      class="hidden max-[860px]:flex max-[860px]:fixed max-[860px]:left-0 max-[860px]:right-0 max-[860px]:bottom-0 max-[860px]:z-[50] max-[860px]:pt-[9px] max-[860px]:px-[8px] max-[860px]:pb-[calc(9px_+_env(safe-area-inset-bottom))] max-[860px]:bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] max-[860px]:[backdrop-filter:blur(var(--glass-blur))_saturate(140%)] max-[860px]:[-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(140%)] max-[860px]:border-t max-[860px]:border-solid max-[860px]:border-[var(--line)]"
+      class="hidden max-md:flex max-md:fixed max-md:left-0 max-md:right-0 max-md:bottom-0 max-md:z-50 max-md:pt-2 max-md:px-2 max-md:pb-[calc(0.5rem+env(safe-area-inset-bottom))] max-md:bg-slate-100/80 dark:max-md:bg-zinc-950/80 max-md:backdrop-blur-md max-md:border-t max-md:border-slate-200 dark:max-md:border-white/10"
     >
       <NuxtLink to="/collection" :class="bottomNavLinkClass('/collection')">
         <Icon name="lucide:layers" size="21" />
@@ -173,15 +170,8 @@ const bottomNavLinkClass = (path: string) => [
   border-radius: 50%;
 }
 
-[data-theme='dark'] .cl-userButtonTrigger.cl-open,
-[data-theme='dark'] .cl-userButtonTrigger:focus-visible {
-  box-shadow:
-    0 0 0 2px var(--bg),
-    0 0 0 4px var(--cyan) !important;
-}
-
-[data-theme='light'] .cl-userButtonTrigger.cl-open,
-[data-theme='light'] .cl-userButtonTrigger:focus-visible {
+.cl-userButtonTrigger.cl-open,
+.cl-userButtonTrigger:focus-visible {
   box-shadow:
     0 0 0 2px var(--bg),
     0 0 0 4px var(--cyan) !important;

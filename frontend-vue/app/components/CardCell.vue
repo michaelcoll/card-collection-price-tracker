@@ -32,11 +32,11 @@ const dealInfo = computed(() => {
 const dealTagClass = computed(() => {
   if (!dealInfo.value) return '';
   const kinds: Record<string, string> = {
-    good: 'text-[var(--good)] bg-[var(--good-fill)]',
-    bad: 'text-[var(--down)] bg-[var(--down-fill)]',
-    par: 'text-[var(--ink-3)]',
+    good: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/15',
+    bad: 'text-red-500 dark:text-red-400 bg-red-500/15',
+    par: 'text-slate-400 dark:text-slate-500',
   };
-  return `[font-family:var(--font-mono)] text-[10.5px] font-bold px-[5px] py-[1px] rounded-[5px] ${kinds[dealInfo.value.kind] ?? ''}`;
+  return `font-mono text-2xs font-bold px-1.5 py-px rounded ${kinds[dealInfo.value.kind] ?? ''}`;
 });
 </script>
 
@@ -51,16 +51,16 @@ const dealTagClass = computed(() => {
       :size="size"
       @click="emit('click')"
     />
-    <div class="flex flex-col gap-[3px]">
+    <div class="flex flex-col gap-1">
       <span
-        class="text-[12.5px] font-semibold text-[var(--ink)] leading-[1.25] overflow-hidden text-ellipsis whitespace-nowrap"
+        class="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight overflow-hidden text-ellipsis whitespace-nowrap"
         >{{ name }}</span
       >
 
       <!-- no deal -->
       <span
         v-if="!deal || deal === 'none'"
-        class="[font-family:var(--font-mono)] text-[12px] text-[var(--ink)] font-semibold"
+        class="font-mono text-xs text-slate-800 dark:text-slate-100 font-semibold"
       >
         <template v-if="price != null">{{ formatPrice(price) }}</template>
       </span>
@@ -69,17 +69,16 @@ const dealTagClass = computed(() => {
       <template v-else-if="deal === 'compare' && dealInfo">
         <span
           v-if="dealInfo.kind === 'par'"
-          class="[font-family:var(--font-mono)] text-[12px] text-[var(--ink)] font-semibold"
+          class="font-mono text-xs text-slate-800 dark:text-slate-100 font-semibold"
           >{{ formatPrice(trend) }}</span
         >
         <span v-else class="flex items-center gap-1.5 flex-wrap">
-          <span
-            class="[font-family:var(--font-mono)] text-[12px] text-[var(--ink)] font-semibold"
-            >{{ formatPrice(trend) }}</span
-          >
+          <span class="font-mono text-xs text-slate-800 dark:text-slate-100 font-semibold">{{
+            formatPrice(trend)
+          }}</span>
           <span
             v-if="size !== 'sm'"
-            class="[font-family:var(--font-mono)] text-[11px] text-[var(--ink-3)] line-through"
+            class="font-mono text-xs text-slate-400 dark:text-slate-500 line-through"
             >{{ formatPrice(purchased) }}</span
           >
           <span :class="dealTagClass">{{ dealInfo.sign }}{{ dealInfo.abs }}%</span>
@@ -87,7 +86,7 @@ const dealTagClass = computed(() => {
       </template>
       <span
         v-else-if="deal === 'compare'"
-        class="[font-family:var(--font-mono)] text-[12px] text-[var(--ink)] font-semibold"
+        class="font-mono text-xs text-slate-800 dark:text-slate-100 font-semibold"
       >
         <template v-if="purchased != null">{{ formatPrice(purchased) }}</template>
         <template v-else-if="price != null">{{ formatPrice(price) }}</template>

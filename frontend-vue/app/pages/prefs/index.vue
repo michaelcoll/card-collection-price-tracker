@@ -57,23 +57,17 @@ const showValOptions = [
 </script>
 
 <template>
-  <div
-    class="max-w-[680px] mx-auto px-[22px] pb-[40px] pt-[28px] max-[860px]:px-[16px] max-[860px]:pt-[20px] max-[860px]:pb-[30px]"
-  >
-    <h2
-      class="[font-family:var(--font-display)] font-semibold text-[20px] tracking-[-0.015em] mb-[18px]"
-    >
-      Préférences
-    </h2>
+  <div class="max-w-[680px] mx-auto px-5 pb-10 pt-7 max-md:px-4 max-md:pt-5 max-md:pb-8">
+    <h2 class="font-display font-semibold text-xl tracking-tight mb-4">Préférences</h2>
 
     <!-- COMPTE -->
     <div
-      class="bg-[var(--glass-bg)] [backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] border border-solid border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow)] p-[18px] mb-[22px]"
+      class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg p-4 mb-6"
     >
-      <div class="flex items-center justify-between gap-[14px]">
-        <div class="flex items-center gap-[13px]">
+      <div class="flex items-center justify-between gap-3.5">
+        <div class="flex items-center gap-3">
           <div
-            class="w-[30px] h-[30px] rounded-full shrink-0 relative bg-[radial-gradient(circle_at_35%_28%,var(--surface-3),var(--surface))] border border-solid border-[var(--line-2)] grid place-items-center [font-family:var(--font-mono)] text-[11px] text-[var(--ink-2)] overflow-hidden"
+            class="w-8 h-8 rounded-full shrink-0 relative bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 grid place-items-center font-mono text-xs text-slate-600 dark:text-slate-300 overflow-hidden"
           >
             <img
               v-if="user?.imageUrl"
@@ -83,21 +77,21 @@ const showValOptions = [
             />
             <template v-else>{{ initials }}</template>
           </div>
-          <div class="flex flex-col gap-[2px]">
+          <div class="flex flex-col gap-0.5">
             <span
-              class="text-[15px] font-semibold text-[var(--ink)] overflow-hidden text-ellipsis whitespace-nowrap"
+              class="text-base font-semibold text-slate-800 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap"
               >{{ user?.fullName ?? user?.username ?? '—' }}</span
             >
-            <span class="text-[12px] text-[var(--ink-3)] flex items-center gap-[5px]">
+            <span class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
               {{ user?.primaryEmailAddress?.emailAddress ?? '' }} ·
-              <span class="text-[var(--violet)] inline-flex items-center gap-[3px]">
+              <span class="text-violet-500 dark:text-violet-300 inline-flex items-center gap-1">
                 <Icon name="lucide:shield" size="12" /> géré par Clerk
               </span>
             </span>
           </div>
         </div>
         <button
-          class="inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] rounded-[8px] text-[12px] font-semibold border border-solid border-[var(--line)] text-[var(--ink-2)] bg-transparent transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--line-3)] hover:-translate-y-px active:translate-y-0"
+          class="inline-flex items-center gap-2 justify-center py-1.5 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
           @click="manageOpen = true"
         >
           Gérer le compte <Icon name="lucide:arrow-up-right" size="14" />
@@ -108,42 +102,40 @@ const showValOptions = [
     <!-- MODAL CLERK USER PROFILE -->
     <div
       v-if="manageOpen"
-      class="fixed inset-0 z-[80] bg-[color-mix(in_srgb,black_58%,transparent)] [backdrop-filter:blur(4px)] [-webkit-backdrop-filter:blur(4px)] animate-[fade_0.2s_ease] grid place-items-center p-[20px]"
+      class="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm animate-[fade_0.2s_ease] grid place-items-center p-5"
       @click.self="manageOpen = false"
     >
-      <div class="p-0 overflow-hidden rounded-[var(--r-xl)]" @click.stop>
+      <div class="p-0 overflow-hidden rounded-3xl" @click.stop>
         <UserProfile />
       </div>
     </div>
 
     <!-- APPARENCE -->
-    <section class="mb-[26px]">
-      <div class="flex flex-col gap-[5px] mb-[12px]">
+    <section class="mb-6">
+      <div class="flex flex-col gap-1.5 mb-3">
         <span
-          class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
+          class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
           >Apparence · thème d'accent</span
         >
-        <span class="text-[12.5px] text-[var(--ink-3)]"
+        <span class="text-xs text-slate-400 dark:text-slate-500"
           >La couleur d'action de toute l'app — boutons, valeurs en hausse, états actifs.</span
         >
       </div>
-      <div class="grid [grid-template-columns:repeat(auto-fit,minmax(146px,1fr))] gap-[10px]">
+      <div class="grid [grid-template-columns:repeat(auto-fit,minmax(146px,1fr))] gap-2.5">
         <button
           v-for="th in THEMES"
           :key="th.c"
           :data-on="accent === th.c"
           :style="{ '--tc': th.c } as any"
-          class="flex items-center gap-[12px] px-[13px] py-[12px] rounded-[13px] border border-solid border-[var(--line)] bg-[var(--surface)] text-left relative transition-all duration-[160ms] ease hover:border-[var(--line-2)] hover:bg-[var(--surface-2)] hover:-translate-y-px data-[on=true]:border-[var(--tc)] data-[on=true]:bg-[color-mix(in_srgb,var(--tc)_11%,var(--surface))] data-[on=true]:shadow-[inset_0_0_0_1px_var(--tc),0_0_24px_-12px_var(--tc)]"
+          class="flex items-center gap-3 px-3 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-left relative transition-all duration-150 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:-translate-y-px data-[on=true]:border-[var(--tc)] data-[on=true]:shadow-[inset_0_0_0_1px_var(--tc)]"
           @click="setAccent(th.c)"
         >
-          <span
-            class="w-[30px] h-[30px] rounded-[9px] shrink-0 bg-[linear-gradient(140deg,var(--tc),color-mix(in_oklch,var(--tc)_50%,#131313))] shadow-[inset_0_1px_1px_rgba(255,255,255,0.35),0_0_16px_-5px_var(--tc)]"
-          />
-          <div class="flex flex-col gap-[1px]">
-            <span class="text-[13.5px] font-semibold text-[var(--ink)]">{{ th.name }}</span>
-            <span class="text-[11px] text-[var(--ink-3)] [font-family:var(--font-mono)]">{{
-              th.sub
+          <span class="w-8 h-8 rounded-lg shrink-0 bg-[var(--tc)] shadow-inner" />
+          <div class="flex flex-col gap-px">
+            <span class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{
+              th.name
             }}</span>
+            <span class="text-xs text-slate-400 dark:text-slate-500 font-mono">{{ th.sub }}</span>
           </div>
           <span v-if="accent === th.c" class="ml-auto text-[var(--tc)] flex">
             <Icon name="lucide:check" size="17" />
@@ -153,56 +145,60 @@ const showValOptions = [
     </section>
 
     <!-- CANAUX DE CONTACT -->
-    <section class="mb-[26px]">
-      <div class="flex flex-col gap-[5px] mb-[12px]">
+    <section class="mb-6">
+      <div class="flex flex-col gap-1.5 mb-3">
         <span
-          class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap"
+          class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
           >Canaux de contact pour les échanges</span
         >
-        <span class="text-[12.5px] text-[var(--ink-3)]"
+        <span class="text-xs text-slate-400 dark:text-slate-500"
           >Ces canaux alimentent le bouton « Contacter » de tes transactions.</span
         >
       </div>
-      <div class="flex flex-col gap-[8px]">
+      <div class="flex flex-col gap-2">
         <div
           v-for="ch in channels"
           :key="ch.name"
-          class="flex items-center gap-[13px] px-[14px] py-[11px] rounded-[12px] border border-solid border-[var(--line)] bg-[var(--surface)] transition-all duration-[150ms] ease hover:border-[var(--line-2)] hover:bg-[var(--surface-2)]"
+          class="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 transition-all duration-150 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
         >
           <span
-            :class="ch.connected ? 'text-[var(--cyan)]' : 'text-[var(--ink-3)]'"
-            class="grid place-items-center w-[30px] shrink-0"
+            :class="
+              ch.connected
+                ? 'text-cyan-600 dark:text-cyan-400'
+                : 'text-slate-400 dark:text-slate-500'
+            "
+            class="grid place-items-center w-8 shrink-0"
           >
             <Icon :name="ch.icon" size="19" />
           </span>
           <div class="flex-1 min-w-0">
             <div
-              class="text-[14px] font-semibold text-[var(--ink)] overflow-hidden text-ellipsis whitespace-nowrap"
+              class="text-sm font-semibold text-slate-800 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap"
             >
               {{ ch.name }}
             </div>
             <div
               v-if="ch.connected"
-              class="text-[12px] text-[var(--ink-2)] flex items-center gap-[8px] flex-wrap [font-family:var(--font-mono)] [font-feature-settings:'tnum'_1,'ss01'_1] tracking-[-0.01em]"
+              class="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2 flex-wrap font-mono tracking-tight"
             >
               {{ ch.value }}
             </div>
             <div
               v-else
-              class="text-[12px] text-[var(--ink-3)] flex items-center gap-[8px] flex-wrap"
+              class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-2 flex-wrap"
             >
               Non connecté
             </div>
           </div>
           <button
             v-if="ch.connected"
-            class="inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] rounded-[8px] text-[12px] font-semibold border border-solid border-[var(--line)] text-[var(--ink-2)] bg-transparent transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:text-[var(--ink)] hover:border-[var(--line-2)] hover:bg-[var(--line-3)] hover:-translate-y-px active:translate-y-0"
+            class="inline-flex items-center gap-2 justify-center py-1.5 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
           >
             Modifier
           </button>
           <button
             v-else
-            class="inline-flex items-center gap-[8px] justify-center py-[6px] px-[11px] rounded-[8px] text-[12px] font-semibold border border-solid border-[var(--line-2)] text-[var(--ink)] bg-[var(--surface-2)] transition-all duration-[160ms] ease whitespace-nowrap leading-none hover:bg-[var(--surface-3)] hover:border-[var(--line-2)] hover:-translate-y-px active:translate-y-0"
+            class="inline-flex items-center gap-2 justify-center py-1.5 px-3 rounded-lg text-xs font-semibold border border-slate-300 dark:border-white/15 text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-zinc-800 transition-all duration-150 whitespace-nowrap leading-none hover:bg-slate-200 dark:hover:bg-zinc-700 hover:border-slate-300 dark:hover:border-white/15 hover:-translate-y-px active:translate-y-0"
           >
             <Icon name="lucide:plus" size="14" /> Ajouter
           </button>
@@ -213,60 +209,58 @@ const showValOptions = [
     <!-- CONFIDENTIALITÉ -->
     <section>
       <span
-        class="[font-family:var(--font-mono)] text-[10.5px] font-medium uppercase tracking-[0.13em] text-[var(--ink-3)] whitespace-nowrap block mb-[12px]"
+        class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap block mb-3"
         >Confidentialité de la collection</span
       >
       <div
-        class="bg-[var(--glass-bg)] [backdrop-filter:blur(var(--glass-blur))_saturate(130%)] [-webkit-backdrop-filter:blur(var(--glass-blur))_saturate(130%)] border border-solid border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow)] p-[6px]"
+        class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg p-1.5"
       >
         <div class="flex flex-col gap-0">
-          <div class="flex items-center justify-between gap-[16px] px-[14px] py-[14px]">
-            <div class="flex flex-col gap-[2px]">
-              <span class="font-semibold text-[14px]">Visibilité de la collection</span>
-              <span class="text-[12.5px] text-[var(--ink-3)]"
+          <div class="flex items-center justify-between gap-4 px-3.5 py-3.5">
+            <div class="flex flex-col gap-0.5">
+              <span class="font-semibold text-sm">Visibilité de la collection</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500"
                 >Qui peut voir tes cartes pour proposer un échange</span
               >
             </div>
             <SegToggle v-model="vis" :options="visOptions" size="sm" />
           </div>
 
-          <div class="h-[1px] bg-[var(--line)]" />
+          <div class="h-px bg-slate-200 dark:bg-white/10" />
 
-          <div class="flex items-center justify-between gap-[16px] px-[14px] py-[14px]">
-            <div class="flex flex-col gap-[2px]">
-              <span class="font-semibold text-[14px]">Afficher la valeur estimée</span>
-              <span class="text-[12.5px] text-[var(--ink-3)]"
+          <div class="flex items-center justify-between gap-4 px-3.5 py-3.5">
+            <div class="flex flex-col gap-0.5">
+              <span class="font-semibold text-sm">Afficher la valeur estimée</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500"
                 >Montant total visible sur ton profil public</span
               >
             </div>
             <SegToggle v-model="showVal" :options="showValOptions" size="sm" />
           </div>
 
-          <div class="h-[1px] bg-[var(--line)]" />
+          <div class="h-px bg-slate-200 dark:bg-white/10" />
 
-          <div class="flex items-center justify-between gap-[16px] px-[14px] py-[14px]">
-            <div class="flex flex-col gap-[2px]">
-              <span class="font-semibold text-[14px]"
-                >Apparaître dans les recherches de proximité</span
-              >
-              <span class="text-[12.5px] text-[var(--ink-3)]"
+          <div class="flex items-center justify-between gap-4 px-3.5 py-3.5">
+            <div class="flex flex-col gap-0.5">
+              <span class="font-semibold text-sm">Apparaître dans les recherches de proximité</span>
+              <span class="text-xs text-slate-400 dark:text-slate-500"
                 >Les joueurs proches peuvent te trouver par carte ou decklist</span
               >
             </div>
             <button
               :aria-pressed="proximity"
               :class="[
-                'w-[46px] h-[27px] rounded-full shrink-0 relative transition-all duration-[200ms] cursor-pointer',
+                'w-12 h-7 rounded-full shrink-0 relative transition-all duration-200 cursor-pointer',
                 proximity
-                  ? 'bg-[var(--cyan)] border border-solid border-transparent shadow-[0_0_14px_-3px_var(--cyan-glow)]'
-                  : 'bg-[var(--surface-3)] border border-solid border-[var(--line-2)]',
+                  ? 'bg-cyan-500 dark:bg-cyan-400 border border-transparent'
+                  : 'bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15',
               ]"
               @click="proximity = !proximity"
             >
               <span
                 :class="[
-                  'absolute top-[2px] w-[21px] h-[21px] rounded-full transition-[left] duration-[220ms] [transition-timing-function:cubic-bezier(0.5,1.3,0.5,1)]',
-                  proximity ? 'left-[21px] bg-[var(--on-accent)]' : 'left-[2px] bg-[var(--ink-2)]',
+                  'absolute top-1 w-5 h-5 rounded-full transition-[left] duration-200 ease-out',
+                  proximity ? 'left-6 bg-zinc-950' : 'left-1 bg-slate-500 dark:bg-slate-400',
                 ]"
               />
             </button>

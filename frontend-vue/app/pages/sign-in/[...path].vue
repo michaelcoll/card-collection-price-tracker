@@ -3,7 +3,7 @@ const { clerkAppearance } = useAppTheme();
 </script>
 
 <template>
-  <div class="max-w-[var(--maxw)] mx-auto px-[22px] pb-[40px] pt-[60px] flex justify-center">
+  <div class="max-w-[1180px] mx-auto px-5 pb-10 pt-16 flex justify-center">
     <SignIn :appearance="clerkAppearance" />
   </div>
 </template>

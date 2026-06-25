@@ -52,7 +52,7 @@ const onMove = (e: MouseEvent) => {
 <template>
   <div
     ref="graphRef"
-    class="relative w-full rounded-[12px] bg-[color-mix(in_srgb,black_18%,transparent)] border border-solid border-[var(--line-3)] overflow-hidden p-[2px]"
+    class="relative w-full rounded-xl bg-black/15 border border-slate-200 dark:border-white/5 overflow-hidden p-0.5"
     :style="{ height: height + 'px' }"
     @mousemove="onMove"
     @mouseleave="hover = null"
@@ -64,18 +64,18 @@ const onMove = (e: MouseEvent) => {
     >
       <defs>
         <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="var(--cyan)" stop-opacity="0.34" />
-          <stop offset="100%" stop-color="var(--cyan)" stop-opacity="0" />
+          <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.34" />
+          <stop offset="100%" stop-color="#22d3ee" stop-opacity="0" />
         </linearGradient>
       </defs>
-      <polygon class="[fill:url(#gfill)] [stroke:none]" :points="fillPts" />
+      <polygon class="fill-[url(#gfill)] stroke-none" :points="fillPts" />
       <polyline
-        class="[fill:none] [stroke:var(--cyan)] [stroke-width:2.5] [filter:drop-shadow(0_0_6px_var(--cyan-glow))]"
+        class="fill-none stroke-cyan-500 dark:stroke-cyan-400 [stroke-width:2.5]"
         :points="linePts"
       />
       <line
         v-if="hover"
-        class="[stroke:var(--line-2)] [stroke-width:1] [stroke-dasharray:3_3]"
+        class="stroke-slate-300 dark:stroke-white/15 stroke-1 [stroke-dasharray:3_3]"
         :x1="xs(hover.i)"
         y1="0"
         :x2="xs(hover.i)"
@@ -83,24 +83,23 @@ const onMove = (e: MouseEvent) => {
       />
       <circle
         v-if="hover"
-        class="[fill:var(--cyan)] [stroke:var(--bg)] [stroke-width:2]"
+        class="fill-cyan-500 dark:fill-cyan-400 stroke-slate-100 dark:stroke-zinc-950 stroke-2"
         :cx="xs(hover.i)"
         :cy="ys(hover.v)"
         r="4.5"
         vector-effect="non-scaling-stroke"
       />
     </svg>
+    <span class="absolute left-1.5 top-1 font-mono text-2xs text-slate-400 dark:text-slate-500">{{
+      hi
+    }}</span>
     <span
-      class="absolute left-[6px] top-[5px] [font-family:var(--font-mono)] text-[10px] text-[var(--ink-3)]"
-      >{{ hi }}</span
-    >
-    <span
-      class="absolute left-[6px] bottom-[5px] [font-family:var(--font-mono)] text-[10px] text-[var(--ink-3)]"
+      class="absolute left-1.5 bottom-1 font-mono text-2xs text-slate-400 dark:text-slate-500"
       >{{ lo }}</span
     >
     <div
       v-if="hover"
-      class="absolute pointer-events-none bg-[var(--surface-2)] border border-solid border-[var(--line-2)] rounded-[8px] px-[9px] py-[5px] [font-family:var(--font-mono)] text-[11px] whitespace-nowrap shadow-[0_8px_20px_-8px_rgba(0,0,0,0.8)] [transform:translate(-50%,-130%)]"
+      class="absolute pointer-events-none bg-white dark:bg-zinc-800 border border-slate-300 dark:border-white/15 rounded-lg px-2.5 py-1 font-mono text-xs whitespace-nowrap shadow-lg [transform:translate(-50%,-130%)]"
       :style="{ left: hover.px + '%', top: hover.py + '%' }"
     >
       {{ valueFmt?.(hover.v) }}

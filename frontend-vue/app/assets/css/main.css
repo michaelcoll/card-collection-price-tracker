@@ -73,8 +73,8 @@
   --maxw: 1180px;
 }
 
-/* ---- Light theme ---- */
-[data-theme='light'] {
+/* ---- Light theme (Tailwind dark-mode: applies when <html> has no .dark class) ---- */
+:root:not(.dark) {
   --bg: #eef0f2;
   --surface: #ffffff;
   --surface-2: oklch(0.975 0.003 250);
@@ -204,105 +204,6 @@ a {
   background-clip: padding-box;
 }
 
-/* ============================================================
-   TYPOGRAPHY HELPERS
-   ============================================================ */
-.display {
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-}
-
-.mono {
-  font-family: var(--font-mono);
-  font-feature-settings:
-    'tnum' 1,
-    'ss01' 1;
-  letter-spacing: -0.01em;
-}
-
-/* ============================================================
-   SURFACES
-   ============================================================ */
-.card-surface {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-}
-
-.tint-cyan {
-  background: var(--cyan-fill);
-  border: 1px solid var(--cyan-line);
-}
-
-.tint-violet {
-  background: var(--violet-fill);
-  border: 1px solid var(--violet-line);
-}
-
-/* ============================================================
-   BOTTOM NAV (mobile)
-   ============================================================ */
-.bottomnav {
-  display: none;
-}
-
-/* ============================================================
-   MISC
-   ============================================================ */
-.pricetag {
-  font-family: var(--font-mono);
-  font-weight: 600;
-}
-
-.up-arrow::before {
-  content: '▴ ';
-}
-
-.down-arrow::before {
-  content: '▾ ';
-}
-
-/* ============================================================
-   LAYOUT GRIDS
-   ============================================================ */
-.card-grid {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
-}
-
-.card-grid.size-sm {
-  gap: 13px;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-}
-
-.card-grid.size-lg {
-  gap: 24px;
-  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
-}
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media (max-width: 860px) {
-  .hide-mobile {
-    display: none !important;
-  }
-
-  .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-    gap: 14px;
-  }
-}
-
-@media (min-width: 861px) {
-  .show-mobile {
-    display: none !important;
-  }
-}
-
 textarea {
   outline: none;
   border: none;
@@ -319,28 +220,7 @@ input[type='range'] {
 }
 
 /* ============================================================
-   DEAL INDICATORS
-   ============================================================ */
-.deal-mini {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.deal-mini.good {
-  color: var(--good);
-}
-
-.deal-mini.bad {
-  color: var(--down);
-}
-
-.deal-mini.par {
-  color: var(--ink-3);
-}
-
-/* ============================================================
-   OVERLAYS / MODALS / SHEETS
+   OVERLAY / MODAL ANIMATIONS (used via Tailwind animate-[...])
    ============================================================ */
 @keyframes fade {
   from {
@@ -348,38 +228,11 @@ input[type='range'] {
   }
 }
 
-.modal {
-  width: 100%;
-  max-width: 480px;
-  padding: 22px;
-  background: var(--surface);
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-xl);
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 1);
-  animation: pop 0.26s cubic-bezier(0.3, 1.2, 0.4, 1);
-}
-
 @keyframes pop {
   from {
     opacity: 0;
     transform: translateY(14px) scale(0.97);
   }
-}
-
-.sheet {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 81;
-  max-height: 84vh;
-  overflow: auto;
-  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
-  background: var(--surface);
-  border-top: 1px solid var(--line-2);
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, 1);
-  animation: slideup 0.3s cubic-bezier(0.3, 1, 0.4, 1);
 }
 
 @keyframes slideup {

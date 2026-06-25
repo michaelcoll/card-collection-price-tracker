@@ -41,8 +41,26 @@ export default defineNuxtConfig({
   },
   tailwindcss: {
     config: {
-      corePlugins: {
-        preflight: false,
+      darkMode: 'class',
+      content: [
+        './app/components/**/*.{vue,js,ts}',
+        './app/layouts/**/*.vue',
+        './app/pages/**/*.vue',
+        './app/app.vue',
+        './app/**/*.{vue,js,ts}',
+      ],
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+            sans: ['Hanken Grotesk', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          },
+          fontSize: {
+            // micro labels (mono uppercase) — single non-standard token kept on purpose
+            '2xs': ['0.625rem', { lineHeight: '1rem' }], // 10px
+          },
+        },
       },
     },
   },
