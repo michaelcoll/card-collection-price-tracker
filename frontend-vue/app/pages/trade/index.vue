@@ -44,26 +44,26 @@ const modeOptions = [
 </script>
 
 <template>
-  <div class="max-w-[1180px] mx-auto px-5 pb-10 pt-7 max-md:px-4 max-md:pt-5 max-md:pb-8">
+  <div class="mx-auto max-w-[1180px] px-5 pt-7 pb-10 max-md:px-4 max-md:pt-5 max-md:pb-8">
     <!-- HEADER -->
-    <div class="flex items-center justify-between flex-wrap gap-3.5 mb-5">
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3.5">
       <div class="flex items-center gap-3">
         <button
-          class="w-9 h-9 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+          class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
         >
           <Icon name="lucide:chevron-left" size="16" />
         </button>
         <div class="flex items-center gap-2.5">
           <PlayerAvatar initials="M4" :online="true" />
           <div class="flex flex-col gap-px">
-            <h2 class="font-display font-semibold text-base tracking-tight">
+            <h2 class="font-display text-base font-semibold tracking-tight">
               Échange avec <span class="text-cyan-600 dark:text-cyan-400">@mizzix_42</span>
             </h2>
             <span class="text-xs text-slate-400 dark:text-slate-500">
               <Icon
                 name="mdi:star"
                 size="11"
-                class="text-violet-500 dark:text-violet-300 align-[-1px]"
+                class="align-[-1px] text-violet-500 dark:text-violet-300"
               />
               4,8 · 2,3 km · en ligne
             </span>
@@ -76,9 +76,9 @@ const modeOptions = [
     <!-- EDHREC INFO BANNER -->
     <div
       v-if="mode === 'edh'"
-      class="bg-violet-500/10 dark:bg-violet-400/10 backdrop-blur-md border border-violet-500/30 dark:border-violet-400/30 rounded-2xl shadow-lg px-4 py-3 mb-4 flex gap-2.5 items-start"
+      class="mb-4 flex items-start gap-2.5 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 shadow-lg backdrop-blur-md dark:border-violet-400/30 dark:bg-violet-400/10"
     >
-      <span class="text-violet-500 dark:text-violet-300 mt-px"
+      <span class="mt-px text-violet-500 dark:text-violet-300"
         ><Icon name="lucide:info" size="16"
       /></span>
       <span class="text-sm text-slate-600 dark:text-slate-300">
@@ -89,15 +89,15 @@ const modeOptions = [
 
     <!-- TRADE GRID -->
     <div
-      class="grid gap-4 items-stretch [grid-template-columns:1fr_auto_1fr] max-md:[grid-template-columns:1fr]"
+      class="grid [grid-template-columns:1fr_auto_1fr] items-stretch gap-4 max-md:[grid-template-columns:1fr]"
     >
       <!-- LEFT: Je donne -->
       <div
-        class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg p-4 flex flex-col gap-3"
+        class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/60"
       >
         <div class="flex items-center justify-between gap-4">
           <span
-            class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
+            class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
             >Je donne</span
           >
           <span class="text-xs text-slate-400 dark:text-slate-500">{{ give.length }} cartes</span>
@@ -106,12 +106,12 @@ const modeOptions = [
           <div
             v-for="(c, i) in give"
             :key="i"
-            class="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 transition-all duration-150 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+            class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-zinc-900 dark:hover:border-white/15 dark:hover:bg-zinc-800"
           >
             <MtgCard :name="c.name" :mini="true" class="w-7 flex-none" />
-            <div class="flex-1 min-w-0">
+            <div class="min-w-0 flex-1">
               <div
-                class="text-sm font-semibold text-slate-800 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap"
+                class="overflow-hidden text-sm font-semibold text-ellipsis whitespace-nowrap text-slate-800 dark:text-slate-100"
               >
                 {{ c.name }}
               </div>
@@ -127,25 +127,25 @@ const modeOptions = [
               {{ mode === 'eur' ? `€${c.eur}` : `${c.edh}%` }}
             </span>
             <button
-              class="w-7 h-7 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+              class="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
             >
               <Icon name="lucide:x" size="13" />
             </button>
           </div>
         </div>
         <button
-          class="flex items-center justify-center gap-2 p-3 text-slate-600 dark:text-slate-300 text-sm font-semibold border-[1.5px] border-dashed border-slate-300 dark:border-white/15 rounded-xl bg-black/10 transition-all duration-200 hover:border-cyan-500/40 dark:hover:border-cyan-400/40 hover:bg-cyan-500/10 dark:hover:bg-cyan-400/10"
+          class="flex items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-slate-300 bg-black/10 p-3 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-cyan-500/40 hover:bg-cyan-500/10 dark:border-white/15 dark:text-slate-300 dark:hover:border-cyan-400/40 dark:hover:bg-cyan-400/10"
         >
           <Icon name="lucide:plus" size="16" /> Ajouter une de mes cartes
         </button>
-        <div class="h-px bg-slate-200 dark:bg-white/10 mt-auto" />
+        <div class="mt-auto h-px bg-slate-200 dark:bg-white/10" />
         <div class="flex items-center justify-between gap-4">
           <span class="text-sm text-slate-400 dark:text-slate-500">{{
             mode === 'eur' ? 'Total' : 'Cumul inclusion'
           }}</span>
           <span
             :class="[
-              'font-mono font-bold tracking-tight whitespace-nowrap text-xl',
+              'font-mono text-xl font-bold tracking-tight whitespace-nowrap',
               mode === 'edh' ? 'text-violet-500 dark:text-violet-300' : '',
             ]"
           >
@@ -155,34 +155,34 @@ const modeOptions = [
       </div>
 
       <!-- CENTER: Balance split -->
-      <div class="flex flex-col items-center justify-center gap-3.5 min-w-[168px]">
-        <div class="flex flex-col items-center w-full max-w-[200px] gap-2">
-          <div class="w-full flex justify-between items-baseline">
+      <div class="flex min-w-[168px] flex-col items-center justify-center gap-3.5">
+        <div class="flex w-full max-w-[200px] flex-col items-center gap-2">
+          <div class="flex w-full items-baseline justify-between">
             <span
-              class="text-2xs tracking-wide uppercase text-slate-400 dark:text-slate-500 whitespace-nowrap"
+              class="text-2xs tracking-wide whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
               >Donne</span
             >
             <span
-              class="text-2xs tracking-wide uppercase text-slate-400 dark:text-slate-500 whitespace-nowrap"
+              class="text-2xs tracking-wide whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
               >Reçois</span
             >
           </div>
           <div
-            class="relative w-full h-3 rounded-full overflow-hidden flex bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-white/10"
+            class="relative flex h-3 w-full overflow-hidden rounded-full border border-slate-200 bg-slate-100 dark:border-white/10 dark:bg-zinc-800"
           >
             <span
-              class="h-full transition-[width] duration-500 ease-out bg-violet-500 dark:bg-violet-400"
+              class="h-full bg-violet-500 transition-[width] duration-500 ease-out dark:bg-violet-400"
               :style="{ width: 100 - getShare + '%' }"
             />
             <span
-              class="h-full transition-[width] duration-500 ease-out bg-cyan-500 dark:bg-cyan-400"
+              class="h-full bg-cyan-500 transition-[width] duration-500 ease-out dark:bg-cyan-400"
               :style="{ width: getShare + '%' }"
             />
             <span
-              class="absolute left-1/2 -top-0.5 -bottom-0.5 w-0.5 bg-slate-100 dark:bg-zinc-950 -translate-x-1/2 shadow-[0_0_0_1px_rgba(120,120,120,0.3)]"
+              class="absolute -top-0.5 -bottom-0.5 left-1/2 w-0.5 -translate-x-1/2 bg-slate-100 shadow-[0_0_0_1px_rgba(120,120,120,0.3)] dark:bg-zinc-950"
             />
           </div>
-          <div class="w-full flex justify-between items-baseline">
+          <div class="flex w-full items-baseline justify-between">
             <span class="font-mono text-sm font-semibold text-violet-500 dark:text-violet-300">{{
               fmt(giveTotal)
             }}</span>
@@ -192,10 +192,10 @@ const modeOptions = [
           </div>
           <div
             :class="[
-              'font-mono text-sm font-semibold text-center px-3 py-2 rounded-xl border',
+              'rounded-xl border px-3 py-2 text-center font-mono text-sm font-semibold',
               lean === 'even'
-                ? 'text-cyan-700 dark:text-cyan-300 border-cyan-500/30 dark:border-cyan-400/30 bg-cyan-500/10 dark:bg-cyan-400/10'
-                : 'text-violet-700 dark:text-violet-300 border-violet-500/30 dark:border-violet-400/30 bg-violet-500/10 dark:bg-violet-400/10',
+                ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300'
+                : 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-300',
             ]"
           >
             {{ verdict }}
@@ -203,7 +203,7 @@ const modeOptions = [
         </div>
         <button
           v-if="mode === 'edh'"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-violet-500/30 dark:border-violet-400/30 text-violet-700 dark:text-violet-300 bg-violet-500/10 dark:bg-violet-400/10 transition-all duration-150 whitespace-nowrap cursor-pointer select-none"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-violet-700 transition-all duration-150 select-none dark:border-violet-400/30 dark:bg-violet-400/10 dark:text-violet-300"
         >
           <Icon name="lucide:refresh-cw" size="12" />
           Voir aussi en € · €{{ giveEurSum }} ↔ €{{ getEurSum }}
@@ -212,11 +212,11 @@ const modeOptions = [
 
       <!-- RIGHT: Je reçois -->
       <div
-        class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg p-4 flex flex-col gap-3"
+        class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/60"
       >
         <div class="flex items-center justify-between gap-4">
           <span
-            class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
+            class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
             >Je reçois</span
           >
           <span class="text-xs text-slate-400 dark:text-slate-500">{{ get.length }} cartes</span>
@@ -225,12 +225,12 @@ const modeOptions = [
           <div
             v-for="(c, i) in get"
             :key="i"
-            class="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 transition-all duration-150 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+            class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-zinc-900 dark:hover:border-white/15 dark:hover:bg-zinc-800"
           >
             <MtgCard :name="c.name" :mini="true" class="w-7 flex-none" />
-            <div class="flex-1 min-w-0">
+            <div class="min-w-0 flex-1">
               <div
-                class="text-sm font-semibold text-slate-800 dark:text-slate-100 overflow-hidden text-ellipsis whitespace-nowrap"
+                class="overflow-hidden text-sm font-semibold text-ellipsis whitespace-nowrap text-slate-800 dark:text-slate-100"
               >
                 {{ c.name }}
               </div>
@@ -246,24 +246,24 @@ const modeOptions = [
               {{ mode === 'eur' ? `€${c.eur}` : `${c.edh}%` }}
             </span>
             <button
-              class="w-7 h-7 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+              class="grid h-7 w-7 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
             >
               <Icon name="lucide:x" size="13" />
             </button>
           </div>
         </div>
         <button
-          class="flex items-center justify-center gap-2 p-3 text-slate-600 dark:text-slate-300 text-sm font-semibold border-[1.5px] border-dashed border-slate-300 dark:border-white/15 rounded-xl bg-black/10 transition-all duration-200 hover:border-cyan-500/40 dark:hover:border-cyan-400/40 hover:bg-cyan-500/10 dark:hover:bg-cyan-400/10"
+          class="flex items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-slate-300 bg-black/10 p-3 text-sm font-semibold text-slate-600 transition-all duration-200 hover:border-cyan-500/40 hover:bg-cyan-500/10 dark:border-white/15 dark:text-slate-300 dark:hover:border-cyan-400/40 dark:hover:bg-cyan-400/10"
         >
           <Icon name="lucide:plus" size="16" /> Chercher dans sa collection
         </button>
-        <div class="h-px bg-slate-200 dark:bg-white/10 mt-auto" />
+        <div class="mt-auto h-px bg-slate-200 dark:bg-white/10" />
         <div class="flex items-center justify-between gap-4">
           <span class="text-sm text-slate-400 dark:text-slate-500">{{
             mode === 'eur' ? 'Total' : 'Cumul inclusion'
           }}</span>
           <span
-            class="font-mono font-bold tracking-tight whitespace-nowrap text-xl text-cyan-600 dark:text-cyan-400"
+            class="font-mono text-xl font-bold tracking-tight whitespace-nowrap text-cyan-600 dark:text-cyan-400"
             >{{ fmt(getTotal) }}</span
           >
         </div>
@@ -272,31 +272,31 @@ const modeOptions = [
 
     <!-- ACTIONS -->
     <div
-      class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg p-4 mt-5"
+      class="mt-5 rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/60"
     >
-      <div class="flex items-center justify-between flex-wrap gap-3.5">
+      <div class="flex flex-wrap items-center justify-between gap-3.5">
         <div class="flex flex-col gap-0.5">
           <span
-            class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
+            class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
             >Contact via le canal du joueur</span
           >
           <span class="text-xs text-slate-400 dark:text-slate-500"
             >Aucun paiement ni messagerie internes · redirection externe</span
           >
         </div>
-        <div class="flex items-center flex-wrap gap-2.5">
+        <div class="flex flex-wrap items-center gap-2.5">
           <button
-            class="inline-flex items-center gap-2 justify-center py-2.5 px-4 rounded-xl text-sm font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
+            class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-transparent px-4 py-2.5 text-sm leading-none font-semibold whitespace-nowrap text-slate-600 transition-all duration-150 hover:-translate-y-px hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 active:translate-y-0 dark:border-white/10 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-white/5 dark:hover:text-slate-100"
           >
             Enregistrer le brouillon
           </button>
           <button
-            class="inline-flex items-center gap-2 justify-center py-2.5 px-4 rounded-xl text-sm font-semibold border border-slate-300 dark:border-white/15 text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-zinc-800 transition-all duration-150 whitespace-nowrap leading-none hover:bg-slate-200 dark:hover:bg-zinc-700 hover:border-slate-300 dark:hover:border-white/15 hover:-translate-y-px active:translate-y-0"
+            class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-100 px-4 py-2.5 text-sm leading-none font-semibold whitespace-nowrap text-slate-800 transition-all duration-150 hover:-translate-y-px hover:border-slate-300 hover:bg-slate-200 active:translate-y-0 dark:border-white/15 dark:bg-zinc-800 dark:text-slate-100 dark:hover:border-white/15 dark:hover:bg-zinc-700"
           >
             Proposer l'échange
           </button>
           <button
-            class="inline-flex items-center gap-2 justify-center py-2.5 px-4 rounded-xl text-sm font-bold border border-transparent text-zinc-950 bg-cyan-500 dark:bg-cyan-400 shadow-lg transition-all duration-150 whitespace-nowrap leading-none hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
+            class="inline-flex items-center justify-center gap-2 rounded-xl border border-transparent bg-cyan-500 px-4 py-2.5 text-sm leading-none font-bold whitespace-nowrap text-zinc-950 shadow-lg transition-all duration-150 hover:-translate-y-px hover:bg-cyan-400 active:translate-y-0 dark:bg-cyan-400 dark:hover:bg-cyan-300"
           >
             <Icon name="simple-icons:discord" size="16" /> Contacter sur Discord
             <Icon name="lucide:arrow-up-right" size="14" />

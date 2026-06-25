@@ -45,16 +45,16 @@ const bottomNavLinkClass = (path: string) => [
 
     <!-- HEADER -->
     <header
-      class="sticky top-0 z-40 backdrop-blur-md bg-slate-100/60 dark:bg-zinc-950/60 border-b border-slate-200 dark:border-white/10"
+      class="sticky top-0 z-40 border-b border-slate-200 bg-slate-100/60 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/60"
     >
-      <div class="max-w-[1180px] mx-auto px-5 max-md:px-4 h-16 max-md:h-14 flex items-center gap-4">
-        <NuxtLink to="/" class="flex items-center gap-2.5 font-display cursor-pointer">
+      <div class="mx-auto flex h-16 max-w-[1180px] items-center gap-4 px-5 max-md:h-14 max-md:px-4">
+        <NuxtLink to="/" class="font-display flex cursor-pointer items-center gap-2.5">
           <span
-            class="w-8 h-8 rounded-lg shrink-0 grid place-items-center overflow-hidden bg-cyan-500/15 dark:bg-cyan-400/15 border border-cyan-500/30 dark:border-cyan-400/30"
+            class="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg border border-cyan-500/30 bg-cyan-500/15 dark:border-cyan-400/30 dark:bg-cyan-400/15"
           >
             <svg
               viewBox="0 0 28 28"
-              class="w-4 h-4"
+              class="h-4 w-4"
               fill="none"
               stroke-width="2.2"
               stroke-linejoin="round"
@@ -80,12 +80,12 @@ const bottomNavLinkClass = (path: string) => [
               />
             </svg>
           </span>
-          <span class="font-semibold text-base tracking-tight"
-            >Arcane <b class="text-cyan-600 dark:text-cyan-400 font-semibold">Exchange</b></span
+          <span class="text-base font-semibold tracking-tight"
+            >Arcane <b class="font-semibold text-cyan-600 dark:text-cyan-400">Exchange</b></span
           >
         </NuxtLink>
 
-        <nav class="flex gap-0.5 ml-2 self-stretch max-md:hidden">
+        <nav class="ml-2 flex gap-0.5 self-stretch max-md:hidden">
           <NuxtLink to="/collection" :class="navLinkClass('/collection')">Collection</NuxtLink>
           <NuxtLink to="/trade" :class="navLinkClass('/trade')">Échanges</NuxtLink>
           <NuxtLink to="/find" :class="navLinkClass('/find')">Rechercher</NuxtLink>
@@ -98,13 +98,13 @@ const bottomNavLinkClass = (path: string) => [
           <NuxtLink
             v-if="!isSignedIn"
             to="/sign-in"
-            class="inline-flex items-center gap-2 justify-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
+            class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-transparent px-3 py-1.5 text-xs leading-none font-semibold whitespace-nowrap text-slate-600 transition-all duration-150 hover:-translate-y-px hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 active:translate-y-0 dark:border-white/10 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-white/5 dark:hover:text-slate-100"
             >Connexion
           </NuxtLink>
         </template>
 
         <button
-          class="w-9 h-9 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+          class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
           @click="toggleTheme"
           :aria-label="theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'"
           :title="theme === 'dark' ? 'Mode clair' : 'Mode sombre'"
@@ -113,13 +113,13 @@ const bottomNavLinkClass = (path: string) => [
         </button>
 
         <button
-          class="w-9 h-9 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800 max-md:hidden"
+          class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 max-md:hidden dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
           aria-label="Notifications"
         >
           <Icon name="lucide:bell" size="17" />
         </button>
 
-        <div v-if="isLoaded && isSignedIn" class="user-btn-wrap flex items-center h-9">
+        <div v-if="isLoaded && isSignedIn" class="user-btn-wrap flex h-9 items-center">
           <UserButton :appearance="clerkAppearance" />
         </div>
       </div>
@@ -132,7 +132,7 @@ const bottomNavLinkClass = (path: string) => [
 
     <!-- MOBILE BOTTOM NAV -->
     <nav
-      class="hidden max-md:flex max-md:fixed max-md:left-0 max-md:right-0 max-md:bottom-0 max-md:z-50 max-md:pt-2 max-md:px-2 max-md:pb-[calc(0.5rem+env(safe-area-inset-bottom))] max-md:bg-slate-100/80 dark:max-md:bg-zinc-950/80 max-md:backdrop-blur-md max-md:border-t max-md:border-slate-200 dark:max-md:border-white/10"
+      class="hidden max-md:fixed max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:z-50 max-md:flex max-md:border-t max-md:border-slate-200 max-md:bg-slate-100/80 max-md:px-2 max-md:pt-2 max-md:pb-[calc(0.5rem+env(safe-area-inset-bottom))] max-md:backdrop-blur-md dark:max-md:border-white/10 dark:max-md:bg-zinc-950/80"
     >
       <NuxtLink to="/collection" :class="bottomNavLinkClass('/collection')">
         <Icon name="lucide:layers" size="21" />

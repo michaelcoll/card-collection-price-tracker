@@ -56,10 +56,10 @@ const btnActiveColor = (o: Option) => {
 <template>
   <div
     ref="containerRef"
-    class="inline-flex p-1 gap-0.5 rounded-xl bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10 relative"
+    class="relative inline-flex gap-0.5 rounded-xl border border-slate-300 bg-slate-200 p-1 dark:border-white/10 dark:bg-black/20"
   >
     <span
-      class="absolute top-0.5 bottom-0.5 z-0 rounded-lg bg-white dark:bg-zinc-800 border border-slate-300 dark:border-white/15 shadow-md [transition:left_0.26s_cubic-bezier(0.5,1.3,0.5,1),width_0.26s_cubic-bezier(0.5,1.3,0.5,1)]"
+      class="absolute top-0.5 bottom-0.5 z-0 rounded-lg border border-slate-300 bg-white shadow-md [transition:left_0.26s_cubic-bezier(0.5,1.3,0.5,1),width_0.26s_cubic-bezier(0.5,1.3,0.5,1)] dark:border-white/15 dark:bg-zinc-800"
       :style="{ left: thumb.left + 'px', width: thumb.width + 'px', opacity: thumb.opacity }"
     />
     <button
@@ -68,7 +68,7 @@ const btnActiveColor = (o: Option) => {
       :title="o.title"
       :aria-label="o.title"
       :class="[
-        'relative z-10 rounded-lg font-semibold whitespace-nowrap transition-colors duration-200',
+        'relative z-10 inline-flex items-center justify-center rounded-lg font-semibold whitespace-nowrap transition-colors duration-200',
         size === 'sm' ? 'px-2.5 py-1.5 text-xs' : 'px-3.5 py-2 text-xs',
         btnActiveColor(o),
       ]"

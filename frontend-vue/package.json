@@ -12,12 +12,12 @@
     "lint:fix": "prettier --write \"**/*.{ts,mjs,vue,json,css,yml}\"",
     "typecheck": "nuxi typecheck"
   },
-  "packageManager": "pnpm@11.8.0",
+  "packageManager": "pnpm@11.9.0",
   "engines": {
     "node": ">=24"
   },
   "dependencies": {
-    "@clerk/nuxt": "~2.6.6",
+    "@clerk/nuxt": "~2.6.7",
     "@nuxt/eslint": "~1.16.0",
     "@nuxt/fonts": "~0.14.0",
     "@nuxt/icon": "~2.2.3",
@@ -32,6 +32,7 @@
   "devDependencies": {
     "@types/node": "~24.1.0",
     "eslint-config-prettier": "~10.1.8",
-    "prettier": "~3.8.4"
+    "prettier": "~3.8.4",
+    "prettier-plugin-tailwindcss": "~0.8.0"
   }
 }
