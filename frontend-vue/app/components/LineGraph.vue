@@ -52,7 +52,7 @@ const onMove = (e: MouseEvent) => {
 <template>
   <div
     ref="graphRef"
-    class="relative w-full rounded-xl bg-black/15 border border-slate-200 dark:border-white/5 overflow-hidden p-0.5"
+    class="relative w-full overflow-hidden rounded-xl border border-slate-200 bg-black/15 p-0.5 dark:border-white/5"
     :style="{ height: height + 'px' }"
     @mousemove="onMove"
     @mouseleave="hover = null"
@@ -60,7 +60,7 @@ const onMove = (e: MouseEvent) => {
     <svg
       :viewBox="`0 0 ${W} ${H}`"
       preserveAspectRatio="none"
-      class="w-full h-full block overflow-visible"
+      class="block h-full w-full overflow-visible"
     >
       <defs>
         <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
@@ -70,12 +70,12 @@ const onMove = (e: MouseEvent) => {
       </defs>
       <polygon class="fill-[url(#gfill)] stroke-none" :points="fillPts" />
       <polyline
-        class="fill-none stroke-cyan-500 dark:stroke-cyan-400 [stroke-width:2.5]"
+        class="fill-none stroke-cyan-500 [stroke-width:2.5] dark:stroke-cyan-400"
         :points="linePts"
       />
       <line
         v-if="hover"
-        class="stroke-slate-300 dark:stroke-white/15 stroke-1 [stroke-dasharray:3_3]"
+        class="stroke-slate-300 stroke-1 [stroke-dasharray:3_3] dark:stroke-white/15"
         :x1="xs(hover.i)"
         y1="0"
         :x2="xs(hover.i)"
@@ -83,23 +83,23 @@ const onMove = (e: MouseEvent) => {
       />
       <circle
         v-if="hover"
-        class="fill-cyan-500 dark:fill-cyan-400 stroke-slate-100 dark:stroke-zinc-950 stroke-2"
+        class="fill-cyan-500 stroke-slate-100 stroke-2 dark:fill-cyan-400 dark:stroke-zinc-950"
         :cx="xs(hover.i)"
         :cy="ys(hover.v)"
         r="4.5"
         vector-effect="non-scaling-stroke"
       />
     </svg>
-    <span class="absolute left-1.5 top-1 font-mono text-2xs text-slate-400 dark:text-slate-500">{{
+    <span class="text-2xs absolute top-1 left-1.5 font-mono text-slate-400 dark:text-slate-500">{{
       hi
     }}</span>
     <span
-      class="absolute left-1.5 bottom-1 font-mono text-2xs text-slate-400 dark:text-slate-500"
+      class="text-2xs absolute bottom-1 left-1.5 font-mono text-slate-400 dark:text-slate-500"
       >{{ lo }}</span
     >
     <div
       v-if="hover"
-      class="absolute pointer-events-none bg-white dark:bg-zinc-800 border border-slate-300 dark:border-white/15 rounded-lg px-2.5 py-1 font-mono text-xs whitespace-nowrap shadow-lg [transform:translate(-50%,-130%)]"
+      class="pointer-events-none absolute [transform:translate(-50%,-130%)] rounded-lg border border-slate-300 bg-white px-2.5 py-1 font-mono text-xs whitespace-nowrap shadow-lg dark:border-white/15 dark:bg-zinc-800"
       :style="{ left: hover.px + '%', top: hover.py + '%' }"
     >
       {{ valueFmt?.(hover.v) }}

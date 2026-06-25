@@ -83,23 +83,27 @@ const clearSets = () => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 h-full">
+  <div class="flex h-full flex-col gap-4">
     <!-- Search -->
     <div
-      class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-black/20 border border-slate-300 dark:border-white/15 transition-all duration-200 focus-within:border-cyan-500/40 dark:focus-within:border-cyan-400/40 focus-within:ring-4 focus-within:ring-cyan-500/10 focus-within:bg-slate-200 dark:focus-within:bg-black/30"
+      class="flex items-center gap-2.5 rounded-xl border border-slate-400/50 bg-slate-200/50 px-3 py-2 transition-all duration-200 focus-within:border-cyan-500/40 focus-within:bg-slate-200 focus-within:ring-4 focus-within:ring-cyan-500/10 dark:border-white/15 dark:bg-black/20 dark:focus-within:border-cyan-400/40 dark:focus-within:bg-black/30"
     >
-      <Icon name="lucide:search" :size="16" class="text-slate-400 dark:text-slate-500 shrink-0" />
+      <Icon
+        name="lucide:search"
+        :size="16"
+        class="shrink-0 text-slate-500/80 dark:text-slate-500"
+      />
       <input
         v-model="q"
         placeholder="Filtrer ma collection…"
-        class="flex-1 border-0 bg-transparent outline-none text-sm text-slate-800 dark:text-slate-100 min-w-0 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+        class="min-w-0 flex-1 border-0 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500"
       />
     </div>
 
     <!-- Rarity -->
     <div class="flex flex-col gap-2">
       <span
-        class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
+        class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
         >Rareté</span
       >
       <div class="flex flex-wrap gap-2">
@@ -107,7 +111,7 @@ const clearSets = () => {
           v-for="r in RARITIES"
           :key="r"
           :class="[
-            'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 whitespace-nowrap cursor-pointer select-none',
+            'inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-solid px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150 select-none',
             chipClass(r),
           ]"
           @click="emit('toggle', 'rar', r)"
@@ -120,18 +124,18 @@ const clearSets = () => {
     <!-- Price range -->
     <div class="flex flex-col gap-2">
       <span
-        class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
+        class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
         >Plage de prix</span
       >
       <div
-        class="bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-xl pt-4 px-3.5 pb-3"
+        class="rounded-xl border border-slate-400/50 bg-slate-200/50 px-3.5 pt-4 pb-3 dark:border-white/15 dark:bg-black/20"
       >
         <div class="relative h-5">
           <div
-            class="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-slate-300 dark:bg-zinc-700"
+            class="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full bg-slate-300 dark:bg-zinc-700"
           />
           <div
-            class="absolute top-1/2 -translate-y-1/2 h-1 rounded-full bg-cyan-500 dark:bg-cyan-400"
+            class="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-cyan-500 dark:bg-cyan-400"
             :style="{ left: pricePct(lo) + '%', right: 100 - pricePct(hi) + '%' }"
           />
           <input
@@ -154,14 +158,14 @@ const clearSets = () => {
             @input="onHiInput"
           />
         </div>
-        <div class="flex justify-between mt-3 gap-2">
+        <div class="mt-3 flex justify-between gap-2">
           <span
-            class="text-xs px-2.5 py-0.5 rounded-md bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/30 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300"
+            class="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-xs text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300"
             >€{{ lo }}</span
           >
-          <span class="font-mono text-slate-400 dark:text-slate-500 text-xs">—</span>
+          <span class="font-mono text-xs text-slate-400 dark:text-slate-500">—</span>
           <span
-            class="text-xs px-2.5 py-0.5 rounded-md bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/30 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300"
+            class="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-xs text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300"
             >€{{ hi }}{{ hi >= sliderMax ? '+' : '' }}</span
           >
         </div>
@@ -171,7 +175,7 @@ const clearSets = () => {
     <!-- Set / Extension — combobox -->
     <div class="flex flex-col gap-2">
       <span
-        class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
+        class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
         >Set / Extension</span
       >
       <div ref="cbxEl" class="relative">
@@ -179,8 +183,8 @@ const clearSets = () => {
         <button
           type="button"
           :class="[
-            'w-full min-h-[42px] flex items-center gap-2 py-2 pr-2.5 pl-3 rounded-xl text-left cursor-pointer border border-slate-300 dark:border-white/15 bg-slate-100 dark:bg-black/20 hover:bg-slate-200 dark:hover:bg-black/30 transition-[border-color,box-shadow,background] duration-150',
-            cbxOpen ? 'border-cyan-500/40 dark:border-cyan-400/40 ring-4 ring-cyan-500/10' : '',
+            'flex min-h-[42px] w-full cursor-pointer items-center gap-2 rounded-xl border border-solid border-slate-400/50 bg-slate-200/50 py-2 pr-2.5 pl-3 text-left transition-[border-color,box-shadow,background] duration-150 hover:bg-slate-200 dark:border-white/15 dark:bg-black/20 dark:hover:bg-black/30',
+            cbxOpen ? 'border-cyan-500/40 ring-4 ring-cyan-500/10 dark:border-cyan-400/40' : '',
           ]"
           aria-haspopup="listbox"
           :aria-expanded="cbxOpen"
@@ -188,21 +192,21 @@ const clearSets = () => {
         >
           <span
             v-if="active.sets.length === 0"
-            class="flex-1 text-slate-400 dark:text-slate-500 text-sm"
+            class="flex-1 text-sm text-slate-400 dark:text-slate-500"
             >Toutes les extensions</span
           >
-          <span v-else class="flex-1 flex flex-wrap gap-1.5 min-w-0">
+          <span v-else class="flex min-w-0 flex-1 flex-wrap gap-1.5">
             <span
               v-for="code in active.sets"
               :key="code"
-              class="inline-flex items-center gap-1.5 py-0.5 pr-1 pl-2 rounded-lg bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/30 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 text-xs font-medium max-w-full"
+              class="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 py-0.5 pr-1 pl-2 text-xs font-medium text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300"
             >
               <i :class="['ss', 'text-sm', `ss-${code.toLowerCase()}`]" />
-              <span class="overflow-hidden text-ellipsis whitespace-nowrap max-w-[120px]">{{
+              <span class="max-w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">{{
                 setNameByCode(code)
               }}</span>
               <i
-                class="grid place-items-center w-4 h-4 rounded text-cyan-700 dark:text-cyan-300 opacity-70 flex-none cursor-pointer hover:opacity-100 hover:bg-cyan-500/20"
+                class="grid h-4 w-4 flex-none cursor-pointer place-items-center rounded text-cyan-700 opacity-70 hover:bg-cyan-500/20 hover:opacity-100 dark:text-cyan-300"
                 role="button"
                 :aria-label="`Retirer ${setNameByCode(code)}`"
                 @click.stop="emit('toggle', 'sets', code)"
@@ -213,7 +217,7 @@ const clearSets = () => {
           </span>
           <span
             :class="[
-              'inline-flex text-slate-400 dark:text-slate-500 flex-none transition-transform duration-200',
+              'inline-flex flex-none text-slate-400 transition-transform duration-200 dark:text-slate-500',
               cbxOpen ? 'rotate-180' : '',
             ]"
           >
@@ -225,33 +229,33 @@ const clearSets = () => {
         <Transition name="cbx-pop">
           <div
             v-if="cbxOpen"
-            class="absolute left-0 right-0 top-[calc(100%+8px)] z-40 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-zinc-800 shadow-2xl p-2.5"
+            class="absolute top-[calc(100%+8px)] right-0 left-0 z-40 rounded-xl border border-slate-300 bg-white p-2.5 shadow-2xl dark:border-white/15 dark:bg-zinc-800"
             role="listbox"
             aria-multiselectable="true"
           >
             <!-- Search inside popup -->
             <div
-              class="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/10"
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 dark:border-white/10 dark:bg-black/20"
             >
               <Icon
                 name="lucide:search"
                 :size="15"
-                class="text-slate-400 dark:text-slate-500 shrink-0"
+                class="shrink-0 text-slate-400 dark:text-slate-500"
               />
               <input
                 v-model="cbxQuery"
                 placeholder="Filtrer une extension…"
-                class="flex-1 border-0 bg-transparent outline-none text-sm text-slate-800 dark:text-slate-100 min-w-0 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                class="min-w-0 flex-1 border-0 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
 
             <!-- Options list -->
             <div
-              class="flex flex-col gap-0.5 max-h-60 overflow-y-auto overflow-x-hidden mt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              class="mt-2 flex max-h-60 flex-col gap-0.5 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               <div
                 v-if="filteredSets.length === 0"
-                class="py-4 px-1 text-center text-slate-300 dark:text-slate-600 text-xs"
+                class="px-1 py-4 text-center text-xs text-slate-300 dark:text-slate-600"
               >
                 Aucune extension
               </div>
@@ -260,7 +264,7 @@ const clearSets = () => {
                 :key="set.code"
                 type="button"
                 :class="[
-                  'group grid grid-cols-[24px_1fr] items-center gap-2.5 w-full text-left py-2 px-2.5 rounded-lg cursor-pointer transition-colors duration-100',
+                  'group grid w-full cursor-pointer grid-cols-[24px_1fr] items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-100',
                   active.sets.includes(set.code)
                     ? 'on bg-cyan-500/10 dark:bg-cyan-400/10'
                     : 'hover:bg-slate-100 dark:hover:bg-zinc-700',
@@ -270,12 +274,12 @@ const clearSets = () => {
                 @click="emit('toggle', 'sets', set.code)"
               >
                 <span
-                  class="grid place-items-center text-slate-600 dark:text-slate-300 group-[.on]:text-cyan-700 dark:group-[.on]:text-cyan-300"
+                  class="grid place-items-center text-slate-600 group-[.on]:text-cyan-700 dark:text-slate-300 dark:group-[.on]:text-cyan-300"
                 >
                   <i :class="['ss', 'text-lg', `ss-${set.code.toLowerCase()}`]" />
                 </span>
                 <span
-                  class="text-sm text-slate-800 dark:text-slate-100 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap group-[.on]:text-cyan-700 dark:group-[.on]:text-cyan-300 group-[.on]:font-medium"
+                  class="min-w-0 overflow-hidden text-sm text-ellipsis whitespace-nowrap text-slate-800 group-[.on]:font-medium group-[.on]:text-cyan-700 dark:text-slate-100 dark:group-[.on]:text-cyan-300"
                   >{{ set.name }}</span
                 >
               </button>
@@ -285,7 +289,7 @@ const clearSets = () => {
             <button
               v-if="active.sets.length > 0"
               type="button"
-              class="w-full mt-2 p-2 rounded-lg border border-slate-200 dark:border-white/10 font-mono text-xs font-semibold tracking-wide text-slate-400 dark:text-slate-500 bg-black/10 transition-all duration-150 cursor-pointer hover:text-cyan-700 dark:hover:text-cyan-300 hover:border-cyan-500/30 dark:hover:border-cyan-400/30 hover:bg-cyan-500/10 dark:hover:bg-cyan-400/10"
+              class="mt-2 w-full cursor-pointer rounded-lg border border-slate-200 bg-black/10 p-2 font-mono text-xs font-semibold tracking-wide text-slate-400 transition-all duration-150 hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:text-slate-500 dark:hover:border-cyan-400/30 dark:hover:bg-cyan-400/10 dark:hover:text-cyan-300"
               @click="clearSets"
             >
               Tout effacer ({{ active.sets.length }})

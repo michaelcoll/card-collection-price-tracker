@@ -53,14 +53,14 @@ const dealTagClass = computed(() => {
     />
     <div class="flex flex-col gap-1">
       <span
-        class="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight overflow-hidden text-ellipsis whitespace-nowrap"
+        class="overflow-hidden text-xs leading-tight font-semibold text-ellipsis whitespace-nowrap text-slate-800 dark:text-slate-100"
         >{{ name }}</span
       >
 
       <!-- no deal -->
       <span
         v-if="!deal || deal === 'none'"
-        class="font-mono text-xs text-slate-800 dark:text-slate-100 font-semibold"
+        class="font-mono text-xs font-semibold text-slate-800 dark:text-slate-100"
       >
         <template v-if="price != null">{{ formatPrice(price) }}</template>
       </span>
@@ -69,16 +69,16 @@ const dealTagClass = computed(() => {
       <template v-else-if="deal === 'compare' && dealInfo">
         <span
           v-if="dealInfo.kind === 'par'"
-          class="font-mono text-xs text-slate-800 dark:text-slate-100 font-semibold"
+          class="font-mono text-xs font-semibold text-slate-800 dark:text-slate-100"
           >{{ formatPrice(trend) }}</span
         >
-        <span v-else class="flex items-center gap-1.5 flex-wrap">
-          <span class="font-mono text-xs text-slate-800 dark:text-slate-100 font-semibold">{{
+        <span v-else class="flex flex-wrap items-center gap-1.5">
+          <span class="font-mono text-xs font-semibold text-slate-800 dark:text-slate-100">{{
             formatPrice(trend)
           }}</span>
           <span
             v-if="size !== 'sm'"
-            class="font-mono text-xs text-slate-400 dark:text-slate-500 line-through"
+            class="font-mono text-xs text-slate-400 line-through dark:text-slate-500"
             >{{ formatPrice(purchased) }}</span
           >
           <span :class="dealTagClass">{{ dealInfo.sign }}{{ dealInfo.abs }}%</span>
@@ -86,7 +86,7 @@ const dealTagClass = computed(() => {
       </template>
       <span
         v-else-if="deal === 'compare'"
-        class="font-mono text-xs text-slate-800 dark:text-slate-100 font-semibold"
+        class="font-mono text-xs font-semibold text-slate-800 dark:text-slate-100"
       >
         <template v-if="purchased != null">{{ formatPrice(purchased) }}</template>
         <template v-else-if="price != null">{{ formatPrice(price) }}</template>

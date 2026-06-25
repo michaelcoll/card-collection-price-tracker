@@ -213,52 +213,52 @@ const onDragLeave = () => {
 </script>
 
 <template>
-  <div class="max-w-[1180px] mx-auto px-5 pt-7 pb-10 max-md:px-4 max-md:pt-5 max-md:pb-8">
+  <div class="mx-auto max-w-[1180px] px-5 pt-7 pb-10 max-md:px-4 max-md:pt-5 max-md:pb-8">
     <!-- ── VALUE BAR ── -->
     <div
-      class="bg-cyan-500/10 dark:bg-cyan-400/10 backdrop-blur-md border border-cyan-500/30 dark:border-cyan-400/30 rounded-2xl shadow-lg px-5 py-5 mb-4"
+      class="mb-4 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-5 shadow-lg backdrop-blur-md dark:border-cyan-400/30 dark:bg-cyan-400/10"
     >
-      <div class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex flex-col gap-1">
           <span
-            class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
+            class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
             >Valeur totale · CardMarket</span
           >
           <span
-            class="font-mono font-bold tracking-tight whitespace-nowrap text-[clamp(30px,5vw,38px)]"
+            class="font-mono text-[clamp(30px,5vw,38px)] font-bold tracking-tight whitespace-nowrap"
             >€ 4 218,60</span
           >
-          <span class="text-cyan-600 dark:text-cyan-400 text-sm font-mono"
+          <span class="font-mono text-sm text-cyan-600 dark:text-cyan-400"
             >▴ €86,20 · +2,1 % (30 j)</span
           >
         </div>
-        <div class="flex flex-col gap-2 items-end">
+        <div class="flex flex-col items-end gap-2">
           <div class="flex items-center gap-2">
             <span
-              class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap max-md:hidden"
+              class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase max-md:hidden dark:text-slate-500"
               >graphe</span
             >
             <SegToggle v-model="graph" :options="graphOptions" size="sm" />
           </div>
           <Sparkline v-if="graph === 'compact'" :data="[40, 52, 46, 60, 54, 70, 64, 78, 72, 90]" />
           <span
-            class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap max-md:hidden flex items-center gap-1.5"
+            class="text-2xs flex items-center gap-1.5 font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase max-md:hidden dark:text-slate-500"
           >
             <Icon name="lucide:refresh-cw" :size="11" /> synchro auto · il y a 2 h
           </span>
         </div>
       </div>
 
-      <div v-if="graph === 'expanded'" class="flex flex-col gap-2.5 mt-4">
+      <div v-if="graph === 'expanded'" class="mt-4 flex flex-col gap-2.5">
         <div class="flex gap-2">
           <button
             v-for="r in ['30 j', '3 m', '1 an', 'Max']"
             :key="r"
             :class="[
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap cursor-pointer select-none transition-all duration-150',
+              'inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150 select-none',
               graphRange === r
-                ? 'border-cyan-500/30 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10'
-                : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800',
+                ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300'
+                : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100',
             ]"
             @click="graphRange = r"
           >
@@ -275,16 +275,16 @@ const onDragLeave = () => {
     </div>
 
     <!-- ── CONTROLS ── -->
-    <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <button
-        class="md:hidden inline-flex items-center gap-2 justify-center px-4 py-2.5 rounded-xl text-sm font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
+        class="inline-flex items-center justify-center gap-2 rounded-xl border border-transparent bg-cyan-500 px-4 py-2.5 text-sm leading-none font-bold whitespace-nowrap text-zinc-950 shadow-lg transition-all duration-150 hover:-translate-y-px hover:bg-cyan-400 active:translate-y-0 md:hidden dark:bg-cyan-400 dark:hover:bg-cyan-300"
         @click="openImport"
       >
         <Icon name="lucide:upload" :size="16" />
         Importer Manabox
       </button>
       <button
-        class="md:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 whitespace-nowrap cursor-pointer select-none hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+        class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-slate-600 transition-all duration-150 select-none hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 md:hidden dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
         @click="sheet = true"
       >
         <Icon name="lucide:filter" :size="13" />
@@ -293,20 +293,18 @@ const onDragLeave = () => {
     </div>
 
     <!-- ── BODY ── -->
-    <div class="flex gap-6 items-start">
+    <div class="flex items-start gap-6">
       <!-- Sidebar filters (desktop) -->
-      <div
-        class="max-md:hidden flex-none w-[210px] sticky top-[86px] flex flex-col gap-3.5 h-[calc(100vh-106px)]"
-      >
+      <div class="sticky top-[86px] flex w-[210px] flex-none flex-col gap-3.5 max-md:hidden">
         <button
-          class="inline-flex items-center gap-2 justify-center px-4 py-2.5 rounded-xl text-sm font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none w-full hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-cyan-500 px-4 py-2.5 text-sm leading-none font-bold whitespace-nowrap text-zinc-950 shadow-lg transition-all duration-150 hover:-translate-y-px hover:bg-cyan-400 active:translate-y-0 dark:bg-cyan-400 dark:hover:bg-cyan-300"
           @click="openImport"
         >
           <Icon name="lucide:upload" :size="16" />
           Importer Manabox
         </button>
         <aside
-          class="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg p-4 flex-1 overflow-y-auto"
+          class="rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/60"
         >
           <CollectionFilters
             v-model:q="q"
@@ -320,10 +318,10 @@ const onDragLeave = () => {
       </div>
 
       <!-- Main content -->
-      <div class="flex-1 min-w-0">
+      <div class="min-w-0 flex-1">
         <!-- Header row -->
-        <div class="flex items-center justify-between mb-3.5 min-h-[22px]">
-          <span v-if="statsData" class="text-slate-400 dark:text-slate-500 text-sm">{{
+        <div class="mb-3.5 flex min-h-[22px] items-center justify-between">
+          <span v-if="statsData" class="text-sm text-slate-400 dark:text-slate-500">{{
             `${statsData.total_cards.toLocaleString('fr-FR')} cartes · ${statsData.unique_cards} uniques`
           }}</span>
           <div class="flex items-center gap-2.5">
@@ -336,10 +334,10 @@ const onDragLeave = () => {
             />
             <button
               :class="[
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 whitespace-nowrap cursor-pointer select-none',
+                'inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150 select-none',
                 params.sort_dir === 'asc'
-                  ? 'border-cyan-500/30 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10'
-                  : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800',
+                  ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300'
+                  : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100',
               ]"
               @click="params.sort_dir = params.sort_dir === 'desc' ? 'asc' : 'desc'"
             >
@@ -355,21 +353,21 @@ const onDragLeave = () => {
         <!-- Loading state (initial) -->
         <div
           v-if="pending && allCards.length === 0"
-          class="flex items-center justify-center py-16 text-slate-400 dark:text-slate-500 text-sm font-mono"
+          class="flex items-center justify-center py-16 font-mono text-sm text-slate-400 dark:text-slate-500"
         >
-          <Icon name="lucide:loader-circle" :size="18" class="animate-spin mr-2.5" />
+          <Icon name="lucide:loader-circle" :size="18" class="mr-2.5 animate-spin" />
           Chargement…
         </div>
 
         <!-- Empty state -->
         <div
           v-else-if="!pending && allCards.length === 0"
-          class="flex flex-col items-center justify-center py-20 gap-4 text-slate-400 dark:text-slate-500"
+          class="flex flex-col items-center justify-center gap-4 py-20 text-slate-400 dark:text-slate-500"
         >
           <Icon name="lucide:inbox" :size="48" class="opacity-40" />
-          <p class="text-base font-mono text-center">Aucune carte dans la collection.</p>
+          <p class="text-center font-mono text-base">Aucune carte dans la collection.</p>
           <button
-            class="mt-1 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-sm font-mono transition-colors cursor-pointer"
+            class="mt-1 flex cursor-pointer items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 font-mono text-sm transition-colors hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
             @click="openImport()"
           >
             <Icon name="lucide:upload" :size="14" />
@@ -383,13 +381,13 @@ const onDragLeave = () => {
             :class="[
               'grid max-md:[grid-template-columns:repeat(auto-fill,minmax(150px,1fr))] max-md:gap-3.5',
               size === 'sm'
-                ? 'gap-3 [grid-template-columns:repeat(auto-fill,minmax(130px,1fr))]'
+                ? '[grid-template-columns:repeat(auto-fill,minmax(130px,1fr))] gap-3'
                 : '',
               size === 'md'
-                ? 'gap-4 [grid-template-columns:repeat(auto-fill,minmax(185px,1fr))]'
+                ? '[grid-template-columns:repeat(auto-fill,minmax(185px,1fr))] gap-4'
                 : '',
               size === 'lg'
-                ? 'gap-6 [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]'
+                ? '[grid-template-columns:repeat(auto-fill,minmax(340px,1fr))] gap-6'
                 : '',
             ]"
           >
@@ -412,9 +410,9 @@ const onDragLeave = () => {
           <div ref="sentinel" class="h-px" />
           <div
             v-if="pending && allCards.length > 0"
-            class="flex items-center justify-center py-8 text-slate-400 dark:text-slate-500 text-sm font-mono"
+            class="flex items-center justify-center py-8 font-mono text-sm text-slate-400 dark:text-slate-500"
           >
-            <Icon name="lucide:loader-circle" :size="16" class="animate-spin mr-2" />
+            <Icon name="lucide:loader-circle" :size="16" class="mr-2 animate-spin" />
             Chargement…
           </div>
         </template>
@@ -424,17 +422,17 @@ const onDragLeave = () => {
     <!-- ── MOBILE FILTER SHEET ── -->
     <div
       v-if="sheet"
-      class="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm animate-[fade_0.2s_ease]"
+      class="fixed inset-0 z-[80] animate-[fade_0.2s_ease] bg-black/60 backdrop-blur-sm"
       @click="sheet = false"
     >
       <div
-        class="fixed left-0 right-0 bottom-0 z-[81] max-h-[84vh] overflow-auto px-4 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] bg-white dark:bg-zinc-900 border-t border-slate-300 dark:border-white/15 rounded-t-3xl shadow-2xl animate-[slideup_0.3s_cubic-bezier(0.3,1,0.4,1)]"
+        class="fixed right-0 bottom-0 left-0 z-[81] max-h-[84vh] animate-[slideup_0.3s_cubic-bezier(0.3,1,0.4,1)] overflow-auto rounded-t-3xl border-t border-slate-300 bg-white px-4 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl dark:border-white/15 dark:bg-zinc-900"
         @click.stop
       >
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-display font-semibold text-base tracking-tight">Filtres</h3>
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="font-display text-base font-semibold tracking-tight">Filtres</h3>
           <button
-            class="w-9 h-9 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+            class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
             @click="sheet = false"
           >
             <Icon name="lucide:x" :size="16" />
@@ -448,7 +446,7 @@ const onDragLeave = () => {
           @toggle="toggle"
         />
         <button
-          class="inline-flex items-center gap-2 justify-center px-4 py-2.5 rounded-xl text-sm font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none w-full mt-4 hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
+          class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-cyan-500 px-4 py-2.5 text-sm leading-none font-bold whitespace-nowrap text-zinc-950 shadow-lg transition-all duration-150 hover:-translate-y-px hover:bg-cyan-400 active:translate-y-0 dark:bg-cyan-400 dark:hover:bg-cyan-300"
           @click="sheet = false"
         >
           Voir les résultats
@@ -459,16 +457,16 @@ const onDragLeave = () => {
     <!-- ── CARD DETAIL MODAL ── -->
     <div
       v-if="detail"
-      class="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm animate-[fade_0.2s_ease] grid place-items-center p-5"
+      class="fixed inset-0 z-[80] grid animate-[fade_0.2s_ease] place-items-center bg-black/60 p-5 backdrop-blur-sm"
       @click="detail = null"
     >
       <div
-        class="relative w-full max-w-[840px] p-0 overflow-hidden max-h-[calc(100dvh-40px)] bg-white dark:bg-zinc-900 border border-slate-300 dark:border-white/15 rounded-3xl shadow-2xl animate-[pop_0.26s_cubic-bezier(0.3,1.2,0.4,1)] max-[720px]:max-w-[440px]"
+        class="relative max-h-[calc(100dvh-40px)] w-full max-w-[840px] animate-[pop_0.26s_cubic-bezier(0.3,1.2,0.4,1)] overflow-hidden rounded-3xl border border-slate-300 p-0 shadow-2xl max-[720px]:max-w-[440px] dark:border-white/15"
         @click.stop
       >
         <!-- close -->
         <button
-          class="absolute top-3.5 right-3.5 z-[5] w-9 h-9 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+          class="absolute top-3.5 right-3.5 z-[5] grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
           @click="detail = null"
         >
           <Icon name="lucide:x" :size="16" />
@@ -476,11 +474,11 @@ const onDragLeave = () => {
 
         <!-- body grid -->
         <div
-          class="grid [grid-template-columns:minmax(300px,360px)_1fr] max-h-[calc(100dvh-40px)] overflow-y-auto max-[720px]:[grid-template-columns:1fr]"
+          class="grid max-h-[calc(100dvh-40px)] [grid-template-columns:minmax(300px,360px)_1fr] overflow-y-auto max-[720px]:[grid-template-columns:1fr]"
         >
           <!-- art -->
           <div
-            class="relative p-7 flex items-center justify-center border-r border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-zinc-800 max-[720px]:border-r-0 max-[720px]:border-b max-[720px]:p-6"
+            class="relative flex items-center justify-center border-r border-slate-200/60 bg-white/40 p-7 backdrop-blur-md max-[720px]:border-r-0 max-[720px]:border-b max-[720px]:p-6 dark:border-white/10 dark:bg-zinc-900/40"
           >
             <MtgCard
               :scryfall-id="detail?.scryfall_id"
@@ -490,19 +488,19 @@ const onDragLeave = () => {
           </div>
 
           <!-- info -->
-          <div class="px-6 py-7 flex flex-col gap-4 min-w-0">
+          <div class="flex min-w-0 flex-col gap-4 bg-white px-6 py-7 dark:bg-zinc-900">
             <!-- header -->
             <div>
-              <h3 class="font-display font-semibold text-xl tracking-tight mb-1.5">
+              <h3 class="font-display mb-1.5 text-xl font-semibold tracking-tight">
                 {{ detail.name }}
               </h3>
               <span
-                class="text-slate-400 dark:text-slate-500 text-sm inline-flex items-center gap-2 flex-wrap"
+                class="inline-flex flex-wrap items-center gap-2 text-sm text-slate-400 dark:text-slate-500"
               >
                 {{ detail.set_code.toUpperCase() }} · {{ detail.rarity_code }}
                 <span
                   v-if="detail?.foil"
-                  class="inline-flex items-center ml-2 text-2xs font-bold tracking-wide px-1.5 py-px rounded-full text-zinc-900 [background:linear-gradient(110deg,#ffd84d,#4dffd0,#4db4ff,#b85dff,#ff5db8)] [background-size:200%_100%] [animation:foilSlide_4s_linear_infinite]"
+                  class="text-2xs ml-2 inline-flex [animation:foilSlide_4s_linear_infinite] items-center rounded-full [background-size:200%_100%] px-1.5 py-px font-bold tracking-wide text-zinc-900 [background:linear-gradient(110deg,#ffd84d,#4dffd0,#4db4ff,#b85dff,#ff5db8)]"
                 >
                   ✦ Foil
                 </span>
@@ -512,10 +510,10 @@ const onDragLeave = () => {
             <!-- stats -->
             <div class="grid grid-cols-3 gap-2.5">
               <div
-                class="flex flex-col gap-1 px-3 py-3 border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-zinc-900"
+                class="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-zinc-900"
               >
                 <span
-                  class="font-mono text-2xs tracking-widest uppercase text-slate-400 dark:text-slate-500"
+                  class="text-2xs font-mono tracking-widest text-slate-400 uppercase dark:text-slate-500"
                   >Quantité</span
                 >
                 <span class="font-mono text-lg font-bold tracking-tight"
@@ -523,10 +521,10 @@ const onDragLeave = () => {
                 >
               </div>
               <div
-                class="flex flex-col gap-1 px-3 py-3 border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-zinc-900"
+                class="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-zinc-900"
               >
                 <span
-                  class="font-mono text-2xs tracking-widest uppercase text-slate-400 dark:text-slate-500"
+                  class="text-2xs font-mono tracking-widest text-slate-400 uppercase dark:text-slate-500"
                   >Prix unit.</span
                 >
                 <span class="font-mono text-lg font-bold tracking-tight">{{
@@ -534,10 +532,10 @@ const onDragLeave = () => {
                 }}</span>
               </div>
               <div
-                class="flex flex-col gap-1 px-3 py-3 border border-slate-200 dark:border-white/10 rounded-xl bg-white dark:bg-zinc-900"
+                class="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-white/10 dark:bg-zinc-900"
               >
                 <span
-                  class="font-mono text-2xs tracking-widest uppercase text-slate-400 dark:text-slate-500"
+                  class="text-2xs font-mono tracking-widest text-slate-400 uppercase dark:text-slate-500"
                   >Total</span
                 >
                 <span
@@ -549,11 +547,11 @@ const onDragLeave = () => {
 
             <!-- market -->
             <div
-              class="bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-3"
+              class="rounded-xl border border-slate-200 bg-black/20 px-3.5 py-3 dark:border-white/10"
             >
               <div class="flex items-center justify-between">
                 <span
-                  class="font-mono text-2xs font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 whitespace-nowrap"
+                  class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
                   >Marché · CardMarket</span
                 >
                 <span
@@ -568,7 +566,7 @@ const onDragLeave = () => {
                   {{ Math.abs(detailDelta(detail)) }} %
                 </span>
               </div>
-              <div class="flex items-center gap-2.5 mt-2">
+              <div class="mt-2 flex items-center gap-2.5">
                 <span class="font-mono text-xl font-bold">{{
                   formatPrice(detail.price_guide?.trend ?? 0)
                 }}</span>
@@ -583,16 +581,16 @@ const onDragLeave = () => {
             </div>
 
             <!-- actions -->
-            <div class="flex flex-col gap-2 mt-auto">
+            <div class="mt-auto flex flex-col gap-2">
               <button
-                class="inline-flex items-center gap-2 justify-center px-4 py-2.5 rounded-xl text-sm font-bold text-zinc-950 bg-cyan-500 dark:bg-cyan-400 border border-transparent shadow-lg transition-all duration-150 whitespace-nowrap leading-none w-full hover:bg-cyan-400 dark:hover:bg-cyan-300 hover:-translate-y-px active:translate-y-0"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-cyan-500 px-4 py-2.5 text-sm leading-none font-bold whitespace-nowrap text-zinc-950 shadow-lg transition-all duration-150 hover:-translate-y-px hover:bg-cyan-400 active:translate-y-0 dark:bg-cyan-400 dark:hover:bg-cyan-300"
                 @click="navigateTo('/find')"
               >
                 <Icon name="lucide:user" :size="16" />
                 Voir qui la possède
               </button>
               <button
-                class="inline-flex items-center gap-2 justify-center py-2.5 px-4 rounded-xl text-sm font-semibold border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-transparent transition-all duration-150 whitespace-nowrap leading-none w-full hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-100 dark:hover:bg-white/5 hover:-translate-y-px active:translate-y-0"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-transparent px-4 py-2.5 text-sm leading-none font-semibold whitespace-nowrap text-slate-600 transition-all duration-150 hover:-translate-y-px hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800 active:translate-y-0 dark:border-white/10 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-white/5 dark:hover:text-slate-100"
                 @click="navigateTo('/trade')"
               >
                 Proposer en échange
@@ -606,23 +604,23 @@ const onDragLeave = () => {
     <!-- ── IMPORT MODAL ── -->
     <div
       v-if="importOpen"
-      class="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm animate-[fade_0.2s_ease] grid place-items-center p-5"
+      class="fixed inset-0 z-[80] grid animate-[fade_0.2s_ease] place-items-center bg-black/60 p-5 backdrop-blur-sm"
       @click="importOpen = false"
     >
       <div
-        class="w-full max-w-[480px] p-6 bg-white dark:bg-zinc-900 border border-slate-300 dark:border-white/15 rounded-3xl shadow-2xl animate-[pop_0.26s_cubic-bezier(0.3,1.2,0.4,1)]"
+        class="w-full max-w-[480px] animate-[pop_0.26s_cubic-bezier(0.3,1.2,0.4,1)] rounded-3xl border border-slate-300 bg-white p-6 shadow-2xl dark:border-white/15 dark:bg-zinc-900"
         @click.stop
       >
-        <div class="flex items-center justify-between mb-1">
-          <h3 class="font-display font-semibold text-xl tracking-tight">Importer depuis Manabox</h3>
+        <div class="mb-1 flex items-center justify-between">
+          <h3 class="font-display text-xl font-semibold tracking-tight">Importer depuis Manabox</h3>
           <button
-            class="w-9 h-9 rounded-lg grid place-items-center border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 transition-all duration-150 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800"
+            class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 hover:ring-4 hover:ring-cyan-500/10 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
             @click="importOpen = false"
           >
             <Icon name="lucide:x" :size="16" />
           </button>
         </div>
-        <p class="text-slate-600 dark:text-slate-300 text-sm mt-0">
+        <p class="mt-0 text-sm text-slate-600 dark:text-slate-300">
           Exporte ta collection en
           <span class="font-mono tracking-tight">.csv</span>
           depuis Manabox, puis dépose-la ici.
@@ -638,11 +636,11 @@ const onDragLeave = () => {
             @change="onFileInputChange"
           />
           <div
-            class="border-[1.5px] border-dashed rounded-xl transition-all duration-200 flex flex-col items-center gap-3 p-8 mt-2 cursor-pointer"
+            class="mt-2 flex cursor-pointer flex-col items-center gap-3 rounded-xl border-[1.5px] border-dashed p-8 transition-all duration-200"
             :class="
               isDragging
-                ? 'border-cyan-500/40 dark:border-cyan-400/40 bg-cyan-500/10 dark:bg-cyan-400/10'
-                : 'border-slate-300 dark:border-white/15 bg-black/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/40 hover:bg-cyan-500/10 dark:hover:bg-cyan-400/10'
+                ? 'border-cyan-500/40 bg-cyan-500/10 dark:border-cyan-400/40 dark:bg-cyan-400/10'
+                : 'border-slate-300 bg-black/10 hover:border-cyan-500/40 hover:bg-cyan-500/10 dark:border-white/15 dark:hover:border-cyan-400/40 dark:hover:bg-cyan-400/10'
             "
             @click="fileInputRef?.click()"
             @drop="onDrop"
@@ -659,12 +657,12 @@ const onDragLeave = () => {
               <span class="font-semibold">{{
                 importLoading ? 'Import en cours…' : 'Glisse ton fichier .csv ici'
               }}</span>
-              <span v-if="!importLoading" class="text-slate-400 dark:text-slate-500 text-xs"
+              <span v-if="!importLoading" class="text-xs text-slate-400 dark:text-slate-500"
                 >ou clique pour parcourir</span
               >
             </div>
           </div>
-          <p v-if="importError" class="text-red-400 text-sm mt-2.5 mb-0">
+          <p v-if="importError" class="mt-2.5 mb-0 text-sm text-red-400">
             {{ importError }}
           </p>
         </template>
