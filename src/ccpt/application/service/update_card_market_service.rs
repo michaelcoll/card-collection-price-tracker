@@ -1,4 +1,5 @@
 use crate::application::caller::ScryfallCaller;
+use crate::application::error::AppError;
 use crate::application::repository::{CardPricesViewRepository, CardRepository};
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
 use crate::domain::card::CardId;
@@ -32,7 +33,10 @@ impl CardMarketIdWorker {
         }
     }
 
-    pub async fn run(self, mut receiver: UnboundedReceiver<(CardId, Uuid)>) {
+    pub async fn run(
+        self,
+        mut receiver: UnboundedReceiver<(CardId, Uuid)>,
+    ) -> Result<(), AppError> {
         tracing::info!("Card market id updater started.");
 
         while let Some((card_id, scryfall_id)) = receiver.recv().await {
@@ -56,7 +60,10 @@ impl CardMarketIdWorker {
             }
 
             {
-                let mut set = self.dedup_set.lock().unwrap();
+                let mut set = self
+                    .dedup_set
+                    .lock()
+                    .map_err(|_| AppError::QueueError("Mutex poisoned".into()))?;
                 set.remove(&card_id);
             }
 
@@ -72,6 +79,8 @@ impl CardMarketIdWorker {
                 tracing::error!("Failed to refresh card price view: {:?}", e);
             }
         }
+
+        Ok(())
     }
 }
 
@@ -128,7 +137,7 @@ mod tests {
         tx.send((card_id, Uuid::default())).unwrap();
         drop(tx); // ferme le canal pour que run() se termine
 
-        worker.run(rx).await;
+        worker.run(rx).await.unwrap();
     }
 
     #[tokio::test]
@@ -162,7 +171,7 @@ mod tests {
             Arc::new(mock_prices_view()),
             dedup_set.clone(),
         );
-        worker.run(rx).await;
+        worker.run(rx).await.unwrap();
 
         assert!(!dedup_set.lock().unwrap().contains(&card_id));
     }
@@ -194,7 +203,7 @@ mod tests {
             Arc::new(mock_prices_view()),
             dedup_set,
         );
-        worker.run(rx).await;
+        worker.run(rx).await.unwrap();
     }
 
     #[tokio::test]
@@ -231,6 +240,6 @@ mod tests {
             Arc::new(prices_view),
             dedup_set,
         );
-        worker.run(rx).await;
+        worker.run(rx).await.unwrap();
     }
 }

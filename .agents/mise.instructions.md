@@ -34,19 +34,20 @@ mise run setup         # Full dev setup: clean + install frontend deps
 
 ### Test
 
-- **Backend** : `rtk cargo test` — utilise `cargo-nextest` + `cargo-llvm-cov` pour la couverture
-- **Frontend** : `cd frontend && pnpm test` (Vitest via `ng test`) ou `cd frontend && pnpm test:coverage` pour la couverture
+- **Backend** : `cargo test` — utilise `cargo-nextest` + `cargo-llvm-cov` pour la couverture
+- **Frontend** : `cd frontend && pnpm test` (Vitest via `ng test`) ou `cd frontend && pnpm test:coverage` pour la
+  couverture
 
 ### Lint
 
 - **Backend** : `mise run lint` (= `mise run l`)
-    1. `rtk cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all`
+    1. `cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all`
     2. `cargo sqlx prepare --check` (valide les requêtes SQL contre la DB)
 - **Frontend** : `cd frontend && pnpm lint` (Prettier check) ou `cd frontend && pnpm lint:fix` (auto-fix)
 
 ### Format
 
-- **Backend** : `rtk cargo fmt` (rustfmt)
+- **Backend** : `cargo fmt` (rustfmt)
 - **Frontend** : `cd frontend && pnpm lint:fix` (Prettier)
 - **Les deux** : `mise run format` (= `mise run f`)
 

@@ -108,7 +108,11 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         card_prices_view_repository_adapter.clone(),
         dedup_set,
     );
-    tokio::spawn(worker.run(receiver));
+    tokio::spawn(async move {
+        if let Err(e) = worker.run(receiver).await {
+            tracing::error!("CardMarket worker terminated with error: {:?}", e);
+        }
+    });
 
     let import_card_service = Arc::new(ImportCardService::new(
         card_repository_adapter.clone(),
