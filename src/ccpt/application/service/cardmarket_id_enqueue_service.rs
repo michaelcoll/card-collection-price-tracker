@@ -37,7 +37,9 @@ impl EnqueueCardMarketIdUpdateUseCase for CardMarketIdEnqueueService {
         for (card_id, scryfall_id) in cards {
             if set.insert(card_id.clone()) {
                 if self.sender.send((card_id, scryfall_id)).is_err() {
-                    eprintln!("Worker channel closed, cannot enqueue card");
+                    return Err(AppError::QueueError(
+                        "Worker channel closed, cannot enqueue card".into(),
+                    ));
                 } else {
                     enqueued += 1;
                 }
