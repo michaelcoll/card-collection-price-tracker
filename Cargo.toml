@@ -25,7 +25,7 @@ utoipa = { version = "5", features = ["axum_extras", "yaml"] }
 sentry = { version = "0.48", features = ["tracing", "logs", "tower-axum-matched-path"] }
 
 [dev-dependencies]
-mockall = "0.14"
+mockall = "0.15"
 wiremock = "0.6"
 cargo-husky = "1"
 
