@@ -62,15 +62,9 @@ mod tests {
               "avg": 0.06,
               "low": 0.02,
               "trend": 0.09,
-              "avg1": 0.1,
-              "avg7": 0.06,
-              "avg30": 0.07,
               "avg-foil": 0.5,
               "low-foil": 0.04,
-              "trend-foil": 0.42,
-              "avg1-foil": 0.5,
-              "avg7-foil": 0.41,
-              "avg30-foil": 0.34
+              "trend-foil": 0.42
             },
             {
               "idProduct": 2,
@@ -78,15 +72,9 @@ mod tests {
               "avg": 0.06,
               "low": 0.02,
               "trend": 0.07,
-              "avg1": 0.3,
-              "avg7": 0.08,
-              "avg30": 0.06,
               "avg-foil": null,
               "low-foil": 0.05,
-              "trend-foil": 0.28,
-              "avg1-foil": 0.49,
-              "avg7-foil": 0.31,
-              "avg30-foil": 0.25
+              "trend-foil": 0.28
             }
           ]
         }
@@ -121,15 +109,9 @@ mod tests {
         assert_eq!(first.normal.avg, Some(0.06).into());
         assert_eq!(first.normal.low, Some(0.02).into());
         assert_eq!(first.normal.trend, Some(0.09).into());
-        assert_eq!(first.normal.avg1, Some(0.1).into());
-        assert_eq!(first.normal.avg7, Some(0.06).into());
-        assert_eq!(first.normal.avg30, Some(0.07).into());
         assert_eq!(first.foil.avg, Some(0.5).into());
         assert_eq!(first.foil.low, Some(0.04).into());
         assert_eq!(first.foil.trend, Some(0.42).into());
-        assert_eq!(first.foil.avg1, Some(0.5).into());
-        assert_eq!(first.foil.avg7, Some(0.41).into());
-        assert_eq!(first.foil.avg30, Some(0.34).into());
 
         let second = &actual[1];
         assert_eq!(second.id_product, 2);

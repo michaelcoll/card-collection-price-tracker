@@ -244,24 +244,6 @@ components:
           - 'null'
           format: int32
           minimum: 0
-        avg1:
-          type:
-          - integer
-          - 'null'
-          format: int32
-          minimum: 0
-        avg30:
-          type:
-          - integer
-          - 'null'
-          format: int32
-          minimum: 0
-        avg7:
-          type:
-          - integer
-          - 'null'
-          format: int32
-          minimum: 0
         low:
           type:
           - integer

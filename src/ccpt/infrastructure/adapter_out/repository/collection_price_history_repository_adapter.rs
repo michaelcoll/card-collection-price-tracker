@@ -23,8 +23,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
         let rows = sqlx::query!(
             r#"SELECT dates.date, users.user_id
                 FROM (SELECT DISTINCT user_id FROM collection_entry) AS users
-                         CROSS JOIN (SELECT DISTINCT date FROM cardmarket_price) AS dates
-                WHERE (dates.date, users.user_id) NOT IN (SELECT date, user_id FROM collection_price_history)"#
+                         CROSS JOIN (SELECT DISTINCT date FROM cardmarket_price) AS dates"#
         )
         .fetch_all(&self.pool)
         .await?;
@@ -39,32 +38,32 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
 
     async fn update_for_date_and_user(&self, date: NaiveDate, user: User) -> Result<(), AppError> {
         sqlx::query!(
-            r#"INSERT INTO collection_price_history
+            r#"INSERT INTO collection_price_history (date, user_id, low, trend, avg)
                 SELECT prices.date,
                        prices.user_id,
                        SUM(prices.low)   AS low,
-                       SUM(prices.avg)   AS avg,
                        SUM(prices.trend) AS trend,
-                       SUM(prices.avg1)  AS avg1,
-                       SUM(prices.avg7)  AS avg7,
-                       SUM(prices.avg30) AS avg30
+                       SUM(prices.avg)   AS avg
 
-                FROM (SELECT cq.user_id,
+                FROM (SELECT ce.user_id,
+                             ce.added_at,
                              cmp.date,
-                             CASE WHEN c.foil THEN cmp.low_foil ELSE cmp.low END * cq.quantity     AS low,
-                             CASE WHEN c.foil THEN cmp.avg_foil ELSE cmp.avg END * cq.quantity     AS avg,
-                             CASE WHEN c.foil THEN cmp.trend_foil ELSE cmp.trend END * cq.quantity AS trend,
-                             CASE WHEN c.foil THEN cmp.avg1_foil ELSE cmp.avg1 END * cq.quantity   AS avg1,
-                             CASE WHEN c.foil THEN cmp.avg7_foil ELSE cmp.avg7 END * cq.quantity   AS avg7,
-                             CASE WHEN c.foil THEN cmp.avg30_foil ELSE cmp.avg30 END * cq.quantity AS avg30
+                             CASE WHEN c.foil THEN cmp.low_foil ELSE cmp.low END * ce.quantity     AS low,
+                             CASE WHEN c.foil THEN cmp.avg_foil ELSE cmp.avg END * ce.quantity     AS avg,
+                             CASE WHEN c.foil THEN cmp.trend_foil ELSE cmp.trend END * ce.quantity AS trend
                        FROM card c
-                               JOIN collection_entry cq
-                                    ON c.set_code = cq.set_code AND c.collector_number = cq.collector_number AND
-                                       c.language_code = cq.language_code AND c.foil = cq.foil
+                               JOIN collection_entry ce
+                                    ON c.set_code = ce.set_code AND c.collector_number = ce.collector_number AND
+                                       c.language_code = ce.language_code AND c.foil = ce.foil
                                JOIN cardmarket_price cmp ON cardmarket_id = cmp.id_produit) AS prices
                 WHERE prices.user_id = $1
                   AND prices.date = $2
-                GROUP BY prices.user_id, prices.date"#,
+                  AND CAST(prices.added_at AS DATE) <= to_timestamp(prices.date::text, 'YYYY-MM-DD')
+                GROUP BY prices.user_id, prices.date
+                ON CONFLICT (date, user_id) DO UPDATE SET
+                    low   = EXCLUDED.low,
+                    trend = EXCLUDED.trend,
+                    avg   = EXCLUDED.avg"#,
             user.id,
             date,
         )
@@ -82,7 +81,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
     ) -> Result<Vec<PriceHistoryEntry>, AppError> {
         let entities = sqlx::query_as!(
             CollectionPriceHistoryEntity,
-            r#"SELECT date, low, trend, avg, avg1, avg7, avg30
+            r#"SELECT date, low, trend, avg
                 FROM collection_price_history
                 WHERE user_id = $1
                   AND date >= $2
@@ -136,9 +135,6 @@ mod tests {
                     low: Some(10),
                     avg: Some(20),
                     trend: Some(15),
-                    avg1: Some(25),
-                    avg7: Some(18),
-                    avg30: Some(22),
                 },
                 foil: PriceGuideEntity::empty(),
             },
@@ -153,7 +149,7 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn get_date_and_user_to_update_excludes_combinations_in_history(pool: PgPool) {
+    async fn get_date_and_user_to_update_returns_combinations_already_in_history(pool: PgPool) {
         let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
 
         let date = NaiveDate::from_ymd_opt(2025, 12, 25).unwrap();
@@ -170,20 +166,19 @@ mod tests {
                     low: Some(10),
                     avg: Some(20),
                     trend: Some(15),
-                    avg1: Some(25),
-                    avg7: Some(18),
-                    avg30: Some(22),
                 },
                 foil: PriceGuideEntity::empty(),
             },
         )
         .await;
 
-        insert_collection_price_history(&pool, date, "user1", 100, 200, 150, 250, 180, 220).await;
+        insert_collection_price_history(&pool, date, "user1", 100, 200, 150).await;
 
         let result = adapter.get_date_and_user_to_update().await.unwrap();
 
-        assert!(result.is_empty());
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].0, date);
+        assert_eq!(result[0].1.id, "user1");
     }
 
     #[sqlx::test]
@@ -206,9 +201,6 @@ mod tests {
                     low: Some(10),
                     avg: Some(20),
                     trend: Some(15),
-                    avg1: Some(25),
-                    avg7: Some(18),
-                    avg30: Some(22),
                 },
                 foil: PriceGuideEntity::empty(),
             },
@@ -223,9 +215,6 @@ mod tests {
                     low: Some(12),
                     avg: Some(22),
                     trend: Some(17),
-                    avg1: Some(27),
-                    avg7: Some(20),
-                    avg30: Some(24),
                 },
                 foil: PriceGuideEntity::empty(),
             },
@@ -243,10 +232,12 @@ mod tests {
         let user1 = User::from_id("user1".to_string());
         let date = NaiveDate::from_ymd_opt(2025, 12, 25).unwrap();
 
+        let added_at = date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+
         insert_set(&pool, "SET6").await;
         insert_card(&pool, "SET6", "1", "EN", false, "Card 1", 5).await;
-        insert_collection_entry(&pool, "SET6", "1", "EN", false, "user1", 2, 100, Utc::now()).await;
-        insert_collection_entry(&pool, "SET6", "1", "EN", false, "user2", 3, 150, Utc::now()).await;
+        insert_collection_entry(&pool, "SET6", "1", "EN", false, "user1", 2, 100, added_at).await;
+        insert_collection_entry(&pool, "SET6", "1", "EN", false, "user2", 3, 150, added_at).await;
         insert_price(
             &pool,
             CardMarketPriceEntity {
@@ -256,9 +247,6 @@ mod tests {
                     low: Some(10),
                     avg: Some(20),
                     trend: Some(15),
-                    avg1: Some(25),
-                    avg7: Some(18),
-                    avg30: Some(22),
                 },
                 foil: PriceGuideEntity::empty(),
             },

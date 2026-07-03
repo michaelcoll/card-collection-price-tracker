@@ -63,9 +63,6 @@ mod tests {
                             low: Price { value: Some(100) },
                             trend: Price { value: Some(150) },
                             avg: Price { value: Some(130) },
-                            avg1: Price { value: Some(120) },
-                            avg7: Price { value: Some(140) },
-                            avg30: Price { value: Some(135) },
                         },
                     }])
                 })

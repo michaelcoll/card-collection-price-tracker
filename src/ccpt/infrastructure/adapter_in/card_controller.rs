@@ -80,9 +80,6 @@ pub struct PriceGuideResponse {
     pub low: Option<u32>,
     pub avg: Option<u32>,
     pub trend: Option<u32>,
-    pub avg1: Option<u32>,
-    pub avg7: Option<u32>,
-    pub avg30: Option<u32>,
 }
 
 #[derive(Serialize, TS, ToSchema)]
@@ -134,9 +131,6 @@ impl From<Card> for CollectionCardResponse {
                 low: pg.low.value,
                 avg: pg.avg.value,
                 trend: pg.trend.value,
-                avg1: pg.avg1.value,
-                avg7: pg.avg7.value,
-                avg30: pg.avg30.value,
             }),
         }
     }
@@ -878,9 +872,6 @@ mod tests {
             low: Price { value: Some(100) },
             avg: Price { value: Some(200) },
             trend: Price { value: Some(300) },
-            avg1: Price { value: Some(400) },
-            avg7: Price { value: Some(500) },
-            avg30: Price { value: Some(600) },
         });
 
         let mut mock = MockGetCollectionUseCase::new();
@@ -915,9 +906,6 @@ mod tests {
         assert_eq!(pg.low, Some(100));
         assert_eq!(pg.avg, Some(200));
         assert_eq!(pg.trend, Some(300));
-        assert_eq!(pg.avg1, Some(400));
-        assert_eq!(pg.avg7, Some(500));
-        assert_eq!(pg.avg30, Some(600));
     }
 
     #[tokio::test]
@@ -1231,9 +1219,6 @@ mod tests {
                             low: Price { value: Some(100) },
                             trend: Price { value: Some(150) },
                             avg: Price { value: Some(130) },
-                            avg1: Price { value: None },
-                            avg7: Price { value: None },
-                            avg30: Price { value: None },
                         },
                     }])
                 })

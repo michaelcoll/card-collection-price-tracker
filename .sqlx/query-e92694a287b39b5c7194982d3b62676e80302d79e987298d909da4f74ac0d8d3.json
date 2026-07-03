@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT dates.date, users.user_id\n                FROM (SELECT DISTINCT user_id FROM collection_entry) AS users\n                         CROSS JOIN (SELECT DISTINCT date FROM cardmarket_price) AS dates\n                WHERE (dates.date, users.user_id) NOT IN (SELECT date, user_id FROM collection_price_history)",
+  "query": "SELECT dates.date, users.user_id\n                FROM (SELECT DISTINCT user_id FROM collection_entry) AS users\n                         CROSS JOIN (SELECT DISTINCT date FROM cardmarket_price) AS dates",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "32852dc5a62358b6c878402d5f56605ba720d7a79d8316660583299501913ab4"
+  "hash": "e92694a287b39b5c7194982d3b62676e80302d79e987298d909da4f74ac0d8d3"
 }

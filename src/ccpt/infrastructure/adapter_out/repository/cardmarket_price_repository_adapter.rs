@@ -33,8 +33,8 @@ impl CardMarketPriceRepository for CardMarketPriceRepositoryAdapter {
             let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
                 "
                 INSERT INTO cardmarket_price
-                    (id_produit, date, low, trend, avg, avg1, avg7, avg30,
-                     low_foil, trend_foil, avg_foil, avg1_foil, avg7_foil, avg30_foil)
+                    (id_produit, date, low, trend, avg,
+                     low_foil, trend_foil, avg_foil)
                 ",
             );
 
@@ -44,15 +44,9 @@ impl CardMarketPriceRepository for CardMarketPriceRepositoryAdapter {
                     .push_bind(price_guide.normal.low.as_i32())
                     .push_bind(price_guide.normal.trend.as_i32())
                     .push_bind(price_guide.normal.avg.as_i32())
-                    .push_bind(price_guide.normal.avg1.as_i32())
-                    .push_bind(price_guide.normal.avg7.as_i32())
-                    .push_bind(price_guide.normal.avg30.as_i32())
                     .push_bind(price_guide.foil.low.as_i32())
                     .push_bind(price_guide.foil.trend.as_i32())
-                    .push_bind(price_guide.foil.avg.as_i32())
-                    .push_bind(price_guide.foil.avg1.as_i32())
-                    .push_bind(price_guide.foil.avg7.as_i32())
-                    .push_bind(price_guide.foil.avg30.as_i32());
+                    .push_bind(price_guide.foil.avg.as_i32());
             });
 
             qb.push(
@@ -62,15 +56,9 @@ impl CardMarketPriceRepository for CardMarketPriceRepositoryAdapter {
                     low        = EXCLUDED.low,
                     trend      = EXCLUDED.trend,
                     avg        = EXCLUDED.avg,
-                    avg1       = EXCLUDED.avg1,
-                    avg7       = EXCLUDED.avg7,
-                    avg30      = EXCLUDED.avg30,
                     low_foil   = EXCLUDED.low_foil,
                     trend_foil = EXCLUDED.trend_foil,
-                    avg_foil   = EXCLUDED.avg_foil,
-                    avg1_foil  = EXCLUDED.avg1_foil,
-                    avg7_foil  = EXCLUDED.avg7_foil,
-                    avg30_foil = EXCLUDED.avg30_foil
+                    avg_foil   = EXCLUDED.avg_foil
                 ",
             );
 
@@ -88,8 +76,8 @@ impl CardMarketPriceRepository for CardMarketPriceRepositoryAdapter {
     ) -> Result<Option<FullPriceGuide>, AppError> {
         let record = sqlx::query_as!(
             CardMarketPriceRaw,
-            "SELECT id_produit, date, low, trend, avg, avg1, avg7, avg30,
-                    low_foil, trend_foil, avg_foil, avg1_foil, avg7_foil, avg30_foil
+            "SELECT id_produit, date, low, trend, avg,
+                    low_foil, trend_foil, avg_foil
              FROM cardmarket_price
              WHERE id_produit = $1 AND date = $2",
             id_product as i32,
@@ -118,9 +106,6 @@ mod tests {
                 low: Price::empty(),
                 trend: Price::empty(),
                 avg: Price::empty(),
-                avg1: Price::empty(),
-                avg7: Price::empty(),
-                avg30: Price::empty(),
             }
         }
     }
@@ -128,8 +113,8 @@ mod tests {
     impl FullPriceGuide {
         pub fn from_values(
             id_product: u32,
-            normal_values: (i32, i32, i32, i32, i32, i32),
-            foil_values: (i32, i32, i32, i32, i32, i32),
+            normal_values: (i32, i32, i32),
+            foil_values: (i32, i32, i32),
         ) -> Self {
             FullPriceGuide {
                 id_product,
@@ -137,17 +122,11 @@ mod tests {
                     low: Some(normal_values.0),
                     trend: Some(normal_values.1),
                     avg: Some(normal_values.2),
-                    avg1: Some(normal_values.3),
-                    avg7: Some(normal_values.4),
-                    avg30: Some(normal_values.5),
                 }),
                 foil: PriceGuide::from(PriceGuideEntity {
                     low: Some(foil_values.0),
                     trend: Some(foil_values.1),
                     avg: Some(foil_values.2),
-                    avg1: Some(foil_values.3),
-                    avg7: Some(foil_values.4),
-                    avg30: Some(foil_values.5),
                 }),
             }
         }
@@ -158,11 +137,8 @@ mod tests {
         let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let id_produit = 12345u32;
-        let price_guides = FullPriceGuide::from_values(
-            id_produit,
-            (100, 150, 125, 120, 130, 140),
-            (200, 250, 225, 220, 230, 240),
-        );
+        let price_guides =
+            FullPriceGuide::from_values(id_produit, (100, 150, 125), (200, 250, 225));
 
         let result = repository.save(date, vec![price_guides]).await;
 
@@ -175,15 +151,9 @@ mod tests {
         assert_eq!(record.normal.low, Some(100));
         assert_eq!(record.normal.trend, Some(150));
         assert_eq!(record.normal.avg, Some(125));
-        assert_eq!(record.normal.avg1, Some(120));
-        assert_eq!(record.normal.avg7, Some(130));
-        assert_eq!(record.normal.avg30, Some(140));
         assert_eq!(record.foil.low, Some(200));
         assert_eq!(record.foil.trend, Some(250));
         assert_eq!(record.foil.avg, Some(225));
-        assert_eq!(record.foil.avg1, Some(220));
-        assert_eq!(record.foil.avg7, Some(230));
-        assert_eq!(record.foil.avg30, Some(240));
     }
 
     #[sqlx::test]
@@ -192,21 +162,15 @@ mod tests {
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let id_produit = 12346u32;
 
-        let initial_price_guides = FullPriceGuide::from_values(
-            id_produit,
-            (100, 150, 125, 120, 130, 140),
-            (200, 250, 225, 220, 230, 240),
-        );
+        let initial_price_guides =
+            FullPriceGuide::from_values(id_produit, (100, 150, 125), (200, 250, 225));
         repository
             .save(date, vec![initial_price_guides])
             .await
             .unwrap();
 
-        let updated_price_guides = FullPriceGuide::from_values(
-            id_produit,
-            (110, 160, 135, 130, 140, 150),
-            (210, 260, 235, 230, 240, 250),
-        );
+        let updated_price_guides =
+            FullPriceGuide::from_values(id_produit, (110, 160, 135), (210, 260, 235));
         let result = repository.save(date, vec![updated_price_guides]).await;
 
         assert!(result.is_ok());
@@ -216,15 +180,9 @@ mod tests {
         assert_eq!(record.normal.low, Some(110));
         assert_eq!(record.normal.trend, Some(160));
         assert_eq!(record.normal.avg, Some(135));
-        assert_eq!(record.normal.avg1, Some(130));
-        assert_eq!(record.normal.avg7, Some(140));
-        assert_eq!(record.normal.avg30, Some(150));
         assert_eq!(record.foil.low, Some(210));
         assert_eq!(record.foil.trend, Some(260));
         assert_eq!(record.foil.avg, Some(235));
-        assert_eq!(record.foil.avg1, Some(230));
-        assert_eq!(record.foil.avg7, Some(240));
-        assert_eq!(record.foil.avg30, Some(250));
     }
 
     #[sqlx::test]
@@ -250,15 +208,9 @@ mod tests {
         assert_eq!(record.normal.low, None);
         assert_eq!(record.normal.trend, None);
         assert_eq!(record.normal.avg, None);
-        assert_eq!(record.normal.avg1, None);
-        assert_eq!(record.normal.avg7, None);
-        assert_eq!(record.normal.avg30, None);
         assert_eq!(record.foil.low, None);
         assert_eq!(record.foil.trend, None);
         assert_eq!(record.foil.avg, None);
-        assert_eq!(record.foil.avg1, None);
-        assert_eq!(record.foil.avg7, None);
-        assert_eq!(record.foil.avg30, None);
     }
 
     #[sqlx::test]
@@ -266,16 +218,8 @@ mod tests {
         let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
-        let price_guides_1 = FullPriceGuide::from_values(
-            12348,
-            (100, 150, 125, 120, 130, 140),
-            (200, 250, 225, 220, 230, 240),
-        );
-        let price_guides_2 = FullPriceGuide::from_values(
-            12349,
-            (300, 350, 325, 320, 330, 340),
-            (400, 450, 425, 420, 430, 440),
-        );
+        let price_guides_1 = FullPriceGuide::from_values(12348, (100, 150, 125), (200, 250, 225));
+        let price_guides_2 = FullPriceGuide::from_values(12349, (300, 350, 325), (400, 450, 425));
 
         let result1 = repository.save(date, vec![price_guides_1]).await;
         let result2 = repository.save(date, vec![price_guides_2]).await;
@@ -299,11 +243,8 @@ mod tests {
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let id_produit = 12350u32;
 
-        let price_guides = FullPriceGuide::from_values(
-            id_produit,
-            (100, 150, 125, 120, 130, 140),
-            (200, 250, 225, 220, 230, 240),
-        );
+        let price_guides =
+            FullPriceGuide::from_values(id_produit, (100, 150, 125), (200, 250, 225));
         repository.save(date, vec![price_guides]).await.unwrap();
 
         let result = repository.find_by_id_and_date(id_produit, date).await;
