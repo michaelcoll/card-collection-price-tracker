@@ -31,12 +31,6 @@ pub struct PriceGuide {
     pub avg: Price,
     /// Trend price in cents
     pub trend: Price,
-    /// Average price for 1 day in cents
-    pub avg1: Price,
-    /// Average price for 7 days in cents
-    pub avg7: Price,
-    /// Average price for 30 days in cents
-    pub avg30: Price,
 }
 
 /// Represents one day's aggregated price for a user's collection.
@@ -53,21 +47,11 @@ pub struct FullPriceGuide {
 }
 
 impl PriceGuide {
-    pub fn new(
-        low: impl Into<Price>,
-        trend: impl Into<Price>,
-        avg: impl Into<Price>,
-        avg1: impl Into<Price>,
-        avg7: impl Into<Price>,
-        avg30: impl Into<Price>,
-    ) -> Self {
+    pub fn new(low: impl Into<Price>, trend: impl Into<Price>, avg: impl Into<Price>) -> Self {
         Self {
             low: low.into(),
             trend: trend.into(),
             avg: avg.into(),
-            avg1: avg1.into(),
-            avg7: avg7.into(),
-            avg30: avg30.into(),
         }
     }
 }
@@ -77,9 +61,6 @@ impl AddAssign for PriceGuide {
         self.low += other.low;
         self.trend += other.trend;
         self.avg += other.avg;
-        self.avg1 += other.avg1;
-        self.avg7 += other.avg7;
-        self.avg30 += other.avg30;
     }
 }
 
@@ -97,44 +78,31 @@ mod tests {
         low: impl Into<Price>,
         trend: impl Into<Price>,
         avg: impl Into<Price>,
-        avg1: impl Into<Price>,
-        avg7: impl Into<Price>,
-        avg30: impl Into<Price>,
     ) -> PriceGuide {
         PriceGuide {
             low: low.into(),
             trend: trend.into(),
             avg: avg.into(),
-            avg1: avg1.into(),
-            avg7: avg7.into(),
-            avg30: avg30.into(),
         }
     }
 
     #[test]
     fn add_assign_combines_prices_correctly() {
-        let mut price1 = create_price(100, 200, 200, 300, 400, 500);
-        let price2 = create_price(50, 100, 100, 150, 200, 250);
+        let mut price1 = create_price(100, 200, 200);
+        let price2 = create_price(50, 100, 100);
 
         price1 += price2;
 
-        assert_eq!(price1, create_price(150, 300, 300, 450, 600, 750));
+        assert_eq!(price1, create_price(150, 300, 300));
     }
 
     #[test]
     fn add_assign_with_zero_price_does_not_change_values() {
-        let mut price1 = PriceGuide::new(
-            Price::empty(),
-            Price::empty(),
-            Price::empty(),
-            Price::empty(),
-            Price::empty(),
-            Price::empty(),
-        );
-        let price2 = create_price(100, 200, 200, 300, 400, 500);
+        let mut price1 = PriceGuide::new(Price::empty(), Price::empty(), Price::empty());
+        let price2 = create_price(100, 200, 200);
 
         price1 += price2;
 
-        assert_eq!(price1, create_price(100, 200, 200, 300, 400, 500));
+        assert_eq!(price1, create_price(100, 200, 200));
     }
 }

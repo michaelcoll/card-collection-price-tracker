@@ -89,10 +89,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
                  cp.purchase_price,
                  cp.avg,
                  cp.low,
-                 cp.trend,
-                 cp.avg1,
-                 cp.avg7,
-                 cp.avg30
+                 cp.trend
                FROM mv_card_prices cp
                JOIN set_name sn ON sn.set_code = cp.set_code
                WHERE cp.user_id = $1
@@ -206,9 +203,6 @@ mod tests {
                     low: Some(avg / 2),
                     avg: Some(avg),
                     trend: Some(avg),
-                    avg1: Some(avg),
-                    avg7: Some(avg),
-                    avg30: Some(avg),
                 },
                 foil: PriceGuideEntity::empty(),
             }
@@ -226,17 +220,11 @@ mod tests {
                     low: Some(avg / 2),
                     avg: Some(avg),
                     trend: Some(avg),
-                    avg1: Some(avg),
-                    avg7: Some(avg),
-                    avg30: Some(avg),
                 },
                 foil: PriceGuideEntity {
                     low: Some(avg_foil / 2),
                     avg: Some(avg_foil),
                     trend: Some(avg_foil),
-                    avg1: Some(avg_foil),
-                    avg7: Some(avg_foil),
-                    avg30: Some(avg_foil),
                 },
             }
         }

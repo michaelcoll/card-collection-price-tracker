@@ -122,23 +122,17 @@ pub async fn insert_card_without_cardmarket_id(
 
 pub async fn insert_price(pool: &PgPool, entity: CardMarketPriceEntity) {
     sqlx::query(
-        r#"INSERT INTO cardmarket_price (id_produit, date, low, avg, trend, avg1, avg7, avg30, low_foil, avg_foil, trend_foil, avg1_foil, avg7_foil, avg30_foil)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)"#,
+        r#"INSERT INTO cardmarket_price (id_produit, date, low, avg, trend, low_foil, avg_foil, trend_foil)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#,
     )
     .bind(entity.id_produit)
     .bind(entity.date)
     .bind(entity.normal.low)
     .bind(entity.normal.avg)
     .bind(entity.normal.trend)
-    .bind(entity.normal.avg1)
-    .bind(entity.normal.avg7)
-    .bind(entity.normal.avg30)
     .bind(entity.foil.low)
     .bind(entity.foil.avg)
     .bind(entity.foil.trend)
-    .bind(entity.foil.avg1)
-    .bind(entity.foil.avg7)
-    .bind(entity.foil.avg30)
     .execute(pool)
     .await
     .unwrap();
@@ -151,7 +145,7 @@ pub async fn fetch_collection_price_history(
 ) -> Vec<CollectionPriceHistoryEntity> {
     sqlx::query_as!(
         CollectionPriceHistoryEntity,
-        r#"SELECT date, low, trend, avg, avg1, avg7, avg30
+        r#"SELECT date, low, trend, avg
                 FROM collection_price_history
                 WHERE user_id = $1
                   AND date >= $2
@@ -173,8 +167,8 @@ pub async fn fetch_cardmarket_price(
 ) -> CardMarketPriceEntity {
     sqlx::query_as!(
         CardMarketPriceRaw,
-        "SELECT id_produit, date, low, trend, avg, avg1, avg7, avg30,
-                    low_foil, trend_foil, avg_foil, avg1_foil, avg7_foil, avg30_foil
+        "SELECT id_produit, date, low, trend, avg,
+                    low_foil, trend_foil, avg_foil
              FROM cardmarket_price
              WHERE id_produit = $1 AND date = $2",
         id_produit,
@@ -186,7 +180,6 @@ pub async fn fetch_cardmarket_price(
     .into()
 }
 
-#[allow(clippy::too_many_arguments)]
 pub async fn insert_collection_price_history(
     pool: &PgPool,
     date: chrono::NaiveDate,
@@ -194,22 +187,16 @@ pub async fn insert_collection_price_history(
     low: i32,
     avg: i32,
     trend: i32,
-    avg1: i32,
-    avg7: i32,
-    avg30: i32,
 ) {
     sqlx::query(
-        r#"INSERT INTO collection_price_history (date, user_id, low, avg, trend, avg1, avg7, avg30)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#,
+        r#"INSERT INTO collection_price_history (date, user_id, low, avg, trend)
+           VALUES ($1, $2, $3, $4, $5)"#,
     )
     .bind(date)
     .bind(user_id)
     .bind(low)
     .bind(avg)
     .bind(trend)
-    .bind(avg1)
-    .bind(avg7)
-    .bind(avg30)
     .execute(pool)
     .await
     .unwrap();

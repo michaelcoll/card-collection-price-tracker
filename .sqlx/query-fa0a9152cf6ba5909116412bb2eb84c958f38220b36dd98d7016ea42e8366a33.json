@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT date, low, trend, avg, avg1, avg7, avg30\n                FROM collection_price_history\n                WHERE user_id = $1\n                  AND date >= $2\n                  AND date <= $3\n                ORDER BY date",
+  "query": "SELECT date, low, trend, avg\n                FROM collection_price_history\n                WHERE user_id = $1\n                  AND date >= $2\n                  AND date <= $3\n                ORDER BY date",
   "describe": {
     "columns": [
       {
@@ -46,39 +46,6 @@
             "name": "avg"
           }
         }
-      },
-      {
-        "ordinal": 4,
-        "name": "avg1",
-        "type_info": "Int4",
-        "origin": {
-          "Table": {
-            "table": "collection_price_history",
-            "name": "avg1"
-          }
-        }
-      },
-      {
-        "ordinal": 5,
-        "name": "avg7",
-        "type_info": "Int4",
-        "origin": {
-          "Table": {
-            "table": "collection_price_history",
-            "name": "avg7"
-          }
-        }
-      },
-      {
-        "ordinal": 6,
-        "name": "avg30",
-        "type_info": "Int4",
-        "origin": {
-          "Table": {
-            "table": "collection_price_history",
-            "name": "avg30"
-          }
-        }
       }
     ],
     "parameters": {
@@ -92,11 +59,8 @@
       false,
       false,
       false,
-      false,
-      false,
-      false,
       false
     ]
   },
-  "hash": "d6fd19cfc8f18bb2301eb120b61d24fee518769f40d14a480c71c9fc03f4f3a2"
+  "hash": "fa0a9152cf6ba5909116412bb2eb84c958f38220b36dd98d7016ea42e8366a33"
 }
