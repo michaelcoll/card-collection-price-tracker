@@ -182,8 +182,8 @@ const handleFile = async (file: File) => {
     params.value.page = 0;
     refresh();
   } catch (e: unknown) {
-    const err = e as { data?: { message?: string } };
-    importError.value = err?.data?.message ?? "Erreur lors de l'import";
+    const err = e as { data?: { error?: string } };
+    importError.value = err?.data?.error ?? "Erreur lors de l'import";
   } finally {
     importLoading.value = false;
     if (fileInputRef.value) fileInputRef.value.value = '';

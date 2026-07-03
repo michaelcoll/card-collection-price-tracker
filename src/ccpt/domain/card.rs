@@ -1,3 +1,4 @@
+use crate::domain::error::CardParsingError;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::price::PriceGuide;
 use crate::domain::rarity_code::RarityCode;
@@ -13,18 +14,36 @@ pub struct CardId {
 }
 
 impl CardId {
+    pub fn try_new(
+        set_code: impl Into<SetCode>,
+        collector_number: impl Into<String>,
+        language_code: LanguageCode,
+        foil: bool,
+    ) -> Result<Self, CardParsingError> {
+        let collector_number = collector_number.into();
+        if collector_number.chars().count() > 10 {
+            return Err(CardParsingError::InvalidCollectorNumber(format!(
+                "collector number must be 10 characters or less (got {})",
+                collector_number
+            )));
+        }
+
+        Ok(CardId {
+            set_code: set_code.into(),
+            collector_number,
+            language_code,
+            foil,
+        })
+    }
+
     pub fn new(
         set_code: impl Into<SetCode>,
         collector_number: impl Into<String>,
         language_code: LanguageCode,
         foil: bool,
     ) -> Self {
-        CardId {
-            set_code: set_code.into(),
-            collector_number: collector_number.into(),
-            language_code,
-            foil,
-        }
+        Self::try_new(set_code, collector_number, language_code, foil)
+            .expect("invalid collector number")
     }
 }
 
@@ -128,6 +147,29 @@ pub struct CardInfo {
 mod tests {
     use super::*;
     use crate::domain::language_code::LanguageCode;
+
+    #[test]
+    fn try_new_card_id_with_valid_collector_number_creates_instance() {
+        let result = CardId::try_new("FDN", "1234567890", LanguageCode::EN, true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn try_new_card_id_with_too_long_collector_number_returns_error() {
+        let result = CardId::try_new("FDN", "12345678901", LanguageCode::EN, true);
+        match result {
+            Err(CardParsingError::InvalidCollectorNumber(msg)) => {
+                assert!(msg.contains("collector number must be 10 characters or less"))
+            }
+            _ => panic!("Expected InvalidCollectorNumber variant"),
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid collector number")]
+    fn new_card_id_with_too_long_collector_number_panics() {
+        CardId::new("FDN", "12345678901", LanguageCode::EN, true);
+    }
 
     #[test]
     fn display_card_id_with_foil() {
