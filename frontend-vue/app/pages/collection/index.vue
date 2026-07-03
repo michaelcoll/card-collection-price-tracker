@@ -18,6 +18,13 @@ const GRAPH_DATA = [4132, 4118, 4140, 4096, 4150, 4172, 4160, 4188, 4176, 4205, 
 
 const { getCollection, getCollectionStats, importCards } = useCardsService();
 
+const RARITY_CODES: Record<string, string> = {
+  Mythique: 'M',
+  Rare: 'R',
+  Unco: 'U',
+  Commune: 'C',
+};
+
 const q = ref('');
 const qDebounced = refDebounced(q, 200);
 
@@ -27,6 +34,10 @@ const params = ref({
   page: 0,
   page_size: 20,
   q: '',
+  rarity: undefined as string | undefined,
+  sets: undefined as string | undefined,
+  price_min: undefined as number | undefined,
+  price_max: undefined as number | undefined,
 });
 
 const { data: collectionData, pending, refresh } = await getCollection(params);
@@ -129,6 +140,28 @@ const toggle = (k: 'rar' | 'sets', v: string) => {
   const arr = active.value[k];
   active.value[k] = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 };
+
+watch(
+  () => [active.value.rar, active.value.sets],
+  () => {
+    params.value.rarity = active.value.rar.length
+      ? active.value.rar.map((r) => RARITY_CODES[r]).join(',')
+      : undefined;
+    params.value.sets = active.value.sets.length ? active.value.sets.join(',') : undefined;
+    allCards.value = [];
+    params.value.page = 0;
+    refresh();
+  },
+  { deep: true },
+);
+
+const onPriceChange = useDebounceFn((lo: number, hi: number) => {
+  params.value.price_min = lo > 0 ? lo * 100 : undefined;
+  params.value.price_max = hi < priceMax.value ? hi * 100 : undefined;
+  allCards.value = [];
+  params.value.page = 0;
+  refresh();
+}, 300);
 
 const setList = computed(() => statsData.value?.sets ?? []);
 
@@ -313,6 +346,7 @@ const onDragLeave = () => {
             :price-min="priceMin"
             :price-max="priceMax"
             @toggle="toggle"
+            @price-change="onPriceChange"
           />
         </aside>
       </div>
@@ -444,6 +478,7 @@ const onDragLeave = () => {
           :price-min="priceMin"
           :price-max="priceMax"
           @toggle="toggle"
+          @price-change="onPriceChange"
         />
         <button
           class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-cyan-500 px-4 py-2.5 text-sm leading-none font-bold whitespace-nowrap text-zinc-950 shadow-lg transition-all duration-150 hover:-translate-y-px hover:bg-cyan-400 active:translate-y-0 dark:bg-cyan-400 dark:hover:bg-cyan-300"

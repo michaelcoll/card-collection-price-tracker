@@ -13,10 +13,10 @@ impl RarityCode {
     pub fn try_new<S: AsRef<str>>(s: S) -> Result<Self, CardParsingError> {
         let s_ref = s.as_ref();
         match s_ref.to_lowercase().as_str() {
-            "common" => Ok(RarityCode::C),
-            "uncommon" => Ok(RarityCode::U),
-            "rare" => Ok(RarityCode::R),
-            "mythic" => Ok(RarityCode::M),
+            "common" | "c" => Ok(RarityCode::C),
+            "uncommon" | "u" => Ok(RarityCode::U),
+            "rare" | "r" => Ok(RarityCode::R),
+            "mythic" | "m" => Ok(RarityCode::M),
             _ => Err(CardParsingError::InvalidRarityCode(s_ref.to_string())),
         }
     }

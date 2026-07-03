@@ -6,6 +6,47 @@ use crate::infrastructure::adapter_out::repository::entities::CardWithPriceEntit
 use async_trait::async_trait;
 use sqlx::{AssertSqlSafe, Pool, Postgres, query_as, query_scalar};
 
+/// Builds the "AND ..." filter clause (search, rarity, sets, price range) for the
+/// collection query, starting bind placeholders at `start_idx`.
+/// Returns (filter_clause, order_prefix, next_idx).
+fn build_filter_clause(query: &CollectionQuery, start_idx: u32) -> (String, String, u32) {
+    let mut idx = start_idx;
+    let mut conditions = Vec::new();
+    let mut order_prefix = String::new();
+
+    if query.search_query.is_some() {
+        conditions.push(format!(
+            "(cp.name ILIKE '%' || ${idx} || '%' OR ${idx} <% cp.name)"
+        ));
+        order_prefix = format!("word_similarity(${idx}, cp.name) DESC,");
+        idx += 1;
+    }
+    if !query.rarity.is_empty() {
+        conditions.push(format!("cp.rarity = ANY(${idx})"));
+        idx += 1;
+    }
+    if !query.sets.is_empty() {
+        conditions.push(format!("cp.set_code = ANY(${idx})"));
+        idx += 1;
+    }
+    if query.price_min.is_some() {
+        conditions.push(format!("cp.trend >= ${idx}"));
+        idx += 1;
+    }
+    if query.price_max.is_some() {
+        conditions.push(format!("cp.trend <= ${idx}"));
+        idx += 1;
+    }
+
+    let filter_clause = if conditions.is_empty() {
+        String::new()
+    } else {
+        format!("AND {}", conditions.join(" AND "))
+    };
+
+    (filter_clause, order_prefix, idx)
+}
+
 pub struct CardPricesViewRepositoryAdapter {
     pool: Pool<Postgres>,
 }
@@ -31,13 +72,8 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
         user_id: &str,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError> {
-        let (where_clause, order_prefix) = match &query.search_query {
-            Some(_) => (
-                "AND (cp.name ILIKE '%' || $4 || '%' OR $4 <% cp.name)".to_string(),
-                "word_similarity($4, cp.name) DESC,".to_string(),
-            ),
-            None => (String::new(), String::new()),
-        };
+        let (filter_clause, order_prefix, _) = build_filter_clause(&query, 4);
+        let (count_filter_clause, _, _) = build_filter_clause(&query, 2);
 
         let sql = format!(
             r#"SELECT
@@ -63,38 +99,76 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
                {}
                ORDER BY {} {} {} NULLS LAST, cp.name
                LIMIT $2 OFFSET $3"#,
-            where_clause, order_prefix, query.sort_by, query.sort_dir,
+            filter_clause, order_prefix, query.sort_by, query.sort_dir,
         );
 
         let offset = (query.page * query.page_size) as i64;
         let limit = query.page_size as i64;
 
-        let base_query = query_as::<_, CardWithPriceEntity>(AssertSqlSafe(sql.as_str()))
+        let mut base_query = query_as::<_, CardWithPriceEntity>(AssertSqlSafe(sql.as_str()))
             .bind(user_id)
             .bind(limit)
             .bind(offset);
-
-        let entities = match &query.search_query {
-            Some(q) => base_query.bind(q.clone()),
-            None => base_query,
+        if let Some(q) = &query.search_query {
+            base_query = base_query.bind(q.clone());
         }
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| AppError::RepositoryError(e.to_string()))?;
-
-        let count_sql = match &query.search_query {
-            Some(_) => "SELECT COUNT(*) FROM mv_card_prices cp WHERE cp.user_id = $1 AND (cp.name ILIKE '%' || $2 || '%' OR $2 <% cp.name)".to_string(),
-            None => "SELECT COUNT(*) FROM mv_card_prices cp WHERE cp.user_id = $1".to_string(),
-        };
-
-        let base_count = query_scalar::<_, i64>(AssertSqlSafe(count_sql.as_str())).bind(user_id);
-        let total: i64 = match &query.search_query {
-            Some(q) => base_count.bind(q.clone()),
-            None => base_count,
+        if !query.rarity.is_empty() {
+            base_query = base_query.bind(
+                query
+                    .rarity
+                    .iter()
+                    .map(|r| r.to_string())
+                    .collect::<Vec<_>>(),
+            );
         }
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| AppError::RepositoryError(e.to_string()))?;
+        if !query.sets.is_empty() {
+            base_query = base_query.bind(query.sets.clone());
+        }
+        if let Some(v) = query.price_min {
+            base_query = base_query.bind(v as i64);
+        }
+        if let Some(v) = query.price_max {
+            base_query = base_query.bind(v as i64);
+        }
+
+        let entities = base_query
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| AppError::RepositoryError(e.to_string()))?;
+
+        let count_sql = format!(
+            "SELECT COUNT(*) FROM mv_card_prices cp WHERE cp.user_id = $1 {}",
+            count_filter_clause
+        );
+
+        let mut base_count =
+            query_scalar::<_, i64>(AssertSqlSafe(count_sql.as_str())).bind(user_id);
+        if let Some(q) = &query.search_query {
+            base_count = base_count.bind(q.clone());
+        }
+        if !query.rarity.is_empty() {
+            base_count = base_count.bind(
+                query
+                    .rarity
+                    .iter()
+                    .map(|r| r.to_string())
+                    .collect::<Vec<_>>(),
+            );
+        }
+        if !query.sets.is_empty() {
+            base_count = base_count.bind(query.sets.clone());
+        }
+        if let Some(v) = query.price_min {
+            base_count = base_count.bind(v as i64);
+        }
+        if let Some(v) = query.price_max {
+            base_count = base_count.bind(v as i64);
+        }
+
+        let total: i64 = base_count
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| AppError::RepositoryError(e.to_string()))?;
 
         Ok(PaginatedCollection {
             items: entities.into_iter().map(Card::from).collect(),
@@ -109,6 +183,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
 mod tests {
     use super::*;
     use crate::domain::collection::{CollectionSortField, SortDirection};
+    use crate::domain::rarity_code::RarityCode;
     use crate::infrastructure::adapter_out::repository::common_repository_tests::{
         insert_card, insert_collection_entry, insert_price, insert_set, refresh_view,
     };
@@ -558,5 +633,78 @@ mod tests {
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.total, 1);
         assert_eq!(result.items[0].name, "Goblin Guide");
+    }
+
+    #[sqlx::test]
+    async fn get_paginated_filters_by_rarity(pool: PgPool) {
+        use crate::infrastructure::adapter_out::repository::common_repository_tests::insert_card_with_rarity;
+
+        insert_set(&pool, "TST").await;
+        insert_card_with_rarity(&pool, "TST", "1", "EN", false, "Common Card", 1, "C").await;
+        insert_card_with_rarity(&pool, "TST", "2", "EN", false, "Mythic Card", 2, "M").await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TST", "2", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(2, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let query = CollectionQuery {
+            rarity: vec![RarityCode::M],
+            ..CollectionQuery::default()
+        };
+        let result = adapter.get_paginated("user1", query).await.unwrap();
+
+        assert_eq!(result.items.len(), 1);
+        assert_eq!(result.total, 1);
+        assert_eq!(result.items[0].name, "Mythic Card");
+    }
+
+    #[sqlx::test]
+    async fn get_paginated_filters_by_sets(pool: PgPool) {
+        insert_set(&pool, "TS1").await;
+        insert_set(&pool, "TS2").await;
+        insert_card(&pool, "TS1", "1", "EN", false, "Card A", 1).await;
+        insert_card(&pool, "TS2", "1", "EN", false, "Card B", 2).await;
+        insert_collection_entry(&pool, "TS1", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TS2", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(2, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let query = CollectionQuery {
+            sets: vec!["TS2".to_string()],
+            ..CollectionQuery::default()
+        };
+        let result = adapter.get_paginated("user1", query).await.unwrap();
+
+        assert_eq!(result.items.len(), 1);
+        assert_eq!(result.total, 1);
+        assert_eq!(result.items[0].name, "Card B");
+    }
+
+    #[sqlx::test]
+    async fn get_paginated_filters_by_price_range(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Cheap Card", 1).await;
+        insert_card(&pool, "TST", "2", "EN", false, "Expensive Card", 2).await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TST", "2", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(2, 5000)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let query = CollectionQuery {
+            price_min: Some(1000),
+            price_max: Some(10000),
+            ..CollectionQuery::default()
+        };
+        let result = adapter.get_paginated("user1", query).await.unwrap();
+
+        assert_eq!(result.items.len(), 1);
+        assert_eq!(result.total, 1);
+        assert_eq!(result.items[0].name, "Expensive Card");
     }
 }

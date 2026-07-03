@@ -1,4 +1,5 @@
 use crate::domain::card::Card;
+use crate::domain::rarity_code::RarityCode;
 use std::fmt;
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
@@ -44,6 +45,10 @@ pub struct CollectionQuery {
     pub sort_by: CollectionSortField,
     pub sort_dir: SortDirection,
     pub search_query: Option<String>,
+    pub rarity: Vec<RarityCode>,
+    pub sets: Vec<String>,
+    pub price_min: Option<u32>,
+    pub price_max: Option<u32>,
 }
 
 impl Default for CollectionQuery {
@@ -54,6 +59,10 @@ impl Default for CollectionQuery {
             sort_by: CollectionSortField::default(),
             sort_dir: SortDirection::default(),
             search_query: None,
+            rarity: Vec::new(),
+            sets: Vec::new(),
+            price_min: None,
+            price_max: None,
         }
     }
 }

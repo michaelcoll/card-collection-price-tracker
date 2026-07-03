@@ -41,6 +41,10 @@ mod tests {
             sort_by: CollectionSortField::SetCode,
             sort_dir: SortDirection::Asc,
             search_query: None,
+            rarity: Vec::new(),
+            sets: Vec::new(),
+            price_min: None,
+            price_max: None,
         };
         let expected_result = PaginatedCollection {
             items: vec![],
