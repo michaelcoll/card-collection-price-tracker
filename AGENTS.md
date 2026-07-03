@@ -34,6 +34,17 @@
 - Use `Read` directly only when the exact file path and line range are already known
 - Use `Edit`/`Write` directly in main thread for code changes after research is done
 
+## TOOLS
+
+- Reading a file → `Read`, never `cat`/`head`/`tail`/`sed`/piping through `python`/`jq` in Bash
+- Searching file content → `Grep`, never `grep`/`ack`/`rg` in Bash
+- Finding files by name/pattern → `Glob`, never `find` in Bash
+- Editing a file → `Edit` (diff-only), never `sed`/`awk`
+- Creating a file → `Write`, never heredoc/`echo >` in Bash
+- Reserve `Bash` for what only a shell can do: running builds, tests, git, mise, npm/pnpm/cargo commands, moving/deleting
+  files
+- If a dedicated tool exists for the job, using Bash instead is a mistake — not a style choice
+
 ## PLAYWRIGHT
 
 - Save your screen captures and logs from playwright in the `.playwright-mcp` folder at the root of the repository

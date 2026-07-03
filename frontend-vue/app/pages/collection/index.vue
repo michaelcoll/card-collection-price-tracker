@@ -14,7 +14,7 @@ type CardDisplay = {
   foil: boolean;
 };
 
-const GRAPH_DATA = [4132, 4118, 4140, 4096, 4150, 4172, 4160, 4188, 4176, 4205, 4192, 4218];
+const ENVELOPE_DATA = mockEnvelopeData();
 
 const { getCollection, getCollectionStats, importCards } = useCardsService();
 
@@ -118,6 +118,9 @@ const cards = computed<CardDisplay[]>(() =>
 const view = ref<'grid' | 'list'>('grid');
 const size = ref<'sm' | 'md' | 'lg'>('md');
 const graph = ref<'compact' | 'expanded'>('compact');
+// Detail view is desktop-only — the extra KPIs/axis/range chips don't fit a small screen.
+const isDesktop = useMediaQuery('(min-width: 768px)');
+const showDetail = computed(() => graph.value === 'expanded' && isDesktop.value);
 const graphRange = ref('30 j');
 const sheet = ref(false);
 const importOpen = ref(false);
@@ -247,63 +250,127 @@ const onDragLeave = () => {
 
 <template>
   <div class="mx-auto max-w-[1180px] px-5 pt-7 pb-10 max-md:px-4 max-md:pt-5 max-md:pb-8">
-    <!-- ── VALUE BAR ── -->
+    <!-- ── VALUE BAR — immersive (compact) ⇄ framed + scales (detail) ── -->
     <div
-      class="mb-4 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-5 shadow-lg backdrop-blur-md dark:border-cyan-400/30 dark:bg-cyan-400/10"
+      :class="[
+        'relative mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white/60 shadow-lg backdrop-blur-md transition-[height] duration-[450ms] ease-[cubic-bezier(0.4,0,0.1,1)] dark:border-white/10 dark:bg-zinc-900/60',
+        showDetail ? 'h-[220px] md:h-[396px]' : 'h-[188px] max-md:h-[220px]',
+      ]"
     >
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex flex-col gap-1">
-          <span
-            class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
-            >Valeur totale · CardMarket</span
-          >
-          <span
-            class="font-mono text-[clamp(30px,5vw,38px)] font-bold tracking-tight whitespace-nowrap"
-            >€ 4 218,60</span
-          >
-          <span class="font-mono text-sm text-cyan-600 dark:text-cyan-400"
-            >▴ €86,20 · +2,1 % (30 j)</span
-          >
-        </div>
-        <div class="flex flex-col items-end gap-2">
-          <div class="flex items-center gap-2">
+      <!-- graph background -->
+      <div
+        :class="[
+          'absolute z-0 transition-[inset] duration-[450ms] ease-[cubic-bezier(0.4,0,0.1,1)]',
+          showDetail ? 'inset-0 md:inset-x-4 md:top-[100px] md:bottom-[52px]' : 'inset-0',
+        ]"
+      >
+        <EnvelopeGraph :data="ENVELOPE_DATA" :detail="showDetail" />
+      </div>
+
+      <!-- scrim (fades out in detail mode) -->
+      <div
+        :class="[
+          'pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/95 via-white/55 to-transparent transition-opacity duration-300 dark:from-zinc-900/95 dark:via-zinc-900/55',
+          showDetail ? 'opacity-0' : 'opacity-100',
+        ]"
+      />
+
+      <!-- top: KPIs + controls -->
+      <div
+        class="absolute inset-x-0 top-0 z-[3] flex flex-col items-start justify-between gap-3 px-5 py-5 max-md:gap-2.5 md:flex-row md:flex-wrap"
+      >
+        <div class="flex items-stretch">
+          <div class="flex flex-col gap-1">
             <span
-              class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase max-md:hidden dark:text-slate-500"
-              >graphe</span
+              class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
+              >Valeur totale · CardMarket</span
             >
-            <SegToggle v-model="graph" :options="graphOptions" size="sm" />
+            <span
+              class="font-mono text-[clamp(28px,3.4vw,36px)] font-bold tracking-tight whitespace-nowrap"
+              >€ 4 218,60</span
+            >
           </div>
-          <Sparkline v-if="graph === 'compact'" :data="[40, 52, 46, 60, 54, 70, 64, 78, 72, 90]" />
-          <span
-            class="text-2xs flex items-center gap-1.5 font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase max-md:hidden dark:text-slate-500"
+          <div
+            class="ml-5 hidden flex-col justify-center gap-1 border-l border-slate-200 pl-5 md:flex dark:border-white/10"
           >
-            <Icon name="lucide:refresh-cw" :size="11" /> synchro auto · il y a 2 h
-          </span>
+            <span
+              class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
+              >Variation · 30 j</span
+            >
+            <span class="font-mono text-lg font-semibold text-cyan-600 dark:text-cyan-400"
+              >▴ +2,1 %</span
+            >
+          </div>
+          <div
+            v-if="statsData"
+            class="ml-5 hidden flex-col justify-center gap-1 border-l border-slate-200 pl-5 md:flex dark:border-white/10"
+          >
+            <span
+              class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
+              >Cartes</span
+            >
+            <span class="font-mono text-lg font-semibold">{{
+              statsData.total_cards.toLocaleString('fr-FR')
+            }}</span>
+          </div>
+          <div
+            v-if="statsData"
+            class="ml-5 hidden flex-col justify-center gap-1 border-l border-slate-200 pl-5 md:flex dark:border-white/10"
+          >
+            <span
+              class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
+              >Uniques</span
+            >
+            <span class="font-mono text-lg font-semibold">{{ statsData.unique_cards }}</span>
+          </div>
+        </div>
+
+        <div class="hidden items-center gap-2.5 md:flex">
+          <div v-if="showDetail" class="flex gap-1.5">
+            <button
+              v-for="r in ['30 j', '3 m', '1 an', 'Max']"
+              :key="r"
+              :class="[
+                'inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150 select-none',
+                graphRange === r
+                  ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300'
+                  : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100',
+              ]"
+              @click="graphRange = r"
+            >
+              {{ r }}
+            </button>
+          </div>
+          <SegToggle v-model="graph" :options="graphOptions" size="sm" />
         </div>
       </div>
 
-      <div v-if="graph === 'expanded'" class="mt-4 flex flex-col gap-2.5">
-        <div class="flex gap-2">
-          <button
-            v-for="r in ['30 j', '3 m', '1 an', 'Max']"
-            :key="r"
-            :class="[
-              'inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150 select-none',
-              graphRange === r
-                ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300'
-                : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100',
-            ]"
-            @click="graphRange = r"
-          >
-            {{ r }}
-          </button>
-        </div>
-        <LineGraph
-          :data="GRAPH_DATA"
-          hi="€4,3k"
-          lo="€4,1k"
-          :value-fmt="(v) => '€' + (v ?? 0).toLocaleString('fr-FR')"
-        />
+      <!-- bottom-left: sync status (hidden in detail, hidden on mobile — no room next to legend) -->
+      <span
+        :class="[
+          'text-2xs absolute bottom-3.5 left-5 z-[3] hidden items-center gap-1.5 font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase transition-opacity duration-300 sm:flex dark:text-slate-500',
+          showDetail ? 'pointer-events-none opacity-0' : 'opacity-100',
+        ]"
+      >
+        <Icon name="lucide:refresh-cw" :size="11" /> synchro auto · il y a 2 h
+      </span>
+
+      <!-- bottom-right: legend -->
+      <div class="absolute right-5 bottom-3.5 z-[3] flex gap-4">
+        <span
+          class="text-2xs flex items-center gap-1.5 font-mono whitespace-nowrap text-slate-500 dark:text-slate-300"
+        >
+          <span
+            class="h-2.5 w-[15px] rounded-[3px] border border-cyan-500/40 bg-cyan-500/25 dark:border-cyan-400/40 dark:bg-cyan-400/25"
+          />
+          low → trend
+        </span>
+        <span
+          class="text-2xs flex items-center gap-1.5 font-mono whitespace-nowrap text-slate-500 dark:text-slate-300"
+        >
+          <span class="h-0 w-[17px] border-t-[2.5px] border-cyan-500 dark:border-cyan-400" />
+          moyenne
+        </span>
       </div>
     </div>
 
