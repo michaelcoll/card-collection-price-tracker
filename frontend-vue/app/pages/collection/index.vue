@@ -435,13 +435,13 @@ const onDragLeave = () => {
           <span
             class="h-2.5 w-[15px] rounded-[3px] border border-cyan-500/40 bg-cyan-500/25 dark:border-cyan-400/40 dark:bg-cyan-400/25"
           />
-          low → trend
+          low → avg
         </span>
         <span
           class="text-2xs flex items-center gap-1.5 font-mono whitespace-nowrap text-slate-500 dark:text-slate-300"
         >
           <span class="h-0 w-[17px] border-t-[2.5px] border-cyan-500 dark:border-cyan-400" />
-          moyenne
+          trend
         </span>
       </div>
     </div>
