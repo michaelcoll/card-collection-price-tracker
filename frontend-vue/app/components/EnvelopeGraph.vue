@@ -49,7 +49,7 @@ const fmt = (v: number) => Math.round(v).toLocaleString('fr-FR') + ' €';
 
 const n = computed(() => props.data.length);
 const minVal = computed(() => Math.min(...props.data.map((d) => d.low)));
-const maxVal = computed(() => Math.max(...props.data.map((d) => d.trend)));
+const maxVal = computed(() => Math.max(...props.data.map((d) => d.avg)));
 const pad = computed(() => (maxVal.value - minVal.value) * 0.12 || 1);
 const lo0 = computed(() => minVal.value - pad.value);
 const hi0 = computed(() => maxVal.value + pad.value);
@@ -68,15 +68,15 @@ const ready = computed(() => dim.value.w > 0 && dim.value.h > 0);
 
 const topD = computed(() => {
   if (!ready.value) return '';
-  return envSmooth(props.data.map((d, i) => [x(i), y(d.trend)]));
+  return envSmooth(props.data.map((d, i) => [x(i), y(d.avg)]));
 });
 const botD = computed(() => {
   if (!ready.value) return '';
   return envSmooth(props.data.map((d, i) => [x(i), y(d.low)]));
 });
-const avgD = computed(() => {
+const midD = computed(() => {
   if (!ready.value) return '';
-  return envSmooth(props.data.map((d, i) => [x(i), y(d.avg)]));
+  return envSmooth(props.data.map((d, i) => [x(i), y(d.trend)]));
 });
 const areaD = computed(() => {
   if (!ready.value) return '';
@@ -106,7 +106,7 @@ const tooltipStyle = computed(() => {
   if (hover.value == null || !hoverPoint.value) return {};
   return {
     left: Math.max(64, Math.min(dim.value.w - 70, x(hover.value))) + 'px',
-    top: y(hoverPoint.value.trend) + 'px',
+    top: y(hoverPoint.value.avg) + 'px',
   };
 });
 </script>
@@ -143,7 +143,7 @@ const tooltipStyle = computed(() => {
       />
       <path
         class="fill-none stroke-cyan-500 [stroke-width:2.6] drop-shadow-[0_0_5px_rgba(34,211,238,0.45)] dark:stroke-cyan-400"
-        :d="avgD"
+        :d="midD"
       />
       <line
         v-if="detail && hover != null"
@@ -188,19 +188,19 @@ const tooltipStyle = computed(() => {
       </div>
       <div class="flex items-center justify-between gap-3.5 text-xs leading-relaxed">
         <span class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400"
-          ><i class="inline-block h-2 w-2 rounded-sm bg-cyan-300" />Trend</span
-        >
-        <b class="font-mono font-semibold">{{ fmt(hoverPoint.trend) }}</b>
-      </div>
-      <div class="flex items-center justify-between gap-3.5 text-xs leading-relaxed">
-        <span class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400"
-          ><i class="inline-block h-2 w-2 rounded-sm bg-cyan-500 dark:bg-cyan-400" />Moyenne</span
+          ><i class="inline-block h-2 w-2 rounded-sm bg-cyan-300" />avg</span
         >
         <b class="font-mono font-semibold">{{ fmt(hoverPoint.avg) }}</b>
       </div>
       <div class="flex items-center justify-between gap-3.5 text-xs leading-relaxed">
         <span class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400"
-          ><i class="inline-block h-2 w-2 rounded-sm bg-cyan-700 dark:bg-cyan-600" />Low</span
+          ><i class="inline-block h-2 w-2 rounded-sm bg-cyan-500 dark:bg-cyan-400" />trend</span
+        >
+        <b class="font-mono font-semibold">{{ fmt(hoverPoint.trend) }}</b>
+      </div>
+      <div class="flex items-center justify-between gap-3.5 text-xs leading-relaxed">
+        <span class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400"
+          ><i class="inline-block h-2 w-2 rounded-sm bg-cyan-700 dark:bg-cyan-600" />low</span
         >
         <b class="font-mono font-semibold">{{ fmt(hoverPoint.low) }}</b>
       </div>
