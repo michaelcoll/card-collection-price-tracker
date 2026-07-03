@@ -40,7 +40,7 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
     }
 
     for (index, line) in csv.lines().skip(1).enumerate() {
-        let line_number = index + 1; // +1 car lignes humaines
+        let line_number = index + 1 + 1; // +1 car lignes humaines, +1 car header
 
         let fields: Vec<String> = split_line(line);
         let field_refs: Vec<&str> = fields.iter().map(|s| s.as_str()).collect();
@@ -122,6 +122,18 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
                 )
             }
         };
+
+        CardId::try_new(
+            set_code.clone(),
+            collector_number,
+            language_code.clone(),
+            foil,
+        )
+        .map_err(|e| AppError::ParseError {
+            line: line_number,
+            field: "collector_number",
+            value: String::from(e),
+        })?;
 
         let card = Card::new_full(
             set_code,
@@ -216,7 +228,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(AppError::ParseError {
-                line: 1,
+                line: 2,
                 field: "set_code",
                 value: _
             })
@@ -232,7 +244,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(AppError::ParseError {
-                line: 1,
+                line: 2,
                 field: "language_code",
                 value: _
             })
@@ -252,7 +264,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(AppError::ParseError {
-                line: 2,
+                line: 3,
                 field: "quantity",
                 value: _,
             })
@@ -269,8 +281,25 @@ mod tests {
         assert!(matches!(
             result,
             Err(AppError::ParseError {
-                line: 1,
+                line: 2,
                 field: "purchase_price",
+                value: _
+            })
+        ));
+    }
+
+    #[test]
+    fn import_cards_returns_error_for_too_long_collector_number() {
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,Goblin Boarders,FDN,Foundations,12345678901,normal,common,3,101506,4409a063-bf2a-4a49-803e-3ce6bd474353,0.08,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
+
+        let result = parse_cards(csv);
+
+        assert!(matches!(
+            result,
+            Err(AppError::ParseError {
+                line: 2,
+                field: "collector_number",
                 value: _
             })
         ));
@@ -345,7 +374,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(AppError::ParseError {
-                line: 1,
+                line: 2,
                 field: "added_at",
                 value: _,
             })

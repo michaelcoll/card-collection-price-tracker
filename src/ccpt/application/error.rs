@@ -62,6 +62,11 @@ impl From<CardParsingError> for AppError {
                 field: "rarity",
                 value: msg,
             },
+            CardParsingError::InvalidCollectorNumber(msg) => AppError::ParseError {
+                line: 0,
+                field: "collector_number",
+                value: msg,
+            },
         }
     }
 }
