@@ -14,9 +14,7 @@ type CardDisplay = {
   foil: boolean;
 };
 
-const ENVELOPE_DATA = mockEnvelopeData();
-
-const { getCollection, getCollectionStats, importCards } = useCardsService();
+const { getCollection, getCollectionStats, importCards, getPriceHistory } = useCardsService();
 
 const RARITY_CODES: Record<string, string> = {
   Mythique: 'M',
@@ -122,6 +120,61 @@ const graph = ref<'compact' | 'expanded'>('compact');
 const isDesktop = useMediaQuery('(min-width: 768px)');
 const showDetail = computed(() => graph.value === 'expanded' && isDesktop.value);
 const graphRange = ref('30 j');
+
+const dayLabelFormatter = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
+
+const toIsoDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const dateRangeFor = (range: string) => {
+  const end = new Date();
+  const start = new Date(end);
+  if (range === '3 m') start.setMonth(start.getMonth() - 3);
+  else if (range === '1 an') start.setFullYear(start.getFullYear() - 1);
+  else if (range === 'Max') start.setFullYear(start.getFullYear() - 10);
+  else start.setDate(start.getDate() - 29);
+  return { start_date: toIsoDate(start), end_date: toIsoDate(end) };
+};
+
+const historyParams = ref(dateRangeFor(graphRange.value));
+const {
+  data: priceHistoryData,
+  pending: priceHistoryPending,
+  refresh: refreshPriceHistory,
+} = await getPriceHistory(historyParams);
+
+watch(graphRange, (range) => {
+  historyParams.value = dateRangeFor(range);
+  refreshPriceHistory();
+});
+
+const envelopeData = computed(() =>
+  (priceHistoryData.value ?? []).map((e) => {
+    const [year, month, day] = e.date.split('-').map(Number);
+    return {
+      low: e.low / 100,
+      avg: e.avg / 100,
+      trend: e.trend / 100,
+      label: dayLabelFormatter.format(new Date(year!, month! - 1, day)),
+    };
+  }),
+);
+const hasEnoughHistory = computed(() => envelopeData.value.length >= 2);
+
+const totalValueCents = computed(() => {
+  const entries = priceHistoryData.value;
+  return entries && entries.length > 0 ? entries[entries.length - 1]!.trend : 0;
+});
+
+const variation = computed(() => {
+  const entries = priceHistoryData.value ?? [];
+  if (entries.length < 2) return { pct: 0, positive: true };
+  const first = entries[0]!.trend;
+  const last = entries[entries.length - 1]!.trend;
+  const pct = first !== 0 ? ((last - first) / first) * 100 : 0;
+  return { pct, positive: pct >= 0 };
+});
+
 const sheet = ref(false);
 const importOpen = ref(false);
 const importStep = ref<'drop'>('drop');
@@ -264,7 +317,13 @@ const onDragLeave = () => {
           showDetail ? 'inset-0 md:inset-x-4 md:top-[100px] md:bottom-[52px]' : 'inset-0',
         ]"
       >
-        <EnvelopeGraph :data="ENVELOPE_DATA" :detail="showDetail" />
+        <EnvelopeGraph v-if="hasEnoughHistory" :data="envelopeData" :detail="showDetail" />
+        <div
+          v-else
+          class="text-2xs flex h-full items-center justify-center font-mono tracking-wide text-slate-400 uppercase dark:text-slate-500"
+        >
+          {{ priceHistoryPending ? 'Chargement…' : "Pas encore assez d'historique" }}
+        </div>
       </div>
 
       <!-- scrim (fades out in detail mode) -->
@@ -287,7 +346,7 @@ const onDragLeave = () => {
             >
             <span
               class="font-mono text-[clamp(28px,3.4vw,36px)] font-bold tracking-tight whitespace-nowrap"
-              >€ 4 218,60</span
+              >{{ formatPrice(totalValueCents) }}</span
             >
           </div>
           <div
@@ -295,10 +354,23 @@ const onDragLeave = () => {
           >
             <span
               class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
-              >Variation · 30 j</span
+              >Variation · {{ graphRange }}</span
             >
-            <span class="font-mono text-lg font-semibold text-cyan-600 dark:text-cyan-400"
-              >▴ +2,1 %</span
+            <span
+              :class="[
+                'font-mono text-lg font-semibold',
+                variation.positive
+                  ? 'text-cyan-600 dark:text-cyan-400'
+                  : 'text-red-500 dark:text-red-400',
+              ]"
+              >{{ variation.positive ? '▴' : '▾' }} {{ variation.positive ? '+' : '−'
+              }}{{
+                Math.abs(variation.pct).toLocaleString('fr-FR', {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })
+              }}
+              %</span
             >
           </div>
           <div
@@ -422,9 +494,7 @@ const onDragLeave = () => {
       <div class="min-w-0 flex-1">
         <!-- Header row -->
         <div class="mb-3.5 flex min-h-[22px] items-center justify-between">
-          <span v-if="statsData" class="text-sm text-slate-400 dark:text-slate-500">{{
-            `${statsData.total_cards.toLocaleString('fr-FR')} cartes · ${statsData.unique_cards} uniques`
-          }}</span>
+          <span v-if="statsData" class="text-sm text-slate-400 dark:text-slate-500" />
           <div class="flex items-center gap-2.5">
             <SegToggle
               v-if="view === 'grid'"

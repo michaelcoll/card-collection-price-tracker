@@ -45,7 +45,7 @@ const envSmooth = (pts: [number, number][]) => {
   return d;
 };
 
-const fmt = (v: number) => '€' + Math.round(v).toLocaleString('fr-FR');
+const fmt = (v: number) => Math.round(v).toLocaleString('fr-FR') + ' €';
 
 const n = computed(() => props.data.length);
 const minVal = computed(() => Math.min(...props.data.map((d) => d.low)));

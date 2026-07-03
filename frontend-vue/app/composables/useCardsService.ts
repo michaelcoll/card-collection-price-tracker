@@ -1,8 +1,14 @@
 import type { CollectionStats } from '~/bindings/CollectionStats';
 import type { Message } from '~/bindings/Message';
 import type { PaginatedCollection } from '~/bindings/PaginatedCollection';
+import type { PriceHistoryEntry } from '~/bindings/PriceHistoryEntry';
 import type { SortBy } from '~/bindings/SortBy';
 import type { SortDir } from '~/bindings/SortDir';
+
+type GetPriceHistoryParams = {
+  start_date: string;
+  end_date: string;
+};
 
 type GetCollectionParams = {
   page?: number;
@@ -43,5 +49,19 @@ export const useCardsService = () => {
       lazy: true,
     });
 
-  return { getCollection, getCollection2, importCards, getCardInfo, getCollectionStats };
+  const getPriceHistory = (params: MaybeRefOrGetter<GetPriceHistoryParams>) =>
+    useAsyncData(
+      'cards-price-history',
+      () => apiCall<PriceHistoryEntry[]>('/cards/price-history', { query: toValue(params) }),
+      { lazy: true },
+    );
+
+  return {
+    getCollection,
+    getCollection2,
+    importCards,
+    getCardInfo,
+    getCollectionStats,
+    getPriceHistory,
+  };
 };
