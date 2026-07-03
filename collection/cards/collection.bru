@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/cards?page=0&page_size=20&sort_by=trend&sort_dir=asc
+  url: {{baseUrl}}/cards?page=0&page_size=20&sort_by=trend&sort_dir=desc&rarity=M&q=&sets=ECL&price_min=0&price_max=20000
   body: none
   auth: inherit
 }
@@ -14,6 +14,10 @@ params:query {
   page: 0
   page_size: 20
   sort_by: trend
-  sort_dir: asc
-  ~q: vampire
+  sort_dir: desc
+  rarity: M
+  q: 
+  sets: ECL
+  price_min: 0
+  price_max: 20000
 }

@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   toggle: [k: 'rar' | 'sets', v: string];
+  'price-change': [lo: number, hi: number];
 }>();
 
 const RARITIES = ['Mythique', 'Rare', 'Unco', 'Commune'];
@@ -41,10 +42,12 @@ const pricePct = (v: number) => (v / sliderMax.value) * 100;
 const onLoInput = (e: Event) => {
   const val = Number((e.target as HTMLInputElement).value);
   lo.value = Math.min(val, hi.value - 1);
+  emit('price-change', lo.value, hi.value);
 };
 const onHiInput = (e: Event) => {
   const val = Number((e.target as HTMLInputElement).value);
   hi.value = Math.max(val, lo.value + 1);
+  emit('price-change', lo.value, hi.value);
 };
 
 const chipClass = (r: string) =>

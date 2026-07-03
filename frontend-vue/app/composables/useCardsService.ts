@@ -10,6 +10,10 @@ type GetCollectionParams = {
   sort_by?: SortBy;
   sort_dir?: SortDir;
   q?: string;
+  rarity?: string;
+  sets?: string;
+  price_min?: number;
+  price_max?: number;
 };
 
 export const useCardsService = () => {

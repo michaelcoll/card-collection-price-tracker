@@ -42,6 +42,33 @@ pub async fn insert_card(
 }
 
 #[allow(clippy::too_many_arguments)]
+pub async fn insert_card_with_rarity(
+    pool: &PgPool,
+    set_code: &str,
+    collector_number: &str,
+    language_code: &str,
+    foil: bool,
+    name: &str,
+    cardmarket_id: i32,
+    rarity: &str,
+) {
+    sqlx::query(
+        r#"INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#)
+        .bind(set_code)
+        .bind(collector_number)
+        .bind(language_code)
+        .bind(foil)
+        .bind(name)
+        .bind(rarity)
+        .bind(Uuid::new_v4())
+        .bind(cardmarket_id)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+#[allow(clippy::too_many_arguments)]
 pub async fn insert_collection_entry(
     pool: &PgPool,
     set_code: &str,

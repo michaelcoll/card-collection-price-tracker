@@ -47,6 +47,34 @@ paths:
         required: false
         schema:
           type: string
+      - name: rarity
+        in: query
+        description: Comma-separated rarity codes (C, U, R, M)
+        required: false
+        schema:
+          type: string
+      - name: sets
+        in: query
+        description: Comma-separated set codes
+        required: false
+        schema:
+          type: string
+      - name: price_min
+        in: query
+        description: Minimum trend price in cents
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+      - name: price_max
+        in: query
+        description: Maximum trend price in cents
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
       responses:
         '200':
           description: Paginated card collection
