@@ -164,12 +164,12 @@ const clearSets = () => {
         <div class="mt-3 flex justify-between gap-2">
           <span
             class="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-xs text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300"
-            >€{{ lo }}</span
+            >{{ lo }} €</span
           >
           <span class="font-mono text-xs text-slate-400 dark:text-slate-500">—</span>
           <span
             class="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-xs text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-300"
-            >€{{ hi }}{{ hi >= sliderMax ? '+' : '' }}</span
+            >{{ hi }}{{ hi >= sliderMax ? '+' : '' }} €</span
           >
         </div>
       </div>

@@ -98,10 +98,12 @@ run = "sqlx migrate run"
 
 [tasks.upgrade-backend]
 run = "cargo update"
+hide = true
 
 [tasks.upgrade-frontend]
 dir = "frontend-vue"
 run = "pnpm update"
+hide = true
 
 [tasks.upgrade]
 description = "Upgrades the project dependencies"
@@ -115,3 +117,15 @@ run = "cargo run --bin ccpt"
 description = "Runs the frontend development server"
 dir = "frontend-vue"
 run = "pnpm dev"
+
+[tasks.build-backend]
+description = "Builds the backend"
+run = "cargo build"
+alias = ["bb"]
+
+[tasks.build-frontend]
+description = "Builds the frontend"
+dir = "frontend-vue"
+depends = ["install-frontend-deps"]
+run = "pnpm build"
+alias = ["bf"]
