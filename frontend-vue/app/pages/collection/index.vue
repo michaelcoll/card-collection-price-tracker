@@ -313,7 +313,7 @@ const onDragLeave = () => {
       <!-- graph background -->
       <div
         :class="[
-          'absolute z-0 transition-[inset] duration-[450ms] ease-[cubic-bezier(0.4,0,0.1,1)]',
+          'absolute transition-[inset] duration-[450ms] ease-[cubic-bezier(0.4,0,0.1,1)]',
           showDetail ? 'inset-0 md:inset-x-4 md:top-[100px] md:bottom-[52px]' : 'inset-0',
         ]"
       >
