@@ -147,6 +147,7 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             purchase_price,
             scryfall_id,
             None,
+            None,
             added_at,
         );
         cards.push(card);
@@ -238,7 +239,7 @@ mod tests {
     #[test]
     fn import_cards_returns_error_for_invalid_language_code() {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
-                   bulk,binder,\"Brigid, Clachan's Heart // Brigid, Doun's Mind\",ECL,Lorwyn Eclipsed,7,normal,rare,1,110841,cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8,1.75,false,false,near_mint,de,EUR,2026-02-05T20:44:45.815Z";
+                   bulk,binder,\"Brigid, Clachan's Heart // Brigid, Doun's Mind\",ECL,Lorwyn Eclipsed,7,normal,rare,1,110841,cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8,1.75,false,false,near_mint,xx,EUR,2026-02-05T20:44:45.815Z";
 
         let result = parse_cards(csv);
         assert!(matches!(
@@ -399,6 +400,7 @@ mod tests {
             1,
             76,
             Uuid::parse_str("09478378-c28b-4334-a0a1-157325ed8e5b").unwrap(),
+            None,
             None,
             Some(
                 DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")

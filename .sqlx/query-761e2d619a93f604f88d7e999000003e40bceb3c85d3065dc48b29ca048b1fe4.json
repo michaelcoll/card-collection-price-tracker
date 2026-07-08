@@ -93,6 +93,17 @@
       },
       {
         "ordinal": 8,
+        "name": "the_gatherer_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "card",
+            "name": "the_gatherer_id"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
         "name": "set_name",
         "type_info": "Varchar",
         "origin": {
@@ -103,7 +114,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "quantity",
         "type_info": "Int4",
         "origin": {
@@ -114,7 +125,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "purchase_price",
         "type_info": "Int4",
         "origin": {
@@ -125,7 +136,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "added_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -149,6 +160,7 @@
       false,
       false,
       false,
+      true,
       true,
       false,
       false,

@@ -35,6 +35,7 @@ pub fn create_maintenance_router() -> axum::Router<AppState> {
         .route("/stats", get(get_stats))
         .route("/trigger-price-update", post(trigger_price_update))
         .route("/update-cardmarket-ids", post(update_cardmarket_ids))
+        .route("/update-gatherer-ids", post(update_gatherer_ids))
 }
 
 #[utoipa::path(
@@ -84,6 +85,25 @@ pub(crate) async fn update_cardmarket_ids(
 ) -> Result<(StatusCode, Json<EnqueueResponse>), AppError> {
     let enqueued = state
         .enqueue_cardmarket_id_use_case
+        .enqueue_pending_updates()
+        .await?;
+
+    Ok((StatusCode::ACCEPTED, Json(EnqueueResponse { enqueued })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/maintenance/update-gatherer-ids",
+    responses(
+        (status = 202, description = "Gatherer IDs enqueued for update", body = EnqueueResponse),
+    ),
+    tag = "maintenance",
+)]
+pub(crate) async fn update_gatherer_ids(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<EnqueueResponse>), AppError> {
+    let enqueued = state
+        .enqueue_gatherer_id_use_case
         .enqueue_pending_updates()
         .await?;
 
@@ -465,5 +485,54 @@ mod tests {
         let json = serde_json::to_string(&response).unwrap();
         assert!(json.contains("\"enqueued\""));
         assert!(json.contains("7"));
+    }
+
+    // --- Update Gatherer IDs ---
+
+    #[tokio::test]
+    async fn test_update_gatherer_ids_returns_accepted_with_enqueued_count() {
+        use crate::application::use_case::MockEnqueueGathererIdUpdateUseCase;
+
+        let mut mock_enqueue = MockEnqueueGathererIdUpdateUseCase::new();
+        mock_enqueue
+            .expect_enqueue_pending_updates()
+            .times(1)
+            .returning(|| Box::pin(async { Ok(5) }));
+
+        let app_state = AppState::for_testing_with_enqueue_gatherer_id(
+            Arc::new(MockStatsUseCase::new()),
+            Arc::new(mock_enqueue),
+        );
+
+        let result = update_gatherer_ids(State(app_state)).await;
+        assert!(result.is_ok());
+        let (status, Json(body)) = result.unwrap();
+        assert_eq!(status, StatusCode::ACCEPTED);
+        assert_eq!(body.enqueued, 5);
+    }
+
+    #[tokio::test]
+    async fn test_update_gatherer_ids_returns_error_on_repository_error() {
+        use crate::application::use_case::MockEnqueueGathererIdUpdateUseCase;
+
+        let mut mock_enqueue = MockEnqueueGathererIdUpdateUseCase::new();
+        mock_enqueue
+            .expect_enqueue_pending_updates()
+            .times(1)
+            .returning(|| {
+                Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) })
+            });
+
+        let app_state = AppState::for_testing_with_enqueue_gatherer_id(
+            Arc::new(MockStatsUseCase::new()),
+            Arc::new(mock_enqueue),
+        );
+
+        let result = update_gatherer_ids(State(app_state)).await;
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            AppError::RepositoryError(msg) => assert_eq!(msg, "DB error"),
+            _ => panic!("Expected RepositoryError"),
+        }
     }
 }

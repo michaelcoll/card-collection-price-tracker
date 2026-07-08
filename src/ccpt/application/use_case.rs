@@ -23,6 +23,12 @@ pub trait EnqueueCardMarketIdUpdateUseCase: Send + Sync {
 
 #[async_trait]
 #[cfg_attr(test, automock)]
+pub trait EnqueueGathererIdUpdateUseCase: Send + Sync {
+    async fn enqueue_pending_updates(&self) -> Result<usize, AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
 pub trait CardCollectionPriceCalculationUseCase: Send + Sync {
     async fn calculate_total_price(&self) -> Result<(), AppError>;
 }

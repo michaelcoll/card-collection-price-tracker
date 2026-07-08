@@ -566,6 +566,7 @@ const onDragLeave = () => {
               v-for="c in allCards"
               :key="c.scryfall_id"
               :scryfall-id="c.scryfall_id"
+              :the-gatherer-id="c.the_gatherer_id ?? undefined"
               :name="c.name"
               :qty="c.quantity"
               :purchased="c.purchase_price"
@@ -654,6 +655,7 @@ const onDragLeave = () => {
           >
             <MtgCard
               :scryfall-id="detail?.scryfall_id"
+              :the-gatherer-id="detail?.the_gatherer_id ?? undefined"
               :name="detail?.name"
               class="w-full max-w-[300px] drop-shadow-2xl max-[720px]:max-w-[260px]"
             />

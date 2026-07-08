@@ -17,7 +17,7 @@
     "node": ">=24"
   },
   "dependencies": {
-    "@clerk/nuxt": "~2.6.11",
+    "@clerk/nuxt": "~2.6.12",
     "@nuxt/eslint": "~1.16.0",
     "@nuxt/fonts": "~0.14.0",
     "@nuxt/icon": "~2.3.1",

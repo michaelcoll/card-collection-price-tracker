@@ -72,6 +72,7 @@ pub struct Card {
     pub added_at: Option<chrono::DateTime<chrono::Utc>>,
     pub scryfall_id: uuid::Uuid,
     pub cardmarket_id: Option<u32>,
+    pub the_gatherer_id: Option<String>,
     pub price_guide: Option<PriceGuide>,
 }
 
@@ -100,6 +101,7 @@ impl Card {
             purchase_price,
             scryfall_id: uuid::Uuid::default(),
             cardmarket_id: None,
+            the_gatherer_id: None,
             added_at: None,
             price_guide: None,
         }
@@ -118,6 +120,7 @@ impl Card {
         purchase_price: u32,
         scryfall_id: uuid::Uuid,
         cardmarket_id: Option<u32>,
+        the_gatherer_id: Option<String>,
         added_at: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Self {
         let set_code: SetCode = set_code.into();
@@ -131,6 +134,7 @@ impl Card {
             purchase_price,
             scryfall_id,
             cardmarket_id,
+            the_gatherer_id,
             added_at,
             price_guide: None,
         }

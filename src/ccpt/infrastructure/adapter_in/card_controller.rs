@@ -93,6 +93,7 @@ pub struct CollectionCardResponse {
     pub name: String,
     pub rarity_code: String,
     pub scryfall_id: String,
+    pub the_gatherer_id: Option<String>,
     pub quantity: u8,
     pub purchase_price: u32,
     pub price_guide: Option<PriceGuideResponse>,
@@ -125,6 +126,7 @@ impl From<Card> for CollectionCardResponse {
             name: c.name,
             rarity_code: c.rarity_code.to_string(),
             scryfall_id: c.scryfall_id.to_string(),
+            the_gatherer_id: c.the_gatherer_id,
             quantity: c.quantity,
             purchase_price: c.purchase_price,
             price_guide: c.price_guide.map(|pg| PriceGuideResponse {
@@ -424,9 +426,9 @@ mod tests {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionPriceHistoryUseCase,
-            MockGetCollectionStatsUseCase, MockImportCardUseCase, MockImportPriceUseCase,
-            MockStatsUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
+            MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
+            MockImportCardUseCase, MockImportPriceUseCase, MockStatsUseCase,
         };
 
         AppState {
@@ -437,6 +439,7 @@ mod tests {
             get_collection_use_case: Arc::new(mock),
             import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
             enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
+            enqueue_gatherer_id_use_case: Arc::new(MockEnqueueGathererIdUpdateUseCase::new()),
             get_collection_price_history_use_case: Arc::new(
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
@@ -450,9 +453,9 @@ mod tests {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionPriceHistoryUseCase,
-            MockGetCollectionUseCase, MockImportCardUseCase, MockImportPriceUseCase,
-            MockStatsUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
+            MockGetCollectionPriceHistoryUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
+            MockImportPriceUseCase, MockStatsUseCase,
         };
 
         AppState {
@@ -463,6 +466,7 @@ mod tests {
             get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
             import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
             enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
+            enqueue_gatherer_id_use_case: Arc::new(MockEnqueueGathererIdUpdateUseCase::new()),
             get_collection_price_history_use_case: Arc::new(
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
@@ -1185,9 +1189,9 @@ mod tests {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionStatsUseCase,
-            MockGetCollectionUseCase, MockImportCardUseCase, MockImportPriceUseCase,
-            MockStatsUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
+            MockGetCollectionStatsUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
+            MockImportPriceUseCase, MockStatsUseCase,
         };
 
         AppState {
@@ -1198,6 +1202,7 @@ mod tests {
             get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
             import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
             enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
+            enqueue_gatherer_id_use_case: Arc::new(MockEnqueueGathererIdUpdateUseCase::new()),
             get_collection_price_history_use_case: Arc::new(mock),
             get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
         }

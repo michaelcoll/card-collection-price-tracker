@@ -5,13 +5,16 @@ use crate::application::service::cardmarket_id_enqueue_service::CardMarketIdEnqu
 use crate::application::service::collection_price_history_service::CollectionPriceHistoryService;
 use crate::application::service::collection_service::CollectionService;
 use crate::application::service::collection_stats_service::CollectionStatsService;
+use crate::application::service::gatherer_id_enqueue_service::GathererIdEnqueueService;
 use crate::application::service::import_card_service::ImportCardService;
 use crate::application::service::import_price_service::ImportPriceService;
 use crate::application::service::stats_service::StatsService;
 use crate::application::service::update_card_market_service::CardMarketIdWorker;
+use crate::application::service::update_gatherer_service::GathererIdWorker;
 use crate::application::use_case::{
-    EnqueueCardMarketIdUpdateUseCase, GetCollectionPriceHistoryUseCase, GetCollectionStatsUseCase,
-    GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase, StatsUseCase,
+    EnqueueCardMarketIdUpdateUseCase, EnqueueGathererIdUpdateUseCase,
+    GetCollectionPriceHistoryUseCase, GetCollectionStatsUseCase, GetCollectionUseCase,
+    ImportCardUseCase, ImportPriceUseCase, StatsUseCase,
 };
 use crate::domain::card::CardId;
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
@@ -23,6 +26,7 @@ use crate::infrastructure::adapter_out::repository::collection_price_history_rep
 use crate::infrastructure::adapter_out::repository::collection_stats_repository_adapter::CollectionStatsRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::stats_repository_adapter::StatsRepositoryAdapter;
 use adapter_in::maintenance_controller::create_maintenance_router;
+use adapter_out::caller::gatherer_caller_adapter::GathererCallerAdapter;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
 use adapter_out::repository::card_repository_adapter::CardRepositoryAdapter;
 use adapter_out::repository::set_names_repository_adapter::SetNameRepositoryAdapter;
@@ -50,6 +54,7 @@ pub struct AppState {
     pub get_collection_use_case: Arc<dyn GetCollectionUseCase>,
     pub import_price_use_case: Arc<dyn ImportPriceUseCase>,
     pub enqueue_cardmarket_id_use_case: Arc<dyn EnqueueCardMarketIdUpdateUseCase>,
+    pub enqueue_gatherer_id_use_case: Arc<dyn EnqueueGathererIdUpdateUseCase>,
     pub get_collection_price_history_use_case: Arc<dyn GetCollectionPriceHistoryUseCase>,
     pub get_collection_stats_use_case: Arc<dyn GetCollectionStatsUseCase>,
 }
@@ -63,6 +68,8 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         std::env::var("EDHREC_BASE_URL").unwrap_or("https://edhrec.com".to_string());
     let scryfall_base_url =
         std::env::var("SCRYFALL_BASE_URL").unwrap_or("https://api.scryfall.com".to_string());
+    let gatherer_base_url =
+        std::env::var("GATHERER_BASE_URL").unwrap_or("https://gatherer.wizards.com".to_string());
     let clerk_frontend_api_url = std::env::var("CLERK_FRONTEND_API_URL")
         .expect("CLERK_FRONTEND_API_URL must be set in environment variables");
 
@@ -76,6 +83,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         Arc::new(CardMarketCallerAdapter::new(cardmarket_price_guides_url));
     let edh_rec_caller_adapter = Arc::new(EdhRecCallerAdapter::new(edh_rec_base_url));
     let scryfall_caller_adapter = Arc::new(ScryfallCallerAdapter::new(scryfall_base_url));
+    let gatherer_caller_adapter = Arc::new(GathererCallerAdapter::new(gatherer_base_url));
     let stats_repository_adapter = Arc::new(StatsRepositoryAdapter::new(pool.clone()));
 
     let auth_service: Arc<dyn AuthService> = Arc::new(
@@ -114,10 +122,34 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         }
     });
 
+    // Canal + HashSet de déduplication dédiés à l'enrichissement the_gatherer_id
+    let (gatherer_sender, gatherer_receiver) =
+        tokio::sync::mpsc::unbounded_channel::<(CardId, String)>();
+    let gatherer_dedup_set = Arc::new(Mutex::new(HashSet::<CardId>::new()));
+
+    let enqueue_gatherer_id_service = Arc::new(GathererIdEnqueueService::new(
+        card_repository_adapter.clone(),
+        gatherer_sender,
+        gatherer_dedup_set.clone(),
+    ));
+
+    let gatherer_worker = GathererIdWorker::new(
+        card_repository_adapter.clone(),
+        gatherer_caller_adapter,
+        card_prices_view_repository_adapter.clone(),
+        gatherer_dedup_set,
+    );
+    tokio::spawn(async move {
+        if let Err(e) = gatherer_worker.run(gatherer_receiver).await {
+            tracing::error!("Gatherer worker terminated with error: {:?}", e);
+        }
+    });
+
     let import_card_service = Arc::new(ImportCardService::new(
         card_repository_adapter.clone(),
         set_name_repository_adapter,
         enqueue_cardmarket_id_service.clone(),
+        enqueue_gatherer_id_service.clone(),
         card_prices_view_repository_adapter.clone(),
     ));
 
@@ -149,6 +181,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         get_collection_use_case: collection_service,
         import_price_use_case: import_price_service.clone(),
         enqueue_cardmarket_id_use_case: enqueue_cardmarket_id_service,
+        enqueue_gatherer_id_use_case: enqueue_gatherer_id_service,
         get_collection_price_history_use_case: collection_price_history_service,
         get_collection_stats_use_case: collection_stats_service,
     };
@@ -195,8 +228,9 @@ impl AppState {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionPriceHistoryUseCase,
-            MockGetCollectionStatsUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
+            MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
+            MockGetCollectionUseCase, MockImportCardUseCase,
         };
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
@@ -233,6 +267,7 @@ impl AppState {
             get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
             import_price_use_case,
             enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
+            enqueue_gatherer_id_use_case: Arc::new(MockEnqueueGathererIdUpdateUseCase::new()),
             get_collection_price_history_use_case: Arc::new(
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
@@ -252,6 +287,21 @@ impl AppState {
         let mut base =
             Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
         base.enqueue_cardmarket_id_use_case = enqueue_cardmarket_id_use_case;
+        base
+    }
+
+    pub fn for_testing_with_enqueue_gatherer_id(
+        stats_use_case: Arc<dyn StatsUseCase>,
+        enqueue_gatherer_id_use_case: Arc<dyn EnqueueGathererIdUpdateUseCase>,
+    ) -> Self {
+        use crate::application::use_case::MockImportPriceUseCase;
+        let mut mock_import_price = MockImportPriceUseCase::new();
+        mock_import_price
+            .expect_import_prices_for_current_date()
+            .returning(|| Box::pin(async { Ok(()) }));
+        let mut base =
+            Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
+        base.enqueue_gatherer_id_use_case = enqueue_gatherer_id_use_case;
         base
     }
 }
