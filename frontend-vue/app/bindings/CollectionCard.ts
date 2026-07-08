@@ -9,6 +9,7 @@ export type CollectionCard = {
   name: string;
   rarity_code: string;
   scryfall_id: string;
+  the_gatherer_id: string | null;
   quantity: number;
   purchase_price: number;
   price_guide: PriceGuide | null;

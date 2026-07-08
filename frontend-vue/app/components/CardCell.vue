@@ -2,6 +2,7 @@
 const props = withDefaults(
   defineProps<{
     scryfallId?: string;
+    theGathererId?: string;
     name: string;
     qty?: number;
     price?: number;
@@ -45,6 +46,7 @@ const dealTagClass = computed(() => {
     <MtgCard
       :qty="qty"
       :scryfall-id="scryfallId"
+      :the-gatherer-id="theGathererId"
       :name="name"
       :clickable="clickable ?? true"
       :foil="foil"

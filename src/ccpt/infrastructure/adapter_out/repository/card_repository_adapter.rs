@@ -2,7 +2,9 @@ use crate::application::error::AppError;
 use crate::application::repository::CardRepository;
 use crate::domain::card::{Card, CardId};
 use crate::domain::user::User;
-use crate::infrastructure::adapter_out::repository::entities::{CardEntity, CardIdEntity};
+use crate::infrastructure::adapter_out::repository::entities::{
+    CardEntity, CardIdEntity, CardNameEntity,
+};
 use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 
@@ -65,6 +67,25 @@ impl CardRepository for CardRepositoryAdapter {
         .collect::<Vec<(CardId, uuid::Uuid)>>())
     }
 
+    async fn get_all_without_gatherer_id(&self) -> Result<Vec<(CardId, String)>, AppError> {
+        Ok(sqlx::query_as!(
+            CardNameEntity,
+            "SELECT
+                card.set_code,
+                card.collector_number,
+                card.language_code,
+                card.foil,
+                card.name
+            FROM card
+            WHERE card.the_gatherer_id IS NULL"
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(|e| (e.clone().into(), e.name))
+        .collect::<Vec<(CardId, String)>>())
+    }
+
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
         sqlx::query!(
         r#"INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id)
@@ -118,6 +139,26 @@ impl CardRepository for CardRepositoryAdapter {
                 SET cardmarket_id = $1
                 WHERE set_code = $2 AND collector_number = $3 AND language_code = $4 AND foil = $5;"#,
             cardmarket_id.map(|id| id as i32),
+            id.set_code.to_string(),
+            id.collector_number,
+            id.language_code.to_string(),
+            id.foil)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn update_gatherer_id(
+        &self,
+        id: CardId,
+        gatherer_id: Option<String>,
+    ) -> Result<(), AppError> {
+        sqlx::query!(
+            r#"UPDATE card
+                SET the_gatherer_id = $1
+                WHERE set_code = $2 AND collector_number = $3 AND language_code = $4 AND foil = $5;"#,
+            gatherer_id,
             id.set_code.to_string(),
             id.collector_number,
             id.language_code.to_string(),
@@ -349,5 +390,45 @@ mod tests {
             cards[0].0,
             CardId::new("FDN", "87", LanguageCode::FR, false)
         );
+    }
+
+    #[sqlx::test]
+    async fn get_all_without_gatherer_id_returns_only_cards_without_gatherer_id(pool: PgPool) {
+        insert_card_without_cardmarket_id(&pool, "FDN", "87", "FR", false, "Goblin Boarders").await;
+        insert_card(&pool, "FDN", "12", "EN", true, "Goblin Boarders", 123).await;
+        sqlx::query!(
+            "UPDATE card SET the_gatherer_id = $1 WHERE set_code = 'FDN' AND collector_number = '12'",
+            "ABC123"
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let cards = CardRepositoryAdapter::new(pool)
+            .get_all_without_gatherer_id()
+            .await
+            .unwrap();
+
+        assert_eq!(cards.len(), 1);
+        assert_eq!(
+            cards[0].0,
+            CardId::new("FDN", "87", LanguageCode::FR, false)
+        );
+        assert_eq!(cards[0].1, "Goblin Boarders");
+    }
+
+    #[sqlx::test]
+    async fn update_gatherer_id_sets_the_value(pool: PgPool) {
+        insert_card_without_cardmarket_id(&pool, "FDN", "87", "FR", false, "Goblin Boarders").await;
+
+        let repository = CardRepositoryAdapter::new(pool);
+        let card_id = CardId::new("FDN", "87", LanguageCode::FR, false);
+        repository
+            .update_gatherer_id(card_id.clone(), Some("ABC123".to_string()))
+            .await
+            .unwrap();
+
+        let remaining = repository.get_all_without_gatherer_id().await.unwrap();
+        assert!(remaining.is_empty());
     }
 }

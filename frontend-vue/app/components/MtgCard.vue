@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   scryfallId?: string;
+  theGathererId?: string;
   qty?: number;
   clickable?: boolean;
   mini?: boolean;
@@ -13,6 +14,8 @@ const emit = defineEmits(['click']);
 
 const src = computed(
   () =>
+    (props.theGathererId &&
+      `https://gatherer-static.wizards.com/Cards/medium/${props.theGathererId}.webp`) ||
     (props.scryfallId &&
       `https://api.scryfall.com/cards/${props.scryfallId}?format=image&version=normal`) ||
     '',

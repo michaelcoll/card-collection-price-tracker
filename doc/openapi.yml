@@ -196,6 +196,10 @@ components:
           type: string
         set_code:
           type: string
+        the_gatherer_id:
+          type:
+          - string
+          - 'null'
     EnqueueResponse:
       type: object
       required:

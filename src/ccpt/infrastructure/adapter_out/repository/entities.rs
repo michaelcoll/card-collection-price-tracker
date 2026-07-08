@@ -22,6 +22,7 @@ pub struct CardEntity {
     pub added_at: Option<DateTime<Utc>>,
     pub scryfall_id: Uuid,
     pub cardmarket_id: Option<i32>,
+    pub the_gatherer_id: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -32,6 +33,29 @@ pub struct CardIdEntity {
     pub foil: bool,
     pub set_name: String,
     pub scryfall_id: Uuid,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CardNameEntity {
+    pub set_code: String,
+    pub collector_number: String,
+    pub language_code: String,
+    pub foil: bool,
+    pub name: String,
+}
+
+impl From<CardNameEntity> for CardId {
+    fn from(entity: CardNameEntity) -> CardId {
+        let set_code =
+            SetCode::try_new(entity.set_code).expect("database contains invalid set_code");
+        CardId {
+            set_code,
+            collector_number: entity.collector_number,
+            language_code: LanguageCode::try_new(entity.language_code)
+                .expect("database contains invalid language_code"),
+            foil: entity.foil,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -63,6 +87,7 @@ impl From<CardEntity> for Card {
             added_at: entity.added_at,
             scryfall_id: entity.scryfall_id,
             cardmarket_id: entity.cardmarket_id.map(|id| id as u32),
+            the_gatherer_id: entity.the_gatherer_id,
             price_guide: None,
         }
     }
@@ -229,6 +254,7 @@ pub struct CardWithPriceEntity {
     pub name: String,
     pub rarity: String,
     pub scryfall_id: Uuid,
+    pub the_gatherer_id: Option<String>,
     pub quantity: i32,
     pub purchase_price: i32,
     #[sqlx(flatten)]
@@ -272,6 +298,7 @@ impl From<CardWithPriceEntity> for Card {
             rarity_code: from_db_rarity(e.rarity),
             scryfall_id: e.scryfall_id,
             cardmarket_id: None,
+            the_gatherer_id: e.the_gatherer_id,
             added_at: None,
             quantity: e.quantity as u8,
             purchase_price: e.purchase_price as u32,
@@ -297,6 +324,7 @@ mod tests {
             purchase_price: 350,
             scryfall_id: Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             cardmarket_id,
+            the_gatherer_id: None,
             added_at: None,
         }
     }

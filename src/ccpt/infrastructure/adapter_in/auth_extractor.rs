@@ -62,8 +62,9 @@ mod tests {
 
     fn create_test_app_state_with_auth(auth_service: Arc<dyn AuthService>) -> AppState {
         use crate::application::use_case::{
-            MockEnqueueCardMarketIdUpdateUseCase, MockGetCollectionPriceHistoryUseCase,
-            MockGetCollectionStatsUseCase, MockGetCollectionUseCase, MockImportPriceUseCase,
+            MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
+            MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
+            MockGetCollectionUseCase, MockImportPriceUseCase,
         };
         AppState {
             import_card_use_case: Arc::new(MockImportCardUseCase::new()),
@@ -73,6 +74,7 @@ mod tests {
             get_collection_use_case: Arc::new(MockGetCollectionUseCase::new()),
             import_price_use_case: Arc::new(MockImportPriceUseCase::new()),
             enqueue_cardmarket_id_use_case: Arc::new(MockEnqueueCardMarketIdUpdateUseCase::new()),
+            enqueue_gatherer_id_use_case: Arc::new(MockEnqueueGathererIdUpdateUseCase::new()),
             get_collection_price_history_use_case: Arc::new(
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),

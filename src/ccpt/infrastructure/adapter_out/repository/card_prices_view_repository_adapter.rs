@@ -85,6 +85,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
                  cp.name,
                  cp.rarity,
                  cp.scryfall_id,
+                 cp.the_gatherer_id,
                  cp.quantity,
                  cp.purchase_price,
                  cp.avg,
