@@ -8,16 +8,18 @@ use crate::application::service::collection_stats_service::CollectionStatsServic
 use crate::application::service::gatherer_id_enqueue_service::GathererIdEnqueueService;
 use crate::application::service::import_card_service::ImportCardService;
 use crate::application::service::import_price_service::ImportPriceService;
+use crate::application::service::register_user_service::RegisterUserService;
 use crate::application::service::stats_service::StatsService;
 use crate::application::service::update_card_market_service::CardMarketIdWorker;
 use crate::application::service::update_gatherer_service::GathererIdWorker;
 use crate::application::use_case::{
     EnqueueCardMarketIdUpdateUseCase, EnqueueGathererIdUpdateUseCase,
     GetCollectionPriceHistoryUseCase, GetCollectionStatsUseCase, GetCollectionUseCase,
-    ImportCardUseCase, ImportPriceUseCase, StatsUseCase,
+    ImportCardUseCase, ImportPriceUseCase, RegisterUserUseCase, StatsUseCase,
 };
 use crate::domain::card::CardId;
 use crate::infrastructure::adapter_in::card_controller::create_card_router;
+use crate::infrastructure::adapter_in::user_controller::create_user_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
 use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCallerAdapter;
 use crate::infrastructure::adapter_out::repository::card_prices_view_repository_adapter::CardPricesViewRepositoryAdapter;
@@ -30,6 +32,7 @@ use adapter_out::caller::gatherer_caller_adapter::GathererCallerAdapter;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
 use adapter_out::repository::card_repository_adapter::CardRepositoryAdapter;
 use adapter_out::repository::set_names_repository_adapter::SetNameRepositoryAdapter;
+use adapter_out::repository::user_repository_adapter::UserRepositoryAdapter;
 use axum::Router;
 use axum::body::Body;
 use axum::http::Request;
@@ -57,6 +60,7 @@ pub struct AppState {
     pub enqueue_gatherer_id_use_case: Arc<dyn EnqueueGathererIdUpdateUseCase>,
     pub get_collection_price_history_use_case: Arc<dyn GetCollectionPriceHistoryUseCase>,
     pub get_collection_stats_use_case: Arc<dyn GetCollectionStatsUseCase>,
+    pub register_user_use_case: Arc<dyn RegisterUserUseCase>,
 }
 
 pub async fn create_infra(pool: Pool<Postgres>) -> Router {
@@ -85,6 +89,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let scryfall_caller_adapter = Arc::new(ScryfallCallerAdapter::new(scryfall_base_url));
     let gatherer_caller_adapter = Arc::new(GathererCallerAdapter::new(gatherer_base_url));
     let stats_repository_adapter = Arc::new(StatsRepositoryAdapter::new(pool.clone()));
+    let user_repository_adapter = Arc::new(UserRepositoryAdapter::new(pool.clone()));
 
     let auth_service: Arc<dyn AuthService> = Arc::new(
         crate::application::service::auth_service::ClerkAuthService::new(
@@ -172,6 +177,8 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         Arc::new(CollectionStatsService::new(Arc::new(
             CollectionStatsRepositoryAdapter::new(pool.clone()),
         )));
+    let register_user_service: Arc<dyn RegisterUserUseCase> =
+        Arc::new(RegisterUserService::new(user_repository_adapter));
 
     let app_state = AppState {
         import_card_use_case: import_card_service,
@@ -184,6 +191,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         enqueue_gatherer_id_use_case: enqueue_gatherer_id_service,
         get_collection_price_history_use_case: collection_price_history_service,
         get_collection_stats_use_case: collection_stats_service,
+        register_user_use_case: register_user_service,
     };
 
     let mut cron = AsyncCron::new(Utc);
@@ -205,6 +213,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     Router::new()
         .nest("/cards", create_card_router())
         .nest("/maintenance", create_maintenance_router())
+        .nest("/user", create_user_router())
         .with_state(app_state)
         .layer(NewSentryLayer::<Request<Body>>::new_from_top())
         .layer(SentryHttpLayer::new().enable_transaction())
@@ -230,7 +239,7 @@ impl AppState {
         use crate::application::use_case::{
             MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
             MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
-            MockGetCollectionUseCase, MockImportCardUseCase,
+            MockGetCollectionUseCase, MockImportCardUseCase, MockRegisterUserUseCase,
         };
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
@@ -256,6 +265,7 @@ impl AppState {
                 "test-user-id".to_string(),
                 "test@example.com".to_string(),
                 None,
+                None,
             ))
         });
 
@@ -272,6 +282,7 @@ impl AppState {
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
             get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
+            register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
         }
     }
 

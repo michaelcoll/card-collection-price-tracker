@@ -14,6 +14,7 @@ use utoipa::OpenApi;
         super::maintenance_controller::get_stats,
         super::maintenance_controller::trigger_price_update,
         super::maintenance_controller::update_cardmarket_ids,
+        super::user_controller::register,
     ),
     components(schemas(
         PriceGuideResponse,
@@ -35,6 +36,7 @@ use utoipa::OpenApi;
     tags(
         (name = "cards", description = "Collection management (authentication required)"),
         (name = "maintenance", description = "Maintenance operations (public)"),
+        (name = "auth", description = "Authentication and user registration (authentication required)"),
     )
 )]
 pub struct ApiDoc;

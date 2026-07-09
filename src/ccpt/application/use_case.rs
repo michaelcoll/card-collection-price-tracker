@@ -17,6 +17,12 @@ pub trait ImportCardUseCase: Send + Sync {
 
 #[async_trait]
 #[cfg_attr(test, automock)]
+pub trait RegisterUserUseCase: Send + Sync {
+    async fn register_user(&self, user: &User) -> Result<(), AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
 pub trait EnqueueCardMarketIdUpdateUseCase: Send + Sync {
     async fn enqueue_pending_updates(&self) -> Result<usize, AppError>;
 }

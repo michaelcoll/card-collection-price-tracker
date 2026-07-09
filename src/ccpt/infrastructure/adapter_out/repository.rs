@@ -12,6 +12,7 @@ pub mod common_repository_tests;
 pub mod entities;
 pub mod set_names_repository_adapter;
 pub mod stats_repository_adapter;
+pub mod user_repository_adapter;
 
 impl From<Error> for AppError {
     fn from(err: Error) -> Self {

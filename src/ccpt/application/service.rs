@@ -8,6 +8,7 @@ pub mod gatherer_id_enqueue_service;
 pub mod import_card_service;
 pub mod import_price_service;
 mod parse_service;
+pub mod register_user_service;
 pub mod stats_service;
 pub mod update_card_market_service;
 pub mod update_gatherer_service;
