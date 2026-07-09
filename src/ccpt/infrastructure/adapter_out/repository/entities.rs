@@ -209,6 +209,7 @@ impl User {
             id: id.clone(),
             email: format!("{}@placeholder.local", id),
             name: None,
+            username: None,
         }
     }
 }

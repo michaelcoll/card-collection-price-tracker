@@ -155,6 +155,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EnqueueResponse'
+  /user/register:
+    post:
+      tags:
+      - auth
+      operationId: register
+      responses:
+        '204':
+          description: User registered/updated successfully
+        '400':
+          description: Missing username claim in token
+        '401':
+          description: Missing or invalid authentication token
+      security:
+      - bearer_auth: []
 components:
   schemas:
     CollectionCardResponse:
@@ -301,3 +315,5 @@ tags:
   description: Collection management (authentication required)
 - name: maintenance
   description: Maintenance operations (public)
+- name: auth
+  description: Authentication and user registration (authentication required)

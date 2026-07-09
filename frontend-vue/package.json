@@ -17,7 +17,7 @@
     "node": ">=24"
   },
   "dependencies": {
-    "@clerk/nuxt": "~2.6.12",
+    "@clerk/nuxt": "~2.6.13",
     "@nuxt/eslint": "~1.16.0",
     "@nuxt/fonts": "~0.14.0",
     "@nuxt/icon": "~2.3.1",
@@ -33,6 +33,8 @@
     "@types/node": "~24.1.0",
     "eslint-config-prettier": "~10.1.8",
     "prettier": "~3.9.4",
-    "prettier-plugin-tailwindcss": "~0.8.0"
+    "prettier-plugin-tailwindcss": "~0.8.0",
+    "typescript": "~6.0.3",
+    "vue-tsc": "~3.3.7"
   }
 }

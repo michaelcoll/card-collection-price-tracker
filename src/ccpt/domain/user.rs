@@ -5,11 +5,17 @@ pub struct User {
     pub id: String,
     pub email: String,
     pub name: Option<String>,
+    pub username: Option<String>,
 }
 
 impl User {
-    pub fn new(id: String, email: String, name: Option<String>) -> Self {
-        Self { id, email, name }
+    pub fn new(id: String, email: String, name: Option<String>, username: Option<String>) -> Self {
+        Self {
+            id,
+            email,
+            name,
+            username,
+        }
     }
 
     #[cfg(test)]
@@ -18,6 +24,7 @@ impl User {
             id: "test-user-id".to_string(),
             email: "test@example.com".to_string(),
             name: Some("Test User".to_string()),
+            username: Some("testuser".to_string()),
         }
     }
 }
@@ -32,20 +39,28 @@ mod tests {
             "123456".to_string(),
             "test@example.com".to_string(),
             Some("Test User".to_string()),
+            Some("testuser".to_string()),
         );
 
         assert_eq!(user.id, "123456");
         assert_eq!(user.email, "test@example.com");
         assert_eq!(user.name, Some("Test User".to_string()));
+        assert_eq!(user.username, Some("testuser".to_string()));
     }
 
     #[test]
     fn user_creation_without_name() {
-        let user = User::new("789".to_string(), "anonymous@example.com".to_string(), None);
+        let user = User::new(
+            "789".to_string(),
+            "anonymous@example.com".to_string(),
+            None,
+            None,
+        );
 
         assert_eq!(user.id, "789");
         assert_eq!(user.email, "anonymous@example.com");
         assert_eq!(user.name, None);
+        assert_eq!(user.username, None);
     }
 
     #[test]
@@ -54,6 +69,7 @@ mod tests {
             "456".to_string(),
             "clone@example.com".to_string(),
             Some("Cloned User".to_string()),
+            Some("cloneduser".to_string()),
         );
 
         let user2 = user1.clone();

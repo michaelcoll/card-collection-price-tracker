@@ -83,7 +83,7 @@ const showValOptions = [
               >{{ user?.fullName ?? user?.username ?? '—' }}</span
             >
             <span class="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-              {{ user?.primaryEmailAddress?.emailAddress ?? '' }} ·
+              {{ user?.username ?? '' }} ·
               <span class="inline-flex items-center gap-1 text-violet-500 dark:text-violet-300">
                 <Icon name="lucide:shield" size="12" /> géré par Clerk
               </span>

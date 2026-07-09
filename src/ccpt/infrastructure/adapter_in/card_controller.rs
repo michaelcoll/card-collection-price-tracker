@@ -428,7 +428,8 @@ mod tests {
         use crate::application::use_case::{
             MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
             MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
-            MockImportCardUseCase, MockImportPriceUseCase, MockStatsUseCase,
+            MockImportCardUseCase, MockImportPriceUseCase, MockRegisterUserUseCase,
+            MockStatsUseCase,
         };
 
         AppState {
@@ -444,6 +445,7 @@ mod tests {
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
             get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
+            register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
         }
     }
 
@@ -455,7 +457,7 @@ mod tests {
         use crate::application::use_case::{
             MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
             MockGetCollectionPriceHistoryUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
-            MockImportPriceUseCase, MockStatsUseCase,
+            MockImportPriceUseCase, MockRegisterUserUseCase, MockStatsUseCase,
         };
 
         AppState {
@@ -471,6 +473,7 @@ mod tests {
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
             get_collection_stats_use_case: Arc::new(mock),
+            register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
         }
     }
 
@@ -1191,7 +1194,7 @@ mod tests {
         use crate::application::use_case::{
             MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
             MockGetCollectionStatsUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
-            MockImportPriceUseCase, MockStatsUseCase,
+            MockImportPriceUseCase, MockRegisterUserUseCase, MockStatsUseCase,
         };
 
         AppState {
@@ -1205,6 +1208,7 @@ mod tests {
             enqueue_gatherer_id_use_case: Arc::new(MockEnqueueGathererIdUpdateUseCase::new()),
             get_collection_price_history_use_case: Arc::new(mock),
             get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
+            register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
         }
     }
 

@@ -114,3 +114,9 @@ pub trait CollectionRepository: Send + Sync {
 pub trait CollectionStatsRepository: Send + Sync {
     async fn get_collection_stats(&self, user_id: &str) -> Result<CollectionStats, AppError>;
 }
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait UserRepository: Send + Sync {
+    async fn upsert(&self, user: &User) -> Result<(), AppError>;
+}

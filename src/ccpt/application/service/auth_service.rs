@@ -10,6 +10,7 @@ use tracing::info;
 struct ClerkClaims {
     sub: String,
     email: Option<String>,
+    username: Option<String>,
     exp: usize,
     azp: Option<String>,
 }
@@ -97,6 +98,7 @@ impl AuthService for ClerkAuthService {
             token_data.claims.sub.clone(),
             token_data.claims.email.unwrap_or(token_data.claims.sub),
             None, // Clerk JWT does not include name
+            token_data.claims.username,
         ))
     }
 }
@@ -130,6 +132,31 @@ mod tests {
         let claims: ClerkClaims = serde_json::from_str(json).unwrap();
         assert_eq!(claims.sub, "user_clerk123");
         assert_eq!(claims.email, None);
+    }
+
+    #[test]
+    fn clerk_claims_deserialization_with_username() {
+        let json = r#"{
+            "sub": "user_clerk123",
+            "email": "test@example.com",
+            "username": "clerkuser",
+            "exp": 1234567890
+        }"#;
+
+        let claims: ClerkClaims = serde_json::from_str(json).unwrap();
+        assert_eq!(claims.username, Some("clerkuser".to_string()));
+    }
+
+    #[test]
+    fn clerk_claims_deserialization_without_username_stays_valid() {
+        let json = r#"{
+            "sub": "user_clerk123",
+            "email": "test@example.com",
+            "exp": 1234567890
+        }"#;
+
+        let claims: ClerkClaims = serde_json::from_str(json).unwrap();
+        assert_eq!(claims.username, None);
     }
 
     #[test]

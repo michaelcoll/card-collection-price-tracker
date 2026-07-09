@@ -64,7 +64,7 @@ mod tests {
         use crate::application::use_case::{
             MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
             MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
-            MockGetCollectionUseCase, MockImportPriceUseCase,
+            MockGetCollectionUseCase, MockImportPriceUseCase, MockRegisterUserUseCase,
         };
         AppState {
             import_card_use_case: Arc::new(MockImportCardUseCase::new()),
@@ -79,6 +79,7 @@ mod tests {
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
             get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
+            register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
         }
     }
 
@@ -122,6 +123,7 @@ mod tests {
         let expected_user = User::new(
             "user_clerk123".to_string(),
             "user@example.com".to_string(),
+            None,
             None,
         );
 
