@@ -8,9 +8,9 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "prettier --check \"**/*.{ts,mjs,vue,json,css,yml}\"",
-    "lint:fix": "prettier --write \"**/*.{ts,mjs,vue,json,css,yml}\"",
-    "typecheck": "nuxi typecheck"
+    "format": "prettier --check \"**/*.{ts,mjs,vue,json,css,yml}\"",
+    "format:fix": "prettier --write \"**/*.{ts,mjs,vue,json,css,yml}\"",
+    "lint": "nuxi typecheck"
   },
   "packageManager": "pnpm@11.9.0",
   "engines": {

@@ -73,10 +73,14 @@ depends = ["sqlx-prepare"]
 run = "cargo sqlx prepare --check"
 hide = true
 
-[tasks.lint]
+[tasks.lint-backend]
 description = "Lints the backend of project"
 depends = ["lint-clippy", "lint-sqlx"]
-alias = ["l"]
+
+[tasks.lint-frontend]
+description = "Lints the frontend of project"
+dir = "frontend-vue"
+run = "pnpm lint"
 
 [tasks.format-backend]
 run = "cargo fmt"
@@ -84,7 +88,7 @@ hide = true
 
 [tasks.format-frontend]
 dir = "frontend-vue"
-run = "pnpm lint:fix"
+run = "pnpm format:fix"
 hide = true
 
 [tasks.format]
