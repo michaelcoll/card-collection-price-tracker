@@ -75,6 +75,12 @@ paths:
           type: integer
           format: int32
           minimum: 0
+      - name: owned
+        in: query
+        description: 'Restrict to cards owned by the authenticated user (default: false — full catalog)'
+        required: false
+        schema:
+          type: boolean
       responses:
         '200':
           description: Paginated card collection
@@ -181,9 +187,12 @@ components:
       - name
       - rarity_code
       - scryfall_id
-      - quantity
-      - purchase_price
       properties:
+        collection_entry:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/CollectionEntryResponse'
+            description: Present only when the card is owned by the authenticated user.
         collector_number:
           type: string
         foil:
@@ -192,18 +201,15 @@ components:
           type: string
         name:
           type: string
+        owner_username:
+          type:
+          - string
+          - 'null'
+          description: Username of the owner when the card belongs to another user (catalog listing).
         price_guide:
           oneOf:
           - type: 'null'
           - $ref: '#/components/schemas/PriceGuideResponse'
-        purchase_price:
-          type: integer
-          format: int32
-          minimum: 0
-        quantity:
-          type: integer
-          format: int32
-          minimum: 0
         rarity_code:
           type: string
         scryfall_id:
@@ -214,6 +220,24 @@ components:
           type:
           - string
           - 'null'
+    CollectionEntryResponse:
+      type: object
+      required:
+      - quantity
+      - purchase_price
+      - added_at
+      properties:
+        added_at:
+          type: string
+          description: RFC 3339 timestamp
+        purchase_price:
+          type: integer
+          format: int32
+          minimum: 0
+        quantity:
+          type: integer
+          format: int32
+          minimum: 0
     EnqueueResponse:
       type: object
       required:

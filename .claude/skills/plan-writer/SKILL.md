@@ -31,10 +31,12 @@ Tu rédiges des plans d'implémentation à partir d'une spec existante dans `doc
     - Utiliser `mise build-backend` et `mise build-frontend` pour construire l'app, `mise lint-backend` et
       `mise lint-frontend` pour linter le code
     - Si des requêtes dans le back ont été modifiées/ajoutées utiliser `mise sqlx-prepare`
-    - Si des endpoint ont été ajoutés ou modifié il faut regénérer la doc openapi avec `mise openapi`
+    - Si des endpoint ont été ajoutés ou modifiés, il faut re-générer la doc openapi avec `mise openapi` et ajouter ou
+      compléter les collections bruno
     - Rappelle en fin de plan l'étape de vérification qualité (lint, type check, build,
       `mise format`) conformément à `AGENTS.md`.
     - pour tenir les dépendances à jour, en fin de dev lancer un upgrade des dépendances avec `mise upgrade`
+    - ajoute les critères d'acceptance présent dans la spec pour qu'ils soient vérifiés lors de l'implémentation
 5. Soumets le plan à l'utilisateur pour relecture, ajuste avec `Edit` selon ses retours.
 
 ## Ce que tu ne fais pas

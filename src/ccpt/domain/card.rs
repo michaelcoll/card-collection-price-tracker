@@ -60,16 +60,28 @@ impl Display for CardId {
     }
 }
 
+/// A card's presence in a collection: either fully visible (mine) or reduced to
+/// just the owner's name (someone else's, in a catalog listing).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CollectionEntry {
+    Mine {
+        quantity: u8,
+        /// Price in cents
+        purchase_price: u32,
+        added_at: chrono::DateTime<chrono::Utc>,
+    },
+    Owned {
+        owner_username: String,
+    },
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Card {
     pub id: CardId,
     pub set_name: SetName,
     pub name: String,
     pub rarity_code: RarityCode,
-    pub quantity: u8,
-    /// Price in cents
-    pub purchase_price: u32,
-    pub added_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub collection_entry: CollectionEntry,
     pub scryfall_id: uuid::Uuid,
     pub cardmarket_id: Option<u32>,
     pub the_gatherer_id: Option<String>,
@@ -97,12 +109,14 @@ impl Card {
             set_name,
             name: name.into(),
             rarity_code,
-            quantity,
-            purchase_price,
+            collection_entry: CollectionEntry::Mine {
+                quantity,
+                purchase_price,
+                added_at: chrono::Utc::now(),
+            },
             scryfall_id: uuid::Uuid::default(),
             cardmarket_id: None,
             the_gatherer_id: None,
-            added_at: None,
             price_guide: None,
         }
     }
@@ -116,12 +130,10 @@ impl Card {
         foil: bool,
         name: impl Into<String>,
         rarity_code: RarityCode,
-        quantity: u8,
-        purchase_price: u32,
         scryfall_id: uuid::Uuid,
         cardmarket_id: Option<u32>,
         the_gatherer_id: Option<String>,
-        added_at: Option<chrono::DateTime<chrono::Utc>>,
+        collection_entry: CollectionEntry,
     ) -> Self {
         let set_code: SetCode = set_code.into();
         let set_name = SetName::new(set_code.clone(), set_name);
@@ -130,12 +142,10 @@ impl Card {
             set_name,
             name: name.into(),
             rarity_code,
-            quantity,
-            purchase_price,
+            collection_entry,
             scryfall_id,
             cardmarket_id,
             the_gatherer_id,
-            added_at,
             price_guide: None,
         }
     }

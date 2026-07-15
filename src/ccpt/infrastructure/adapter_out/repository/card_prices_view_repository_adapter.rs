@@ -1,6 +1,8 @@
 use crate::application::error::AppError;
 use crate::application::repository::CardPricesViewRepository;
 use crate::domain::card::Card;
+#[cfg(test)]
+use crate::domain::card::CollectionEntry;
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::infrastructure::adapter_out::repository::entities::CardWithPriceEntity;
 use async_trait::async_trait;
@@ -72,8 +74,8 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
         user_id: &str,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError> {
-        let (filter_clause, order_prefix, _) = build_filter_clause(&query, 4);
-        let (count_filter_clause, _, _) = build_filter_clause(&query, 2);
+        let (filter_clause, order_prefix, _) = build_filter_clause(&query, 5);
+        let (count_filter_clause, _, _) = build_filter_clause(&query, 3);
 
         let sql = format!(
             r#"SELECT
@@ -86,17 +88,20 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
                  cp.rarity,
                  cp.scryfall_id,
                  cp.the_gatherer_id,
-                 cp.quantity,
-                 cp.purchase_price,
+                 CASE WHEN cp.user_id = $2 THEN cp.quantity ELSE NULL END AS quantity,
+                 CASE WHEN cp.user_id = $2 THEN cp.purchase_price ELSE NULL END AS purchase_price,
+                 CASE WHEN cp.user_id = $2 THEN cp.added_at ELSE NULL END AS added_at,
+                 CASE WHEN cp.user_id = $2 THEN NULL ELSE u.username END AS owner_username,
                  cp.avg,
                  cp.low,
                  cp.trend
                FROM mv_card_prices cp
                JOIN set_name sn ON sn.set_code = cp.set_code
-               WHERE cp.user_id = $1
+               LEFT JOIN users u ON u.id = cp.user_id
+               WHERE ($1::boolean = false OR cp.user_id = $2)
                {}
                ORDER BY {} {} {} NULLS LAST, cp.name
-               LIMIT $2 OFFSET $3"#,
+               LIMIT $3 OFFSET $4"#,
             filter_clause, order_prefix, query.sort_by, query.sort_dir,
         );
 
@@ -104,6 +109,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
         let limit = query.page_size as i64;
 
         let mut base_query = query_as::<_, CardWithPriceEntity>(AssertSqlSafe(sql.as_str()))
+            .bind(query.owned)
             .bind(user_id)
             .bind(limit)
             .bind(offset);
@@ -135,12 +141,13 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
             .map_err(|e| AppError::RepositoryError(e.to_string()))?;
 
         let count_sql = format!(
-            "SELECT COUNT(*) FROM mv_card_prices cp WHERE cp.user_id = $1 {}",
+            "SELECT COUNT(*) FROM mv_card_prices cp WHERE ($1::boolean = false OR cp.user_id = $2) {}",
             count_filter_clause
         );
 
-        let mut base_count =
-            query_scalar::<_, i64>(AssertSqlSafe(count_sql.as_str())).bind(user_id);
+        let mut base_count = query_scalar::<_, i64>(AssertSqlSafe(count_sql.as_str()))
+            .bind(query.owned)
+            .bind(user_id);
         if let Some(q) = &query.search_query {
             base_count = base_count.bind(q.clone());
         }
@@ -183,7 +190,7 @@ mod tests {
     use crate::domain::collection::{CollectionSortField, SortDirection};
     use crate::domain::rarity_code::RarityCode;
     use crate::infrastructure::adapter_out::repository::common_repository_tests::{
-        insert_card, insert_collection_entry, insert_price, insert_set, refresh_view,
+        insert_card, insert_collection_entry, insert_price, insert_set, insert_user, refresh_view,
     };
     use crate::infrastructure::adapter_out::repository::entities::{
         CardMarketPriceEntity, PriceGuideEntity,
@@ -454,19 +461,119 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
 
+        let owned_query = CollectionQuery {
+            owned: true,
+            ..CollectionQuery::default()
+        };
         let result_a = adapter
-            .get_paginated("userA", CollectionQuery::default())
+            .get_paginated("userA", owned_query.clone())
             .await
             .unwrap();
-        let result_b = adapter
-            .get_paginated("userB", CollectionQuery::default())
-            .await
-            .unwrap();
+        let result_b = adapter.get_paginated("userB", owned_query).await.unwrap();
 
         assert_eq!(result_a.total, 1);
         assert_eq!(result_b.total, 1);
         assert_eq!(result_a.items[0].id.set_code.to_string(), "TS1");
         assert_eq!(result_b.items[0].id.set_code.to_string(), "TS2");
+    }
+
+    #[sqlx::test]
+    async fn get_paginated_catalog_mode_returns_cards_from_all_users(pool: PgPool) {
+        insert_set(&pool, "TS1").await;
+        insert_card(&pool, "TS1", "1", "EN", false, "Test Card", 1).await;
+        insert_set(&pool, "TS2").await;
+        insert_card(&pool, "TS2", "1", "EN", false, "Test Card", 2).await;
+        insert_user(&pool, "userA", "Alice").await;
+        insert_user(&pool, "userB", "Bob").await;
+        insert_collection_entry(&pool, "TS1", "1", "EN", false, "userA", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TS2", "1", "EN", false, "userB", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(2, 200)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .get_paginated("userA", CollectionQuery::default())
+            .await
+            .unwrap();
+
+        assert_eq!(result.total, 2);
+        assert_eq!(result.items.len(), 2);
+    }
+
+    #[sqlx::test]
+    async fn get_paginated_catalog_mode_masks_other_users_financial_data(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_user(&pool, "userB", "Bob").await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userB", 3, 1500, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .get_paginated("userA", CollectionQuery::default())
+            .await
+            .unwrap();
+
+        assert_eq!(result.items.len(), 1);
+        assert_eq!(
+            result.items[0].collection_entry,
+            CollectionEntry::Owned {
+                owner_username: "Bob".to_string()
+            }
+        );
+    }
+
+    #[sqlx::test]
+    async fn get_paginated_catalog_mode_keeps_own_data_unmasked(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_user(&pool, "userA", "Alice").await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userA", 3, 1500, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .get_paginated("userA", CollectionQuery::default())
+            .await
+            .unwrap();
+
+        assert_eq!(result.items.len(), 1);
+        let CollectionEntry::Mine {
+            quantity,
+            purchase_price,
+            ..
+        } = &result.items[0].collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        assert_eq!(*quantity, 3);
+        assert_eq!(*purchase_price, 1500);
+    }
+
+    #[sqlx::test]
+    async fn get_paginated_same_card_owned_by_three_users_appears_three_times(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_user(&pool, "userA", "Alice").await;
+        insert_user(&pool, "userB", "Bob").await;
+        insert_user(&pool, "userC", "Carol").await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userA", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userB", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userC", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .get_paginated("userA", CollectionQuery::default())
+            .await
+            .unwrap();
+
+        assert_eq!(result.total, 3);
+        assert_eq!(result.items.len(), 3);
     }
 
     #[sqlx::test]
@@ -540,8 +647,16 @@ mod tests {
             .unwrap();
 
         assert_eq!(result.items.len(), 1);
-        assert_eq!(result.items[0].quantity, 7);
-        assert_eq!(result.items[0].purchase_price, 1234);
+        let CollectionEntry::Mine {
+            quantity,
+            purchase_price,
+            ..
+        } = &result.items[0].collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        assert_eq!(*quantity, 7);
+        assert_eq!(*purchase_price, 1234);
     }
 
     #[sqlx::test]

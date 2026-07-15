@@ -20,6 +20,7 @@ type GetCollectionParams = {
   sets?: string;
   price_min?: number;
   price_max?: number;
+  owned?: boolean;
 };
 
 export const useCardsService = () => {
