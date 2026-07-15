@@ -4,31 +4,9 @@ use crate::domain::language_code::LanguageCode;
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
 use chrono::{DateTime, Utc};
+use csv::{ReaderBuilder, Trim};
 use std::collections::HashMap;
 use uuid::Uuid;
-
-fn split_line(line: &str) -> Vec<String> {
-    let mut fields = Vec::new();
-    let mut current_field = String::new();
-    let mut in_quotes = false;
-    let chars: Vec<char> = line.chars().collect();
-    let mut i = 0;
-
-    while i < chars.len() {
-        let c = chars[i];
-        if c == '"' {
-            in_quotes = !in_quotes;
-        } else if c == ',' && !in_quotes {
-            fields.push(current_field.trim().to_string());
-            current_field.clear();
-        } else {
-            current_field.push(c);
-        }
-        i += 1;
-    }
-    fields.push(current_field.trim().to_string());
-    fields
-}
 
 pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
     let mut cards = Vec::new();
@@ -39,22 +17,28 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
         ));
     }
 
-    for (index, line) in csv.lines().skip(1).enumerate() {
+    let mut reader = ReaderBuilder::new()
+        .has_headers(true)
+        .flexible(true)
+        .trim(Trim::All)
+        .from_reader(csv.as_bytes());
+
+    for (index, result) in reader.records().enumerate() {
         let line_number = index + 1 + 1; // +1 car lignes humaines, +1 car header
 
-        let fields: Vec<String> = split_line(line);
-        let field_refs: Vec<&str> = fields.iter().map(|s| s.as_str()).collect();
+        let record = result.map_err(|e| AppError::WrongFormat(e.to_string()))?;
+        let field_refs: Vec<&str> = record.iter().collect();
 
-        if fields.len() == 15 {
+        if field_refs.len() == 15 {
             return Err(AppError::WrongFormat(
                 "expecting a collection export, got a binder export".to_string(),
             ));
         }
 
-        if fields.len() != 18 {
+        if field_refs.len() != 18 {
             return Err(AppError::WrongFormat(format!(
                 "expected 18 fields per line, got {}",
-                fields.len()
+                field_refs.len()
             )));
         }
 
@@ -260,6 +244,21 @@ mod tests {
         };
         assert_eq!(q2, 2);
         assert_eq!(p2, 20);
+
+        Ok(())
+    }
+
+    #[test]
+    fn import_cards_handles_comma_inside_quoted_field() -> Result<(), AppError> {
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,\"Dwynen, Gilt-Leaf Daen\",FDN,Foundations,217,normal,uncommon,2,100086,01c00d7b-7fac-4f8c-a1ea-de2cf4d06627,0.2,false,false,near_mint,fr,EUR,2026-02-05T20:44:45.815Z";
+
+        let cards = parse_cards(csv)?;
+
+        assert_eq!(cards.len(), 1);
+        assert_eq!(cards[0].name, "Dwynen, Gilt-Leaf Daen");
+        assert_eq!(cards[0].id.set_code, SetCode::new("FDN"));
+        assert_eq!(cards[0].id.collector_number, "217");
 
         Ok(())
     }
