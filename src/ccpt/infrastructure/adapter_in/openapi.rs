@@ -1,20 +1,20 @@
-use super::card_controller::{
+use super::card::dto::{
     CollectionCardResponse, MessageResponse, PaginatedCollectionResponse, PriceGuideResponse,
     SortByParam, SortDirParam,
 };
-use super::maintenance_controller::{EnqueueResponse, StatsResponse};
+use super::maintenance::dto::{EnqueueResponse, StatsResponse};
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        super::card_controller::get_collection,
-        super::card_controller::import_cards,
-        super::card_controller::get_card_info,
-        super::maintenance_controller::get_stats,
-        super::maintenance_controller::trigger_price_update,
-        super::maintenance_controller::update_cardmarket_ids,
-        super::user_controller::register,
+        super::card::controller::get_collection,
+        super::card::controller::import_cards,
+        super::card::controller::get_card_info,
+        super::maintenance::controller::get_stats,
+        super::maintenance::controller::trigger_price_update,
+        super::maintenance::controller::update_cardmarket_ids,
+        super::user::controller::register,
     ),
     components(schemas(
         PriceGuideResponse,

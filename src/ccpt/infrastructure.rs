@@ -18,8 +18,8 @@ use crate::application::use_case::{
     ImportCardUseCase, ImportPriceUseCase, RegisterUserUseCase, StatsUseCase,
 };
 use crate::domain::card::CardId;
-use crate::infrastructure::adapter_in::card_controller::create_card_router;
-use crate::infrastructure::adapter_in::user_controller::create_user_router;
+use crate::infrastructure::adapter_in::card::controller::create_card_router;
+use crate::infrastructure::adapter_in::user::controller::create_user_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
 use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCallerAdapter;
 use crate::infrastructure::adapter_out::repository::card_prices_view_repository_adapter::CardPricesViewRepositoryAdapter;
@@ -27,7 +27,7 @@ use crate::infrastructure::adapter_out::repository::cardmarket_price_repository_
 use crate::infrastructure::adapter_out::repository::collection_price_history_repository_adapter::CollectionPriceHistoryRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::collection_stats_repository_adapter::CollectionStatsRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::stats_repository_adapter::StatsRepositoryAdapter;
-use adapter_in::maintenance_controller::create_maintenance_router;
+use adapter_in::maintenance::controller::create_maintenance_router;
 use adapter_out::caller::gatherer_caller_adapter::GathererCallerAdapter;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
 use adapter_out::repository::card_repository_adapter::CardRepositoryAdapter;
