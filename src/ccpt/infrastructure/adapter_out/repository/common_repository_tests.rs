@@ -202,6 +202,15 @@ pub async fn insert_collection_price_history(
     .unwrap();
 }
 
+pub async fn insert_user(pool: &PgPool, id: &str, username: &str) {
+    sqlx::query(r#"INSERT INTO users (id, username) VALUES ($1, $2)"#)
+        .bind(id)
+        .bind(username)
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
 pub async fn refresh_view(pool: &PgPool) {
     sqlx::query("REFRESH MATERIALIZED VIEW mv_card_prices")
         .execute(pool)

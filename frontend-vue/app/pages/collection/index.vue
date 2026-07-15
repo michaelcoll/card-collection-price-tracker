@@ -36,6 +36,7 @@ const params = ref({
   sets: undefined as string | undefined,
   price_min: undefined as number | undefined,
   price_max: undefined as number | undefined,
+  owned: true,
 });
 
 const { data: collectionData, pending, refresh } = await getCollection(params);
@@ -103,8 +104,8 @@ watch(sentinel, (el, oldEl) => {
 const cards = computed<CardDisplay[]>(() =>
   allCards.value.map((c) => ({
     name: c.name,
-    qty: c.quantity,
-    unit: c.purchase_price,
+    qty: c.collection_entry?.quantity ?? 0,
+    unit: c.collection_entry?.purchase_price ?? 0,
     trend: c.price_guide?.trend ?? 0,
     rar: c.rarity_code,
     set: c.set_code,
@@ -186,7 +187,7 @@ const active = ref({ rar: [] as string[], sets: [] as string[] });
 const detail = ref<CollectionCard | null>(null);
 
 const detailDelta = (card: CollectionCard) => {
-  const u = card.purchase_price;
+  const u = card.collection_entry?.purchase_price ?? 0;
   const t = card.price_guide?.trend ?? 0;
   if (!u) return 0;
   return Math.round(((t - u) / u) * 100);
@@ -568,8 +569,8 @@ const onDragLeave = () => {
               :scryfall-id="c.scryfall_id"
               :the-gatherer-id="c.the_gatherer_id ?? undefined"
               :name="c.name"
-              :qty="c.quantity"
-              :purchased="c.purchase_price"
+              :qty="c.collection_entry?.quantity ?? 0"
+              :purchased="c.collection_entry?.purchase_price ?? 0"
               :trend="c.price_guide?.trend ?? 0"
               deal="compare"
               :foil="c.foil"
@@ -691,7 +692,7 @@ const onDragLeave = () => {
                   >Quantité</span
                 >
                 <span class="font-mono text-lg font-bold tracking-tight"
-                  >×{{ detail.quantity }}</span
+                  >×{{ detail.collection_entry?.quantity ?? 0 }}</span
                 >
               </div>
               <div
@@ -702,7 +703,7 @@ const onDragLeave = () => {
                   >Prix unit.</span
                 >
                 <span class="font-mono text-lg font-bold tracking-tight">{{
-                  formatPrice(detail.purchase_price)
+                  formatPrice(detail.collection_entry?.purchase_price ?? 0)
                 }}</span>
               </div>
               <div
@@ -714,7 +715,12 @@ const onDragLeave = () => {
                 >
                 <span
                   class="font-mono text-lg font-bold tracking-tight text-cyan-600 dark:text-cyan-400"
-                  >{{ formatPrice(detail.quantity * detail.purchase_price) }}</span
+                  >{{
+                    formatPrice(
+                      (detail.collection_entry?.quantity ?? 0) *
+                        (detail.collection_entry?.purchase_price ?? 0),
+                    )
+                  }}</span
                 >
               </div>
             </div>

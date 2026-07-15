@@ -1,5 +1,5 @@
 use crate::application::error::AppError;
-use crate::domain::card::Card;
+use crate::domain::card::{Card, CollectionEntry};
 use crate::domain::collection::{CollectionQuery, CollectionSortField, SortDirection};
 use crate::domain::collection_stats::CollectionStats;
 use crate::infrastructure::AppState;
@@ -70,6 +70,9 @@ pub(crate) struct CollectionParams {
     price_min: Option<u32>,
     /// Maximum trend price in cents
     price_max: Option<u32>,
+    /// Restrict to cards owned by the authenticated user (default: false — full catalog)
+    #[serde(default)]
+    owned: bool,
 }
 
 // --- Réponses ---
@@ -80,6 +83,16 @@ pub struct PriceGuideResponse {
     pub low: Option<u32>,
     pub avg: Option<u32>,
     pub trend: Option<u32>,
+}
+
+#[derive(Serialize, TS, ToSchema)]
+#[serde(rename = "CollectionEntry")]
+#[ts(export, export_to = "CollectionEntry.ts")]
+pub struct CollectionEntryResponse {
+    pub quantity: u8,
+    pub purchase_price: u32,
+    /// RFC 3339 timestamp
+    pub added_at: String,
 }
 
 #[derive(Serialize, TS, ToSchema)]
@@ -94,8 +107,10 @@ pub struct CollectionCardResponse {
     pub rarity_code: String,
     pub scryfall_id: String,
     pub the_gatherer_id: Option<String>,
-    pub quantity: u8,
-    pub purchase_price: u32,
+    /// Present only when the card is owned by the authenticated user.
+    pub collection_entry: Option<CollectionEntryResponse>,
+    /// Username of the owner when the card belongs to another user (catalog listing).
+    pub owner_username: Option<String>,
     pub price_guide: Option<PriceGuideResponse>,
 }
 
@@ -118,6 +133,22 @@ pub struct PaginatedCollectionResponse {
 
 impl From<Card> for CollectionCardResponse {
     fn from(c: Card) -> Self {
+        let (collection_entry, owner_username) = match c.collection_entry {
+            CollectionEntry::Mine {
+                quantity,
+                purchase_price,
+                added_at,
+            } => (
+                Some(CollectionEntryResponse {
+                    quantity,
+                    purchase_price,
+                    added_at: added_at.to_rfc3339(),
+                }),
+                None,
+            ),
+            CollectionEntry::Owned { owner_username } => (None, Some(owner_username)),
+        };
+
         Self {
             set_code: c.id.set_code.to_string(),
             collector_number: c.id.collector_number,
@@ -127,8 +158,8 @@ impl From<Card> for CollectionCardResponse {
             rarity_code: c.rarity_code.to_string(),
             scryfall_id: c.scryfall_id.to_string(),
             the_gatherer_id: c.the_gatherer_id,
-            quantity: c.quantity,
-            purchase_price: c.purchase_price,
+            collection_entry,
+            owner_username,
             price_guide: c.price_guide.map(|pg| PriceGuideResponse {
                 low: pg.low.value,
                 avg: pg.avg.value,
@@ -152,6 +183,7 @@ impl From<Card> for CollectionCardResponse {
         ("sets" = Option<String>, Query, description = "Comma-separated set codes"),
         ("price_min" = Option<u32>, Query, description = "Minimum trend price in cents"),
         ("price_max" = Option<u32>, Query, description = "Maximum trend price in cents"),
+        ("owned" = Option<bool>, Query, description = "Restrict to cards owned by the authenticated user (default: false — full catalog)"),
     ),
     responses(
         (status = 200, description = "Paginated card collection", body = PaginatedCollectionResponse),
@@ -208,6 +240,7 @@ pub(crate) async fn get_collection(
         sets,
         price_min: params.price_min,
         price_max: params.price_max,
+        owned: params.owned,
     };
 
     let result = state
@@ -518,6 +551,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -560,6 +594,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -593,6 +628,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -630,6 +666,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -665,6 +702,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -698,6 +736,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -715,9 +754,54 @@ mod tests {
         assert_eq!(item.language_code, "EN");
         assert!(!item.foil);
         assert_eq!(item.name, "Test Card");
-        assert_eq!(item.quantity, 1);
-        assert_eq!(item.purchase_price, 100);
+        let entry = item.collection_entry.as_ref().unwrap();
+        assert_eq!(entry.quantity, 1);
+        assert_eq!(entry.purchase_price, 100);
+        assert!(item.owner_username.is_none());
         assert!(item.price_guide.is_none());
+    }
+
+    #[tokio::test]
+    async fn get_collection_masks_collection_entry_for_cards_owned_by_another_user() {
+        let mut card = make_card("FDN", "42");
+        card.collection_entry = CollectionEntry::Owned {
+            owner_username: "Bob".to_string(),
+        };
+
+        let mut mock = MockGetCollectionUseCase::new();
+        mock.expect_get_collection().returning(move |_, _| {
+            Box::pin({
+                let c = card.clone();
+                async move { Ok(make_paginated(vec![c], 0, 20)) }
+            })
+        });
+
+        let app_state = make_app_state_with_collection(mock);
+        let params = CollectionParams {
+            page: 0,
+            page_size: 20,
+            sort_by: SortByParam::default(),
+            sort_dir: SortDirParam::default(),
+            q: None,
+            rarity: None,
+            sets: None,
+            price_min: None,
+            price_max: None,
+            owned: false,
+        };
+
+        let result = get_collection(
+            AuthenticatedUser(User::for_testing()),
+            State(app_state),
+            Query(params),
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let axum::Json(response) = result.unwrap();
+        let item = &response.items[0];
+        assert!(item.collection_entry.is_none());
+        assert_eq!(item.owner_username, Some("Bob".to_string()));
     }
 
     #[tokio::test]
@@ -738,6 +822,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -768,6 +853,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -798,6 +884,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -828,6 +915,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -858,6 +946,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -898,6 +987,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -949,6 +1039,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -963,8 +1054,9 @@ mod tests {
         let item = &response.items[0];
         assert!(item.foil);
         assert_eq!(item.name, "Foil Card");
-        assert_eq!(item.quantity, 2);
-        assert_eq!(item.purchase_price, 500);
+        let entry = item.collection_entry.as_ref().unwrap();
+        assert_eq!(entry.quantity, 2);
+        assert_eq!(entry.purchase_price, 500);
     }
 
     #[tokio::test]
@@ -992,6 +1084,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -1027,6 +1120,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(
@@ -1057,6 +1151,7 @@ mod tests {
             sets: None,
             price_min: None,
             price_max: None,
+            owned: false,
         };
 
         let result = get_collection(

@@ -1,4 +1,4 @@
-use crate::domain::card::{Card, CardId};
+use crate::domain::card::{Card, CardId, CollectionEntry};
 use crate::domain::language_code::LanguageCode;
 use crate::domain::price::{FullPriceGuide, Price, PriceGuide, PriceHistoryEntry};
 use crate::domain::rarity_code::RarityCode;
@@ -82,9 +82,13 @@ impl From<CardEntity> for Card {
             },
             name: entity.name,
             rarity_code: from_db_rarity(entity.rarity),
-            quantity: entity.quantity as u8,
-            purchase_price: entity.purchase_price as u32,
-            added_at: entity.added_at,
+            collection_entry: CollectionEntry::Mine {
+                quantity: entity.quantity as u8,
+                purchase_price: entity.purchase_price as u32,
+                added_at: entity.added_at.expect(
+                    "collection_entry.added_at should always be set (ManaBox import guarantee)",
+                ),
+            },
             scryfall_id: entity.scryfall_id,
             cardmarket_id: entity.cardmarket_id.map(|id| id as u32),
             the_gatherer_id: entity.the_gatherer_id,
@@ -256,8 +260,14 @@ pub struct CardWithPriceEntity {
     pub rarity: String,
     pub scryfall_id: Uuid,
     pub the_gatherer_id: Option<String>,
-    pub quantity: i32,
-    pub purchase_price: i32,
+    /// `NULL` when the row belongs to another user (masked in SQL).
+    pub quantity: Option<i32>,
+    /// `NULL` when the row belongs to another user (masked in SQL).
+    pub purchase_price: Option<i32>,
+    /// `NULL` when the row belongs to another user (masked in SQL).
+    pub added_at: Option<DateTime<Utc>>,
+    /// Username of the owner, `NULL` when the row is mine.
+    pub owner_username: Option<String>,
     #[sqlx(flatten)]
     pub price: PriceGuideEntity,
 }
@@ -285,6 +295,17 @@ impl From<CardWithPriceEntity> for Card {
             None
         };
 
+        let collection_entry = match (e.quantity, e.purchase_price, e.added_at) {
+            (Some(quantity), Some(purchase_price), Some(added_at)) => CollectionEntry::Mine {
+                quantity: quantity as u8,
+                purchase_price: purchase_price as u32,
+                added_at,
+            },
+            _ => CollectionEntry::Owned {
+                owner_username: e.owner_username.unwrap_or_default(),
+            },
+        };
+
         let set_code = SetCode::try_new(&e.set_code).expect("database contains invalid set_code");
         Card {
             id: CardId::new(
@@ -300,9 +321,7 @@ impl From<CardWithPriceEntity> for Card {
             scryfall_id: e.scryfall_id,
             cardmarket_id: None,
             the_gatherer_id: e.the_gatherer_id,
-            added_at: None,
-            quantity: e.quantity as u8,
-            purchase_price: e.purchase_price as u32,
+            collection_entry,
             price_guide,
         }
     }
@@ -326,7 +345,7 @@ mod tests {
             scryfall_id: Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             cardmarket_id,
             the_gatherer_id: None,
-            added_at: None,
+            added_at: Some(chrono::Utc::now()),
         }
     }
 
@@ -353,8 +372,17 @@ mod tests {
         assert_eq!(card.name, "Goblin Guide");
         assert_eq!(card.set_name.name, "Foundations");
         assert_eq!(card.rarity_code, RarityCode::R);
-        assert_eq!(card.quantity, 2);
-        assert_eq!(card.purchase_price, 350);
+        match &card.collection_entry {
+            CollectionEntry::Mine {
+                quantity,
+                purchase_price,
+                ..
+            } => {
+                assert_eq!(*quantity, 2);
+                assert_eq!(*purchase_price, 350);
+            }
+            CollectionEntry::Owned { .. } => panic!("expected CollectionEntry::Mine"),
+        }
         assert_eq!(card.cardmarket_id, Some(42));
     }
 
@@ -392,7 +420,10 @@ mod tests {
 
         let card: Card = entity.into();
 
-        assert_eq!(card.purchase_price, 350);
+        match card.collection_entry {
+            CollectionEntry::Mine { purchase_price, .. } => assert_eq!(purchase_price, 350),
+            CollectionEntry::Owned { .. } => panic!("expected CollectionEntry::Mine"),
+        }
     }
 
     #[test]

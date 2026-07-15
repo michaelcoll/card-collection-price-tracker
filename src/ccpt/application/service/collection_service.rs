@@ -45,6 +45,7 @@ mod tests {
             sets: Vec::new(),
             price_min: None,
             price_max: None,
+            owned: false,
         };
         let expected_result = PaginatedCollection {
             items: vec![],

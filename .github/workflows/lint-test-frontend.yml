@@ -13,7 +13,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 10.32.1
+          package_json_file: 'frontend-vue/package.json'
 
       - uses: actions/setup-node@v6
         with:
@@ -28,6 +28,30 @@ jobs:
         working-directory: frontend-vue
         run: pnpm format
 
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: 'frontend-vue/package.json'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend-vue/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend-vue
+
+      - name: Typecheck
+        working-directory: frontend-vue
+        run: pnpm lint
+
   build-dev:
     name: Build Development
     runs-on: ubuntu-latest
@@ -37,7 +61,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 10.32.1
+          package_json_file: 'frontend-vue/package.json'
 
       - uses: actions/setup-node@v6
         with:
@@ -61,7 +85,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 10.32.1
+          package_json_file: 'frontend-vue/package.json'
 
       - uses: actions/setup-node@v6
         with:

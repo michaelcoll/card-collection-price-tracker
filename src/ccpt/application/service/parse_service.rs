@@ -1,5 +1,5 @@
 use crate::application::error::AppError;
-use crate::domain::card::{Card, CardId};
+use crate::domain::card::{Card, CardId, CollectionEntry};
 use crate::domain::language_code::LanguageCode;
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
@@ -106,21 +106,22 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
 
         let purchase_price = (purchase_price_float * 100.0).round() as u32;
 
-        let added_at: Option<DateTime<Utc>> = {
+        let added_at: DateTime<Utc> = {
             let raw = field_refs[17];
             if raw.is_empty() {
-                None
-            } else {
-                Some(
-                    DateTime::parse_from_rfc3339(raw)
-                        .map(|dt| dt.with_timezone(&Utc))
-                        .map_err(|_e| AppError::ParseError {
-                            line: line_number,
-                            field: "added_at",
-                            value: raw.to_string(),
-                        })?,
-                )
+                return Err(AppError::ParseError {
+                    line: line_number,
+                    field: "added_at",
+                    value: raw.to_string(),
+                });
             }
+            DateTime::parse_from_rfc3339(raw)
+                .map(|dt| dt.with_timezone(&Utc))
+                .map_err(|_e| AppError::ParseError {
+                    line: line_number,
+                    field: "added_at",
+                    value: raw.to_string(),
+                })?
         };
 
         CardId::try_new(
@@ -143,12 +144,14 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             foil,
             name,
             rarity_code,
-            quantity,
-            purchase_price,
             scryfall_id,
             None,
             None,
-            added_at,
+            CollectionEntry::Mine {
+                quantity,
+                purchase_price,
+                added_at,
+            },
         );
         cards.push(card);
     }
@@ -157,14 +160,32 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
     let mut order: Vec<CardId> = Vec::new();
     for card in cards {
         if let Some(existing) = seen.get_mut(&card.id) {
-            let new_qty = existing.quantity as u32 + card.quantity as u32;
-            let total_cost = existing.purchase_price * existing.quantity as u32
-                + card.purchase_price * card.quantity as u32;
-            existing.purchase_price = total_cost / new_qty;
-            existing.quantity = new_qty.min(u8::MAX as u32) as u8;
-            existing.added_at = match (existing.added_at, card.added_at) {
-                (Some(a), Some(b)) => Some(a.min(b)),
-                (a, b) => a.or(b),
+            let CollectionEntry::Mine {
+                quantity: existing_quantity,
+                purchase_price: existing_purchase_price,
+                added_at: existing_added_at,
+            } = existing.collection_entry
+            else {
+                unreachable!("parsed cards always carry a CollectionEntry::Mine");
+            };
+            let CollectionEntry::Mine {
+                quantity: new_quantity,
+                purchase_price: new_purchase_price,
+                added_at: new_added_at,
+            } = card.collection_entry
+            else {
+                unreachable!("parsed cards always carry a CollectionEntry::Mine");
+            };
+
+            let new_qty = existing_quantity as u32 + new_quantity as u32;
+            let total_cost = existing_purchase_price * existing_quantity as u32
+                + new_purchase_price * new_quantity as u32;
+            let added_at = existing_added_at.min(new_added_at);
+
+            existing.collection_entry = CollectionEntry::Mine {
+                quantity: new_qty.min(u8::MAX as u32) as u8,
+                purchase_price: total_cost / new_qty,
+                added_at,
             };
         } else {
             order.push(card.id.clone());
@@ -199,23 +220,46 @@ mod tests {
         assert_eq!(cards[0].id.collector_number, "87");
         assert_eq!(cards[0].id.language_code, LanguageCode::FR);
         assert!(!cards[0].id.foil);
-        assert_eq!(cards[0].quantity, 3);
-        assert_eq!(cards[0].purchase_price, 8);
-        assert!(cards[0].added_at.is_some());
+        let CollectionEntry::Mine {
+            quantity: q0,
+            purchase_price: p0,
+            ..
+        } = cards[0].collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        assert_eq!(q0, 3);
+        assert_eq!(p0, 8);
 
         assert_eq!(cards[1].id.set_code, SetCode::new("GPT"));
         assert_eq!(cards[1].id.collector_number, "32");
         assert_eq!(cards[1].id.language_code, LanguageCode::FR);
         assert!(!cards[1].id.foil);
-        assert_eq!(cards[1].quantity, 2);
-        assert_eq!(cards[1].purchase_price, 17);
+        let CollectionEntry::Mine {
+            quantity: q1,
+            purchase_price: p1,
+            ..
+        } = cards[1].collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        assert_eq!(q1, 2);
+        assert_eq!(p1, 17);
 
         assert_eq!(cards[2].id.set_code, SetCode::new("FDN"));
         assert_eq!(cards[2].id.collector_number, "217");
         assert_eq!(cards[2].id.language_code, LanguageCode::FR);
         assert!(!cards[2].id.foil);
-        assert_eq!(cards[2].quantity, 2);
-        assert_eq!(cards[2].purchase_price, 20);
+        let CollectionEntry::Mine {
+            quantity: q2,
+            purchase_price: p2,
+            ..
+        } = cards[2].collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        assert_eq!(q2, 2);
+        assert_eq!(p2, 20);
 
         Ok(())
     }
@@ -355,20 +399,42 @@ mod tests {
         assert_eq!(cards.len(), 1);
         assert_eq!(cards[0].id.set_code, SetCode::new("FDN"));
         assert_eq!(cards[0].id.collector_number, "87");
-        assert_eq!(cards[0].quantity, 5);
+        let CollectionEntry::Mine {
+            quantity,
+            purchase_price,
+            added_at,
+        } = cards[0].collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        assert_eq!(quantity, 5);
         // weighted average: (3*8 + 2*10) / 5 = (24+20)/5 = 44/5 = 8
-        assert_eq!(cards[0].purchase_price, 8);
+        assert_eq!(purchase_price, 8);
         // earliest date kept
-        assert_eq!(
-            cards[0].added_at.unwrap().to_rfc3339(),
-            "2026-02-05T20:44:45.815+00:00"
-        );
+        assert_eq!(added_at.to_rfc3339(), "2026-02-05T20:44:45.815+00:00");
     }
 
     #[test]
     fn import_cards_returns_error_for_invalid_date_format() {
         let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
                    bulk,binder,Repeal,GPT,Guildpact,32,normal,common,2,27563,9e7dd929-4bba-46a6-86c9-b8ed853eb721,0.17,false,false,near_mint,fr,EUR,NOT_A_DATE";
+
+        let result = parse_cards(csv);
+
+        assert!(matches!(
+            result,
+            Err(AppError::ParseError {
+                line: 2,
+                field: "added_at",
+                value: _,
+            })
+        ));
+    }
+
+    #[test]
+    fn import_cards_returns_error_for_empty_added_at() {
+        let csv = "Binder Name,Binder Type,Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID,Purchase price,Misprint,Altered,Condition,Language,Purchase price currency,Added\n\
+                   bulk,binder,Repeal,GPT,Guildpact,32,normal,common,2,27563,9e7dd929-4bba-46a6-86c9-b8ed853eb721,0.17,false,false,near_mint,fr,EUR,";
 
         let result = parse_cards(csv);
 
@@ -397,16 +463,16 @@ mod tests {
             true,
             "Felothar, Dawn of the Abzan",
             RarityCode::R,
-            1,
-            76,
             Uuid::parse_str("09478378-c28b-4334-a0a1-157325ed8e5b").unwrap(),
             None,
             None,
-            Some(
-                DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
+            CollectionEntry::Mine {
+                quantity: 1,
+                purchase_price: 76,
+                added_at: DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
                     .unwrap()
                     .with_timezone(&Utc),
-            ),
+            },
         );
 
         assert_eq!(result.clone().unwrap().len(), 1);

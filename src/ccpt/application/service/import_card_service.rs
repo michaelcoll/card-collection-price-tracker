@@ -73,7 +73,7 @@ mod tests {
     use crate::application::use_case::{
         MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
     };
-    use crate::domain::card::Card;
+    use crate::domain::card::{Card, CollectionEntry};
     use crate::domain::language_code::LanguageCode;
     use crate::domain::rarity_code::RarityCode;
     use crate::domain::set_name::{SetCode, SetName};
@@ -101,16 +101,16 @@ mod tests {
             false,
             "Goblin Boarders",
             RarityCode::C,
-            3,
-            8,
             Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             None,
             None,
-            Some(
-                DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
+            CollectionEntry::Mine {
+                quantity: 3,
+                purchase_price: 8,
+                added_at: DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
                     .unwrap()
                     .with_timezone(&Utc),
-            ),
+            },
         );
 
         card_repository
@@ -174,16 +174,16 @@ mod tests {
             false,
             "Goblin Boarders",
             RarityCode::C,
-            0,
-            0,
             Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             None,
             None,
-            Some(
-                DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
+            CollectionEntry::Mine {
+                quantity: 0,
+                purchase_price: 0,
+                added_at: DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
                     .unwrap()
                     .with_timezone(&Utc),
-            ),
+            },
         );
 
         card_repository
@@ -240,16 +240,16 @@ mod tests {
             false,
             "Goblin Boarders",
             RarityCode::C,
-            3,
-            8,
             Uuid::parse_str("4409a063-bf2a-4a49-803e-3ce6bd474353").unwrap(),
             None,
             None,
-            Some(
-                DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
+            CollectionEntry::Mine {
+                quantity: 3,
+                purchase_price: 8,
+                added_at: DateTime::parse_from_rfc3339("2026-02-05T20:44:45.815Z")
                     .unwrap()
                     .with_timezone(&Utc),
-            ),
+            },
         );
 
         card_repository

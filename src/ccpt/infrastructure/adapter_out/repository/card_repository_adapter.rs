@@ -1,6 +1,6 @@
 use crate::application::error::AppError;
 use crate::application::repository::CardRepository;
-use crate::domain::card::{Card, CardId};
+use crate::domain::card::{Card, CardId, CollectionEntry};
 use crate::domain::user::User;
 use crate::infrastructure::adapter_out::repository::entities::{
     CardEntity, CardIdEntity, CardNameEntity,
@@ -87,6 +87,15 @@ impl CardRepository for CardRepositoryAdapter {
     }
 
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
+        let CollectionEntry::Mine {
+            quantity,
+            purchase_price,
+            added_at,
+        } = &card.collection_entry
+        else {
+            panic!("save() is only called for cards owned by the importing user");
+        };
+
         sqlx::query!(
         r#"INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -119,9 +128,9 @@ impl CardRepository for CardRepositoryAdapter {
             card.id.language_code.to_string(),
             card.id.foil,
             user.id,
-            card.quantity as i32,
-            card.purchase_price as i32,
-            card.added_at
+            *quantity as i32,
+            *purchase_price as i32,
+            added_at
         )
             .execute(&self.pool)
             .await?;
@@ -226,8 +235,16 @@ mod tests {
             CardId::new("FDN", "87", LanguageCode::FR, false)
         );
         assert_eq!(cards[0].name, "Goblin Boarders");
-        assert_eq!(cards[0].quantity, 3);
-        assert_eq!(cards[0].purchase_price, 500);
+        let CollectionEntry::Mine {
+            quantity,
+            purchase_price,
+            ..
+        } = &cards[0].collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        assert_eq!(*quantity, 3);
+        assert_eq!(*purchase_price, 500);
     }
 
     #[sqlx::test]
@@ -268,8 +285,24 @@ mod tests {
 
         let cards = repository.get_all(User::for_testing()).await.unwrap();
         assert_eq!(cards.len(), 1);
-        assert_eq!(cards[0].quantity, updated_card.quantity);
-        assert_eq!(cards[0].purchase_price, updated_card.purchase_price);
+        let CollectionEntry::Mine {
+            quantity,
+            purchase_price,
+            ..
+        } = &cards[0].collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        let CollectionEntry::Mine {
+            quantity: updated_quantity,
+            purchase_price: updated_purchase_price,
+            ..
+        } = &updated_card.collection_entry
+        else {
+            panic!("expected CollectionEntry::Mine");
+        };
+        assert_eq!(quantity, updated_quantity);
+        assert_eq!(purchase_price, updated_purchase_price);
     }
 
     #[sqlx::test]
