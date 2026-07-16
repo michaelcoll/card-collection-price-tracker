@@ -1,317 +1,193 @@
----
-applyTo: "frontend/**"
----
+# The Arcane Exchange — Design System
 
-# Design System Strategy: The Arcane Exchange
+Hi-fi design system for a Magic: The Gathering card trading platform.
+Aesthetic: **dark, frosted glass, cyan / violet neon**, shades derived in `oklch`.
 
-## 1. Overview & Creative North Star
-
-**The Creative North Star: "The Digital Curator"**
-This design system rejects the cluttered, "utility-first" aesthetic common in trading platforms. Instead, it adopts the
-persona of a high-end editorial gallery. Magic: The Gathering is a game of incredible art and complex data; our goal is
-to treat the cards like museum artifacts and the data like professional financial analytics.
-
-We break the "template" look by utilizing **intentional asymmetry** and **tonal layering**. Large-scale typography (
-Display-LG) creates a bold, editorial rhythm, while the interface itself recedes into the background using deep,
-atmospheric purples and blues to let the vibrant card art "pop."
-
-The system supports **two themes** derived from the same four seed colors ("Aether Grid" mockup):
-
-| Theme                         | Activation                   | Character                                       |
-|:------------------------------|:-----------------------------|:------------------------------------------------|
-| 🌑 **Dark** — *Mystic Dark*   | `data-theme="dark"` (défaut) | Surfaces quasi-noires, accents néon-kinétiques  |
-| ☀️ **Light** — *Arcane Light* | `data-theme="light"`         | Surfaces blanc chaud, accents saturés et riches |
+**Architecture**: tokens (colors, spacing, radius, shadows, typography) are CSS custom properties defined in
+`frontend-vue/app/assets/css/main.css` (`:root`) — never invent a token, use the real names. Visual composition is
+done with **Tailwind classes directly in the Vue template** (utility-first), not with dedicated global CSS classes
+(`.btn`, `.panel`, `.chip`…). That class system exists in the mockup (`maquette/styles.css`) but has no equivalent
+in `frontend-vue` — that's not the goal, don't recreate it. To apply a token in a Tailwind class, use the
+arbitrary-value syntax (`bg-[var(--surface-2)]`, `text-[var(--ink-2)]`, `border-[var(--line)]`,
+`rounded-[var(--r-lg)]`…), or Tailwind's default palette (`slate`, `zinc`, `cyan`, `violet`, `emerald`, `red`…)
+already used by existing components (`app/components/*.vue`) when the mockup doesn't prescribe an exact hue.
 
 ---
 
-## 2. Colors & Surface Philosophy
+## 1. Foundations
 
-### Seed Colors — Source de Vérité Unique
+### Colors — locked palette
 
-Tous les tokens du système sont dérivés de ces quatre couleurs graines Material Design 3, telles que définies dans la
-maquette "Aether Grid" :
+| Role                 | Token                     | Value     | Usage                                       |
+|-----------------------|---------------------------|-----------|-----------------------------------------------|
+| App background         | `--bg`                    | `#131313` | global background (+ radial cyan/violet aurora) |
+| Surface                | `--surface`               | `#1c1b1b` | cards, panels, modals                          |
+| Cyan (accent)           | `--cyan` / `--accent`     | `#00daf3` | action, interactive, rising values             |
+| Violet (secondary)      | `--violet` / `--accent-2` | `#cdbdff` | EDHREC, balances, reserved                     |
 
-| Rôle          | Seed      | Usage principal                              |
-|:--------------|:----------|:---------------------------------------------|
-| **Primary**   | `#7C4DFF` | Boutons CTA, états actifs, gradients         |
-| **Secondary** | `#2196F3` | Badges de prix, accents secondaires          |
-| **Tertiary**  | `#00E5FF` | Barres EDHREC, indicateurs "Trending Up"     |
-| **Neutral**   | `#121212` | Dérivation de toute la hiérarchie de surface |
+### Derived neutrals (oklch off the background)
 
-### The "No-Line" Rule
+`--surface-2` (raised) · `--surface-3` (hover) · `--ink` (primary text) · `--ink-2` (secondary) · `--ink-3`
+(tertiary / labels) · `--ink-4` (faint)
 
-**Instruction explicite :** Ne jamais utiliser de bordures `1px solid`. Elles créent du bruit visuel qui distrait de
-l'art des cartes.
+### Derived accents (states from the two neon hues)
 
-- Définir les délimitations par des changements de fond : placer un élément `surface-container-high` sur un fond
-  `surface`.
-- Utiliser l'**échelle d'espacement** (`gap-8` ou `gap-10`) pour créer une séparation "par le vide".
+For each hue: `-soft` (light), `-dim` (dark), `-fill` / `-fill-2` (translucent tinted background), `-line`
+(border), `-glow` (glowing shadow), `-ink` (readable text on `-fill`).
+E.g. cyan: `--cyan-soft`, `--cyan-dim`, `--cyan-fill`, `--cyan-fill-2`, `--cyan-line`, `--cyan-glow`,
+`--cyan-ink`. Same for violet.
 
-### Surface Hierarchy & Nesting
+### Semantic colors
 
-Traiter l'UI comme des couches physiques de verre dépoli.
+- `--down` — value decrease (muted warm red) + `--down-fill`
+- `--good` — discount / savings (green) + `--good-fill`
+- rising values: reuse the cyan directly (`--cyan`)
 
-**Dark mode :**
+### Lines & glass
 
-| Token                       | Valeur    | Rôle                                          |
-|:----------------------------|:----------|:----------------------------------------------|
-| `surface-container-lowest`  | `#0e0e0e` | Élément le plus enfoncé (zebra, sunken cards) |
-| `surface`                   | `#131313` | Fond principal de l'application               |
-| `surface-container-low`     | `#1c1b1b` | Sidebar, navigation secondaire                |
-| `surface-container`         | `#211f26` | Container par défaut, base glassmorphique     |
-| `surface-container-high`    | `#2a2a2a` | Cards élevées, panneaux                       |
-| `surface-container-highest` | `#353534` | Modales, panneau de détail actif              |
-| `surface-bright`            | `#393939` | Cible du hover sur les grilles de cartes      |
-| `surface-variant`           | `#49454f` | Fond des tooltips (semi-transparent)          |
+- Borders: `--line` (9%), `--line-2` (14%, more pronounced), `--line-3` (5%, subtle)
+- Glass: `--glass-blur: 12px`, `--glass-alpha: 0.603`, `--glass-bg` (surface/transparent blend)
 
-**Light mode :**
+### Radius & shadow
 
-| Token                       | Valeur    | Rôle                                           |
-|:----------------------------|:----------|:-----------------------------------------------|
-| `surface-container-lowest`  | `#ffffff` | Blanc pur pour les éléments les plus encastrés |
-| `surface`                   | `#fdfbf9` | Fond principal (blanc chaud, légèrement beige) |
-| `surface-container-low`     | `#f7f2f0` | Sidebar, navigation secondaire                 |
-| `surface-container`         | `#f1ece9` | Container par défaut                           |
-| `surface-container-high`    | `#ebe6e3` | Cards élevées, panneaux                        |
-| `surface-container-highest` | `#e5e1de` | Modales, panneau de détail actif               |
-| `surface-bright`            | `#ffffff` | Cible du hover (blanc pur sur fond chaud)      |
-| `surface-variant`           | `#e8e3e0` | Fond des tooltips                              |
+`--r-sm: 8px` · `--r-md: 12px` · `--r-lg: 16px` · `--r-xl: 22px`
+`--shadow`: light inset + large soft drop shadow. `--maxw: 1180px`.
 
-### The "Glass & Gradient" Rule
+### Light theme
 
-Pour le côté "MTG Flavor", utiliser un dégradé subtil sur les CTAs primaires :
+The theme is driven by the `.dark` class on `<html>` (Tailwind `darkMode: 'class'`, see `nuxt.config.ts`) — not a
+`data-theme` attribute (that's the mockup's mechanism, not `frontend-vue`'s). In the absence of `.dark`,
+`:root:not(.dark)` reassigns the same set of tokens for light mode (background `#eef0f2`, white surfaces, deepened
+neons to stay readable, subtle black borders). Always code with `var(--*)` — never a hardcoded color — so both
+themes work.
 
-- `linear-gradient(135deg, var(--primary), var(--primary-container))`
-- Pour les widgets flottants "Price Insight" : `backdrop-filter: blur(12px)` avec 60% d'opacité sur `surface-container`
-  pour un effet glassmorphique premium.
+### Tweakable accent
+
+`--accent` drives the cyan; it's overridable (theme/accent picker in preferences). Roles point at it, so changing
+`--accent` retints the whole app.
 
 ---
 
-## 3. Typography: The Editorial Voice
+## 2. Typography
 
-Police **Inter** exclusivement, avec manipulation du poids et du tracking pour créer de l'autorité.
+Three families (loaded via the `@nuxt/fonts` module, see `nuxt.config.ts`):
 
-| Échelle       | Poids | Tracking  | Usage                                     |
-|:--------------|:------|:----------|:------------------------------------------|
-| Display LG/MD | 500   | `-0.02em` | Noms de sets, prix high-value             |
-| Headline SM   | 700   | `0`       | Noms de cartes dans les grilles           |
-| Label MD/SM   | 500   | `0`       | "EDHREC %", "Prix" — `on-surface-variant` |
-| Body LG       | 400   | `0`       | Texte/flavor text, `line-height: 1.6`     |
+| CSS var          | Tailwind class | Family              | Usage                                                          |
+|--------------------|-----------------|-----------------------|-------------------------------------------------------------------|
+| `--font-display`   | `font-display`  | **Space Grotesk**     | titles, KPIs, brand                                                 |
+| `--font-body`      | `font-sans`     | **Hanken Grotesk**    | body copy, UI (default font)                                       |
+| `--font-mono`      | `font-mono`     | **JetBrains Mono**    | numbers, prices, labels, codes — enable `tabular-nums`               |
+
+The mockup's helpers (`.display`, `.h1`, `.mono`, `.label`, `.kpi`…) don't exist in `frontend-vue`: recompose the
+visual effect with Tailwind classes (`text-*`, `font-*`, `tracking-*`, `uppercase`) on a case-by-case basis, not by
+recreating them as global classes.
+
+Body: `text-[15px] leading-normal tracking-[0.01em]` (antialiasing already handled globally in `main.css`).
 
 ---
 
-## 4. Elevation & Depth
+## 3. Layout
 
-Hiérarchie par **Tonal Layering**, jamais par des ombres structurelles.
+No shared layout classes (`.app`, `.appbar`, `.row`/`.col`…) — each screen/component composes its layout with
+Tailwind flex/grid directly (see `app/app.vue` for the current shell: sticky header + `backdrop-blur`, desktop nav
+up top / mobile nav fixed at the bottom). Reference points from the mockup to respect in this composition:
 
-- **Principe de superposition :** Placer un élément `surface-container-lowest` à l'intérieur d'une section
-  `surface-container-high` pour créer un look "enfoncé" ou "encastré".
-- **Ombres ambiantes :** Pour les aperçus de cartes flottants :
-  `0 24px 48px -12px rgba(0, 0, 0, 0.45)`. La couleur d'ombre doit être teintée, jamais du noir pur.
-- **"Ghost Border" (fallback accessibilité) :** Si un séparateur est obligatoire, utiliser `outline-variant` à **15%
-  d'opacité**. Il doit se sentir, pas se voir.
+- Max page width `1180px` (`max-w-[1180px]`), narrow variant `680px` for content pages (forms, detail views).
+- Mobile nav fixed at the bottom of the screen, desktop/mobile switch at the `md` breakpoint.
+- Card grids in `auto-fill`/`minmax(...)`, `sm`/`lg` sizes depending on context (dense grid vs. featured display).
+- The mockup drives gap/padding via a runtime tweak (`--d-gap`/`--d-pad`) — no need to reproduce that mechanism in
+  `frontend-vue` without an explicit request; use fixed `gap-*`/`p-*` classes.
+
+---
+
+## 4. Surfaces
+
+Visual patterns to compose in Tailwind (no dedicated `.panel`/`.card-surface`/`.inset` class in `frontend-vue`):
+
+| Pattern                     | Indicative Tailwind composition                                                                                             | Role                                              |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------|
+| Frosted-glass panel           | `bg-[var(--glass-bg)] backdrop-blur-[length:var(--glass-blur)] border border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow)]` | main container (cards, panels, modals)                |
+| Flat surface                  | `bg-[var(--surface)] rounded-[var(--r-md)]`                                                                                   | plain surface, no glass effect                        |
+| Inset area                    | background darker than the parent surface + `rounded-[var(--r-md)]`                                                          | recessed sub-area                                     |
+| Tinted accent box             | `bg-[var(--cyan-fill)]` / `bg-[var(--violet-fill)]`                                                                          | accent highlight                                      |
 
 ---
 
 ## 5. Components
 
-### Card Grids
+Inventory of the mockup's UI patterns to reimplement as Vue components styled with Tailwind. The names below
+(`.btn`, `.panel`…) are the ones from the mockup's CSS (`maquette/styles.css`) — useful for finding the reference
+style/behavior to consult, **not classes to recreate as-is** in `frontend-vue`.
 
-- **0 bordure :** Utiliser `rounded-lg` (0.5rem). Zéro `border`.
-- **Hover :** `scale(1.02)` + passage du fond vers `surface-bright`. Pas de glow.
-- **Image :** Inner-shadow subtil pour que l'art semble "enchâssé" dans le cadre numérique.
+**Buttons** `.btn` + variants `.primary` (cyan), `.violet`, `.ghost`, `.danger`; sizes `.sm` / `.lg` / `.block`.
 
-### Progress Bars & Badges
+**Selection / filters**
 
-- **Barre EDHREC %** : fill `tertiary`, track `surface-container-highest`, `height: 4px`.
-- **Badges cartes** (pill `rounded-full`, `text-xs`) :
+- `.chip` (togglable pill, `.on` state, `.vio` variant)
+- `.seg` — segmented control with an animated `.thumb` (`.on.cyan` / `.on.vio`) — already implemented in Tailwind
+  in `app/components/SegToggle.vue`; use it as a composition reference for the other patterns in this list.
+- `.set-pip` — set pip (Keyrune symbols), count badge `.set-ct`
+- `.cbx` — multi-select set combobox (control, chips, popover, options)
+- `.dual-range` — two-handle price-range slider
 
-| Badge           | Fond                       | Texte               | Usage                               |
-|:----------------|:---------------------------|:--------------------|:------------------------------------|
-| Foil ⭑          | `foil-container`           | `on-foil-container` | Carte en version foil               |
-| Quantité xN     | `primary-container` (25%)  | `primary`           | Copies multiples dans la collection |
-| Prix trending ↑ | `tertiary-container` (25%) | `tertiary`          | Prix en hausse                      |
-| Prix trending ↓ | `error-container` (25%)    | `error`             | Prix en baisse                      |
+**Fields** `.field` (+ `.big`), glowing cyan focus; `.search-hero` for the search bar with a halo.
 
-### Toast Notifications
+**MTG cards** `.mtg` — realistic monochrome frame (title bar, art, type bar, text box), quantity badge `.qty`,
+color accents `.c-w/-u/-b/-r/-g/-m`, variants `.mini`, `.has-img` (real scan), `.foil` (holographic, scroll-driven),
+`.clickable`. Grid cell `.card-cell` + deal indicators (`.deal-tag.good/.bad/.par`) — already implemented in
+`app/components/MtgCard.vue` and `app/components/CardCell.vue` respectively.
 
-Composant utilitaire positionné en bas à droite (`fixed bottom-1.5rem right-1.5rem`, `z-9999`). Fichier CSS dédié
-autorisé pour les `@keyframes` et pseudo-classes complexes.
+**Official symbols**: mana (`.msym`, `@font-face` ManaSym, WUBRG badges) and set symbols (`.kr`, Keyrune),
+self-hosted.
 
-| Variante    | Fond (60% opacity)    | Texte                    |
-|:------------|:----------------------|:-------------------------|
-| **Success** | `secondary-container` | `on-secondary-container` |
-| **Error**   | `error-container`     | `on-error-container`     |
+**List rows** `.lrow` (+ `.locked`), `.pavatar` (player avatar, `.online` state — see
+`app/components/PlayerAvatar.vue`), `.bar` (progress bar).
 
-- Entrée animée : `translateY(0.75rem) scale(0.96)` → `translateY(0) scale(1)`, 220ms ease-out.
-- `backdrop-filter: blur(12px)` pour l'effet glassmorphique.
+**Graphs**
 
-### Comparison Tables
+- `.spark` — bar sparkline (see `app/components/Sparkline.vue`)
+- `.graph` — simple SVG curve (line + fill + `.gtip` tooltip)
+- `.valuebar` / `.egraph2` — envelope graph (low→trend band + average curve), `.is-compact` ⇄ `.is-detail` states,
+  axes and grid, hover popover `.egtip` (date + Trend/Average/Low) — see `app/components/EnvelopeGraph.vue`.
+  **This is the reference graph** for price evolution (collection and card detail).
 
-- **Zéro séparateur :** Zebra-striping avec `surface-container-low` / `surface-container-lowest`.
-- **Alignement des données :** Alignement à droite pour les prix, `label-md` pour "Market", `title-sm` pour la valeur.
+**Trade / lifecycle**: `.statuspill` (tonal status pills), `.lifecycle` (stepper), `.stbanner` (tonal contextual
+banner), `.balance` / `.bal-split` (trade value split), `.rating` (stars), `.reserved-flag`.
 
-### Buttons — 4 variantes (maquette "Aether Grid")
+**Overlays**: `.overlay` (+ `.center-modal`), `.modal` (+ `.modal-card` for card detail), `.sheet` (mobile bottom
+sheet).
 
-| Variante      | Fond                     | Texte / Bordure                 | Usage                       |
-|:--------------|:-------------------------|:--------------------------------|:----------------------------|
-| **Primary**   | `primary`                | `on-primary`                    | CTA principal, états actifs |
-| **Secondary** | `surface-container-high` | `on-surface`                    | Actions de support          |
-| **Inverted**  | `on-surface`             | `surface`                       | Contraste inversé           |
-| **Outlined**  | Transparent              | `outline-variant` (15% opacity) | Actions peu accentuées      |
+**Notifications**: `.notif-wrap` / `.notif-badge` / `.notif-pop` / `.notif-item` (`.unread` state, tonal icons by
+type).
 
-- **Google Login :** `surface-container-high` + ghost border 10% `outline-variant`. Icône Google G monochrome.
+**Errors**: `.api-toast` (failed-action snackbar with retry), `.spin` (spinner).
 
-### Icon Buttons — 3 rôles sémantiques
-
-| Rôle         | Fond                 | Icône                   | Usage                |
-|:-------------|:---------------------|:------------------------|:---------------------|
-| **Tertiary** | `tertiary-container` | `on-tertiary-container` | Édition / actions +  |
-| **Primary**  | `primary-container`  | `on-primary-container`  | Catégoriser / taguer |
-| **Error**    | `error-container`    | `on-error-container`    | Supprimer / détruire |
+**Preferences**: `.theme-grid` / `.theme-tile` (theme & accent picker).
 
 ---
 
-## 6. Theming Strategy & Implementation
+## 6. Motion
 
-### Mécanisme
-
-Le thème est piloté par l'attribut `data-theme` sur `<html>` :
-
-```html
-
-<html data-theme="dark" lang="fr">  <!-- ou "light" -->
-```
-
-Dark est le **défaut**. En l'absence de `data-theme`, le système respecte `prefers-color-scheme` (media query
-fallback dans `styles.css`).
-
-### Angular Service Pattern
-
-```typescript
-// theme.service.ts
-export type Theme = 'dark' | 'light';
-
-@Injectable({providedIn: 'root'})
-export class ThemeService {
-    private _theme = signal<Theme>('dark');
-
-    readonly current = this._theme.asReadonly();
-    readonly isDark = computed(() => this._theme() === 'dark');
-    readonly toggleIcon = computed(() => (this._theme() === 'dark' ? 'dark_mode' : 'light_mode'));
-    readonly toggleLabel = computed(() =>
-        this._theme() === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre',
-    );
-
-    constructor() {
-        // Respect la préférence système au démarrage
-        const initial: Theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        this._apply(initial);
-    }
-
-    toggle(): void {
-        this._apply(this._theme() === 'dark' ? 'light' : 'dark');
-    }
-
-    private _apply(theme: Theme): void {
-        this._theme.set(theme);
-        document.documentElement.setAttribute('data-theme', theme);
-    }
-}
-```
-
-### CSS Implementation (Tailwind v4)
-
-Tous les tokens de couleur sont des CSS custom properties déclarées dans `:root` (dark) et `[data-theme="light"]`.
-Tailwind les mappe via `@theme inline` dans `styles.css` :
-
-```css
-@theme inline {
-    --color-primary: var(--primary);
-    --color-surface: var(--surface);
-    /* ... */
-}
-```
-
-Cela permet aux classes `bg-primary`, `text-on-surface`, `bg-surface-container-high` de répondre aux changements
-de thème à l'exécution **sans rebuild**.
+Short, lively transitions (~.15–.3s, `cubic-bezier` curves with a slight overshoot) — reproduce with Tailwind
+utilities (`transition-*`, `duration-*`, `ease-[cubic-bezier(...)]`) or, for complex named animations, component-
+local `@keyframes`. Mockup animations to look up if needed: `pop` (modal), `slideup` (sheet), `fade` (overlay),
+`toastIn`, `cbxIn`, `spin360`, `foilSlide`, `vbRangeIn` (`fade`, `pop`, `slideup` and `foilSlide` are already
+ported in `main.css`). Everything must be neutralized under `prefers-reduced-motion: reduce`.
 
 ---
 
-## 7. Do's and Don'ts
+## 7. Golden Rules
 
-### Do
-
-- **DO** utiliser `spacing-16` (3.5rem) comme marge minimale pour les sections hero. Laisser respirer les données.
-- **DO** utiliser `tertiary` avec parcimonie pour "Success" ou "Trending Up".
-- **DO** utiliser des couches `surface-variant` semi-transparentes pour les tooltips (glassmorphisme).
-- **DO** aligner les données de prix à droite.
-
-### Don't
-
-- **DON'T** utiliser du blanc pur sur fond sombre. Toujours `on-surface` (`#e5e2e1` dark / `#1c1b1f` light).
-- **DON'T** utiliser des séparateurs gris 1px. Utiliser `gap-8` (1.8rem) à la place.
-- **DON'T** utiliser des `box-shadow` sur les cartes dans une grille. Utiliser les décalages de couleur de fond.
-- **DON'T** utiliser `border: 1px solid` pour quelque raison que ce soit.
-
----
-
-## 8. Complete Token Reference
-
-### Color Roles
-
-| Token                    | Dark      | Light     | Usage                                  |
-|:-------------------------|:----------|:----------|:---------------------------------------|
-| `primary`                | `#cdbdff` | `#7c4dff` | Boutons CTA, états actifs              |
-| `on-primary`             | `#370096` | `#ffffff` | Texte sur fond primary                 |
-| `primary-container`      | `#4f2da7` | `#eedcff` | Fin gradient CTA, fond icon-button     |
-| `on-primary-container`   | `#e9deff` | `#220066` | Icône/texte sur primary-container      |
-| `secondary`              | `#a8c7fa` | `#1565c0` | Accents secondaires, textes de support |
-| `on-secondary`           | `#003062` | `#ffffff` | Texte sur fond secondary               |
-| `secondary-container`    | `#004a77` | `#d3e4ff` | Fond toast success, badges prix        |
-| `on-secondary-container` | `#d3e4ff` | `#001c38` | Texte toast success, badges prix       |
-| `tertiary`               | `#00e5ff` | `#006874` | Barres EDHREC, badge prix trending ↑   |
-| `on-tertiary`            | `#003545` | `#ffffff` | Texte sur fond tertiary                |
-| `tertiary-container`     | `#004f57` | `#97f0ff` | Fond icon-button édition, badge prix ↑ |
-| `on-tertiary-container`  | `#a8eeff` | `#001f24` | Icône icon-button édition              |
-| `error`                  | `#cf6679` | `#b3261e` | Texte d'erreur, badge prix trending ↓  |
-| `on-error`               | `#601410` | `#ffffff` | Texte sur fond error                   |
-| `error-container`        | `#8c1d18` | `#f9dedc` | Fond icon-button suppression, badge ↓  |
-| `on-error-container`     | `#f9dedc` | `#410002` | Icône icon-button suppression          |
-| `foil`                   | `#f0c040` | `#7a5900` | Indicateur foil (texte / icône)        |
-| `on-foil`                | `#3d2e00` | `#ffffff` | Texte sur fond foil                    |
-| `foil-container`         | `#5a4200` | `#ffeebb` | Fond badge foil ⭑                      |
-| `on-foil-container`      | `#ffdea0` | `#261900` | Icône/texte badge foil ⭑               |
-
-### Surface Tokens
-
-| Token                       | Dark      | Light     | Usage                              |
-|:----------------------------|:----------|:----------|:-----------------------------------|
-| `surface`                   | `#131313` | `#fdfbf9` | Fond global de l'application       |
-| `surface-bright`            | `#393939` | `#ffffff` | Cible du hover sur les grilles     |
-| `surface-variant`           | `#49454f` | `#e8e3e0` | Fond tooltips (semi-transparent)   |
-| `on-surface`                | `#e5e2e1` | `#1c1b1f` | Texte principal                    |
-| `on-surface-variant`        | `#cbc3d9` | `#49454f` | Texte métadonnées / labels         |
-| `outline-variant`           | `#494456` | `#cac4d0` | Ghost borders (max 15% opacity)    |
-| `surface-container-lowest`  | `#0e0e0e` | `#ffffff` | Élément le plus enfoncé            |
-| `surface-container-low`     | `#1c1b1b` | `#f7f2f0` | Sidebar, zebra-stripe              |
-| `surface-container`         | `#211f26` | `#f1ece9` | Base widget glassmorphique         |
-| `surface-container-high`    | `#2a2a2a` | `#ebe6e3` | Cards élevées, boutons Secondary   |
-| `surface-container-highest` | `#353534` | `#e5e1de` | Modales, panneaux de détail actifs |
-
-### Spacing Scale
-
-| Classe Tailwind  | Valeur    | Usage                                   |
-|:-----------------|:----------|:----------------------------------------|
-| `p-4` / `gap-4`  | `0.9rem`  | Padding interne des cards               |
-| `gap-8`          | `1.8rem`  | Séparation "par le vide" (no-line rule) |
-| `gap-10`         | `2.25rem` | Séparation entre sections               |
-| `mt-16` / `p-16` | `3.5rem`  | Marge minimum pour les sections hero    |
-
-### Border Radius
-
-| Classe Tailwind | Valeur   | Usage                     |
-|:----------------|:---------|:--------------------------|
-| `rounded-lg`    | `0.5rem` | Cards et containers       |
-| `rounded-full`  | `9999px` | Badges pill, icon-buttons |
-
+1. **Always** go through the real `var(--*)` tokens; never a hardcoded color/font (otherwise the light theme
+   breaks).
+2. Two accent colors max: cyan (action/increase) + violet (secondary/balance). Red/green are reserved for
+   semantic use (decrease/discount).
+3. Numbers, prices, and labels in `--font-mono` (`font-mono`); titles in `--font-display` (`font-display`);
+   everything else in `--font-body` (`font-sans`).
+4. Glass surfaces (§4) for main containers, inset area for sub-zones — composed in Tailwind, not via global CSS
+   classes.
+5. No emojis, no aggressive gradients — the only tolerated gradient is the neon halo (`-glow`) and the background
+   aurora.
+6. Don't create global CSS classes like `.btn`/`.panel`/`.chip`: compose each Vue component in Tailwind, relying
+   on the `var(--*)` tokens above (arbitrary values) and on already-written components (`app/components/*.vue`)
+   as a style reference.

@@ -28,38 +28,38 @@ mise run setup         # Full dev setup: clean + install frontend deps
 
 ### Build
 
-- **Backend** : `cargo build` (ou `mise run back` pour lancer directement). En production/Docker :
+- **Backend**: `cargo build` (or `mise run back` to launch it directly). In production/Docker:
   `SQLX_OFFLINE=true cargo build --release`
-- **Frontend** : `cd frontend && pnpm build` (prod) ou `cd frontend && pnpm build --configuration development` (dev)
+- **Frontend**: `cd frontend && pnpm build` (prod) or `cd frontend && pnpm build --configuration development` (dev)
 
 ### Test
 
-- **Backend** : `cargo test` — utilise `cargo-nextest` + `cargo-llvm-cov` pour la couverture
-- **Frontend** : `cd frontend && pnpm test` (Vitest via `ng test`) ou `cd frontend && pnpm test:coverage` pour la
-  couverture
+- **Backend**: `cargo test` — uses `cargo-nextest` + `cargo-llvm-cov` for coverage
+- **Frontend**: `cd frontend && pnpm test` (Vitest via `ng test`) or `cd frontend && pnpm test:coverage` for
+  coverage
 
 ### Lint
 
-- **Backend** : `mise run lint` (= `mise run l`)
+- **Backend**: `mise run lint` (= `mise run l`)
     1. `cargo clippy --locked --workspace --all-features --all-targets -- -A dead_code -D clippy::all`
-    2. `cargo sqlx prepare --check` (valide les requêtes SQL contre la DB)
-- **Frontend** : `cd frontend && pnpm lint` (Prettier check) ou `cd frontend && pnpm lint:fix` (auto-fix)
+    2. `cargo sqlx prepare --check` (validates SQL queries against the DB)
+- **Frontend**: `cd frontend && pnpm lint` (Prettier check) or `cd frontend && pnpm lint:fix` (auto-fix)
 
 ### Format
 
-- **Backend** : `cargo fmt` (rustfmt)
-- **Frontend** : `cd frontend && pnpm lint:fix` (Prettier)
-- **Les deux** : `mise run format` (= `mise run f`)
+- **Backend**: `cargo fmt` (rustfmt)
+- **Frontend**: `cd frontend && pnpm lint:fix` (Prettier)
+- **Both**: `mise run format` (= `mise run f`)
 
 ### OpenAPI
 
 ```
-mise run openapi        # Génère doc/openapi.yml
+mise run openapi        # Generates doc/openapi.yml
 ```
 
 ### Database
 
 ```
-mise run migrate        # Applique les migrations SQLx
-mise run sqlx-prepare   # Génère le metadata SQLx (à lancer après modification de requêtes)
+mise run migrate        # Applies SQLx migrations
+mise run sqlx-prepare   # Generates SQLx metadata (run after modifying queries)
 ```

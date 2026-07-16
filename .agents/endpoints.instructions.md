@@ -1,7 +1,3 @@
----
-applyTo: "src/**"
----
-
 # API Endpoints Reference
 
 All endpoints are defined and documented in the OpenAPI specification file.

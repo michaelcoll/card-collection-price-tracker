@@ -1,33 +1,32 @@
-# Authentification Bearer Token Clerk
+# Clerk Bearer Token Authentication
 
-## Vue d'ensemble
-Authentification basée sur **Clerk** utilisant des JWT validés par le backend.
+## Overview
+Authentication based on **Clerk** using JWTs validated by the backend.
 
-### Variables d'environnement
-Ajouter dans `.env` :
+### Environment Variables
+Add to `.env`:
 ```bash
 CLERK_FRONTEND_API_URL=https://musical-pup-67.clerk.accounts.dev
 ```
 
-### Endpoints Protégés (Requiert Token)
-- `GET /cards/` : Collection paginée de l'utilisateur.
-- `POST /cards/import` : Importation de cartes (CSV ManaBox).
-- `POST /cards/card-info` : Information sur une carte.
+### Protected Endpoints (Token Required)
+- `GET /cards/`: User's paginated collection.
+- `POST /cards/import`: Card import (ManaBox CSV).
+- `POST /cards/card-info`: Information about a card.
 
-### Endpoints Publics
-- `GET /maintenance/stats` : Statistiques globales (sans authentification).
-- `POST /maintenance/trigger-price-update` : Déclenchement manuel de la mise à jour des prix.
+### Public Endpoints
+- `GET /maintenance/stats`: Global statistics (no authentication).
+- `POST /maintenance/trigger-price-update`: Manual trigger of the price update.
 
-## Flux d'utilisation
-1.  **Frontend (Angular)** : Le `AuthService` obtient le token via `clerk.session.getToken()` et l'inclut dans les headers de requête (`Authorization: Bearer <token>`).
-2.  **Backend (Rust)** : L'extracteur `AuthenticatedUser` gère la validation du JWT en utilisant les clés publiques Clerk (JWKS) :
-    *   Vérifie la signature, l'issuer (`https://musical-pup-67.clerk.accounts.dev`), et l'expiration.
-    *   Retourne HTTP 401 en cas d'échec.
+## Usage Flow
+1.  **Frontend (Angular)**: The `AuthService` obtains the token via `clerk.session.getToken()` and includes it in the request headers (`Authorization: Bearer <token>`).
+2.  **Backend (Rust)**: The `AuthenticatedUser` extractor handles JWT validation using Clerk's public keys (JWKS):
+    *   Verifies the signature, issuer (`https://musical-pup-67.clerk.accounts.dev`), and expiration.
+    *   Returns HTTP 401 on failure.
 
-## Modèle Utilisateur
-Chaque utilisateur est identifié par :
-- `user.id` : Le "sub" du JWT Clerk (clé primaire pour isoler les données).
-- `user.email` : L'adresse email de l'utilisateur.
+## User Model
+Each user is identified by:
+- `user.id`: The "sub" claim from the Clerk JWT (primary key used to isolate data).
+- `user.email`: The user's email address.
 
-**Pour ajouter un nouvel endpoint protégé, utilisez l'extracteur `AuthenticatedUser` dans la signature de votre fonction handler.**
-
+**To add a new protected endpoint, use the `AuthenticatedUser` extractor in your handler function signature.**

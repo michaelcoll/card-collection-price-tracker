@@ -1,7 +1,3 @@
----
-applyTo: "migrations/**"
----
-
 # Database Schema & Data Flow Guide
 
 This document details the database structure based on migrations and enhances it with context from the application's
