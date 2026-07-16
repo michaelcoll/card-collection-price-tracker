@@ -1,3 +1,4 @@
+use crate::application::date_range::resolve_date_range;
 use crate::application::error::AppError;
 use crate::application::repository::CollectionPriceHistoryRepository;
 use crate::application::use_case::GetCollectionPriceHistoryUseCase;
@@ -21,14 +22,10 @@ impl GetCollectionPriceHistoryUseCase for CollectionPriceHistoryService {
     async fn get_collection_price_history(
         &self,
         user_id: &str,
-        start_date: NaiveDate,
-        end_date: NaiveDate,
+        start_date: Option<NaiveDate>,
+        end_date: Option<NaiveDate>,
     ) -> Result<Vec<PriceHistoryEntry>, AppError> {
-        if start_date > end_date {
-            return Err(AppError::WrongFormat(
-                "start_date must be before or equal to end_date".to_string(),
-            ));
-        }
+        let (start_date, end_date) = resolve_date_range(start_date, end_date)?;
         self.repository
             .get_price_history(user_id, start_date, end_date)
             .await
@@ -70,7 +67,7 @@ mod tests {
 
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
         let result = service
-            .get_collection_price_history("user1", date(2025, 1, 1), date(2025, 1, 31))
+            .get_collection_price_history("user1", Some(date(2025, 1, 1)), Some(date(2025, 1, 31)))
             .await;
 
         assert!(result.is_ok());
@@ -87,7 +84,7 @@ mod tests {
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
 
         let result = service
-            .get_collection_price_history("user1", date(2025, 2, 1), date(2025, 1, 1))
+            .get_collection_price_history("user1", Some(date(2025, 2, 1)), Some(date(2025, 1, 1)))
             .await;
 
         assert!(result.is_err());
@@ -107,7 +104,7 @@ mod tests {
 
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
         let result = service
-            .get_collection_price_history("user1", date(2025, 6, 1), date(2025, 6, 1))
+            .get_collection_price_history("user1", Some(date(2025, 6, 1)), Some(date(2025, 6, 1)))
             .await;
 
         assert!(result.is_ok());
@@ -122,7 +119,7 @@ mod tests {
 
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
         let result = service
-            .get_collection_price_history("user1", date(2025, 1, 1), date(2025, 1, 31))
+            .get_collection_price_history("user1", Some(date(2025, 1, 1)), Some(date(2025, 1, 31)))
             .await;
 
         assert!(result.is_err());
@@ -130,5 +127,25 @@ mod tests {
             AppError::RepositoryError(msg) => assert_eq!(msg, "db error"),
             _ => panic!("Expected RepositoryError"),
         }
+    }
+
+    #[tokio::test]
+    async fn defaults_to_last_30_days_when_no_dates_provided() {
+        use chrono::{Days, Utc};
+
+        let today = Utc::now().date_naive();
+        let expected_start = today - Days::new(30);
+
+        let mut mock = MockCollectionPriceHistoryRepository::new();
+        mock.expect_get_price_history()
+            .withf(move |_, s, e| *s == expected_start && *e == today)
+            .returning(|_, _, _| Box::pin(async { Ok(vec![]) }));
+
+        let service = CollectionPriceHistoryService::new(Arc::new(mock));
+        let result = service
+            .get_collection_price_history("user1", None, None)
+            .await;
+
+        assert!(result.is_ok());
     }
 }

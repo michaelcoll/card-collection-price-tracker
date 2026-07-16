@@ -1,6 +1,7 @@
 use crate::application::caller::EdhRecCaller;
 use crate::application::service::auth_service::AuthService;
 use crate::application::service::card_collection_service::CardCollectionService;
+use crate::application::service::card_price_history_service::CardPriceHistoryService;
 use crate::application::service::cardmarket_id_enqueue_service::CardMarketIdEnqueueService;
 use crate::application::service::collection_price_history_service::CollectionPriceHistoryService;
 use crate::application::service::collection_service::CollectionService;
@@ -13,7 +14,7 @@ use crate::application::service::stats_service::StatsService;
 use crate::application::service::update_card_market_service::CardMarketIdWorker;
 use crate::application::service::update_gatherer_service::GathererIdWorker;
 use crate::application::use_case::{
-    EnqueueCardMarketIdUpdateUseCase, EnqueueGathererIdUpdateUseCase,
+    EnqueueCardMarketIdUpdateUseCase, EnqueueGathererIdUpdateUseCase, GetCardPriceHistoryUseCase,
     GetCollectionPriceHistoryUseCase, GetCollectionStatsUseCase, GetCollectionUseCase,
     ImportCardUseCase, ImportPriceUseCase, RegisterUserUseCase, StatsUseCase,
 };
@@ -59,6 +60,7 @@ pub struct AppState {
     pub enqueue_cardmarket_id_use_case: Arc<dyn EnqueueCardMarketIdUpdateUseCase>,
     pub enqueue_gatherer_id_use_case: Arc<dyn EnqueueGathererIdUpdateUseCase>,
     pub get_collection_price_history_use_case: Arc<dyn GetCollectionPriceHistoryUseCase>,
+    pub get_card_price_history_use_case: Arc<dyn GetCardPriceHistoryUseCase>,
     pub get_collection_stats_use_case: Arc<dyn GetCollectionStatsUseCase>,
     pub register_user_use_case: Arc<dyn RegisterUserUseCase>,
 }
@@ -160,7 +162,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
 
     let import_price_service: Arc<dyn ImportPriceUseCase> = Arc::new(ImportPriceService::new(
         card_market_caller_adapter,
-        card_market_repository_adapter,
+        card_market_repository_adapter.clone(),
         card_prices_view_repository_adapter.clone(),
         card_collection_service.clone(),
     ));
@@ -173,6 +175,11 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         Arc::new(CollectionPriceHistoryService::new(Arc::new(
             CollectionPriceHistoryRepositoryAdapter::new(pool.clone()),
         )));
+    let card_price_history_service: Arc<dyn GetCardPriceHistoryUseCase> =
+        Arc::new(CardPriceHistoryService::new(
+            card_repository_adapter.clone(),
+            card_market_repository_adapter.clone(),
+        ));
     let collection_stats_service: Arc<dyn GetCollectionStatsUseCase> =
         Arc::new(CollectionStatsService::new(Arc::new(
             CollectionStatsRepositoryAdapter::new(pool.clone()),
@@ -190,6 +197,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         enqueue_cardmarket_id_use_case: enqueue_cardmarket_id_service,
         enqueue_gatherer_id_use_case: enqueue_gatherer_id_service,
         get_collection_price_history_use_case: collection_price_history_service,
+        get_card_price_history_use_case: card_price_history_service,
         get_collection_stats_use_case: collection_stats_service,
         register_user_use_case: register_user_service,
     };
@@ -238,8 +246,9 @@ impl AppState {
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
             MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
-            MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
-            MockGetCollectionUseCase, MockImportCardUseCase, MockRegisterUserUseCase,
+            MockGetCardPriceHistoryUseCase, MockGetCollectionPriceHistoryUseCase,
+            MockGetCollectionStatsUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
+            MockRegisterUserUseCase,
         };
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
@@ -281,6 +290,7 @@ impl AppState {
             get_collection_price_history_use_case: Arc::new(
                 MockGetCollectionPriceHistoryUseCase::new(),
             ),
+            get_card_price_history_use_case: Arc::new(MockGetCardPriceHistoryUseCase::new()),
             get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
             register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
         }

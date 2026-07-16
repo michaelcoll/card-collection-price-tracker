@@ -86,6 +86,20 @@ impl CardRepository for CardRepositoryAdapter {
         .collect::<Vec<(CardId, String)>>())
     }
 
+    async fn find_by_scryfall_id(
+        &self,
+        scryfall_id: uuid::Uuid,
+    ) -> Result<Option<(Option<u32>, bool)>, AppError> {
+        let record = sqlx::query!(
+            "SELECT cardmarket_id, foil FROM card WHERE scryfall_id = $1",
+            scryfall_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(record.map(|r| (r.cardmarket_id.map(|id| id as u32), r.foil)))
+    }
+
     async fn save(&self, user: User, card: Card) -> Result<(), AppError> {
         let CollectionEntry::Mine {
             quantity,
@@ -193,10 +207,12 @@ mod tests {
     use crate::domain::language_code::LanguageCode;
     use crate::domain::rarity_code::RarityCode;
     use crate::infrastructure::adapter_out::repository::common_repository_tests::{
-        insert_card, insert_card_without_cardmarket_id, insert_collection_entry,
+        insert_card, insert_card_with_scryfall_id, insert_card_without_cardmarket_id,
+        insert_collection_entry,
     };
     use chrono::Utc;
     use sqlx::PgPool;
+    use uuid::Uuid;
 
     #[sqlx::test]
     async fn test_no_card_exists(pool: PgPool) {
@@ -463,5 +479,61 @@ mod tests {
 
         let remaining = repository.get_all_without_gatherer_id().await.unwrap();
         assert!(remaining.is_empty());
+    }
+
+    #[sqlx::test]
+    async fn find_by_scryfall_id_returns_cardmarket_id_and_foil_when_present(pool: PgPool) {
+        let scryfall_id = Uuid::new_v4();
+        insert_card_with_scryfall_id(
+            &pool,
+            "FDN",
+            "87",
+            "FR",
+            true,
+            "Goblin Boarders",
+            scryfall_id,
+            Some(123),
+        )
+        .await;
+
+        let result = CardRepositoryAdapter::new(pool)
+            .find_by_scryfall_id(scryfall_id)
+            .await
+            .unwrap();
+
+        assert_eq!(result, Some((Some(123), true)));
+    }
+
+    #[sqlx::test]
+    async fn find_by_scryfall_id_returns_none_cardmarket_id_when_not_linked(pool: PgPool) {
+        let scryfall_id = Uuid::new_v4();
+        insert_card_with_scryfall_id(
+            &pool,
+            "FDN",
+            "87",
+            "FR",
+            false,
+            "Goblin Boarders",
+            scryfall_id,
+            None,
+        )
+        .await;
+
+        let result = CardRepositoryAdapter::new(pool)
+            .find_by_scryfall_id(scryfall_id)
+            .await
+            .unwrap();
+
+        assert_eq!(result, Some((None, false)));
+    }
+
+    #[sqlx::test]
+    async fn find_by_scryfall_id_returns_none_when_card_unknown(pool: PgPool) {
+        let result = CardRepositoryAdapter::new(pool)
+            .find_by_scryfall_id(Uuid::new_v4())
+            .await
+            .unwrap();
+
+        assert_eq!(result, None);
     }
 }

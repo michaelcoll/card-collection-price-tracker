@@ -67,8 +67,19 @@ pub trait GetCollectionPriceHistoryUseCase: Send + Sync {
     async fn get_collection_price_history(
         &self,
         user_id: &str,
-        start_date: chrono::NaiveDate,
-        end_date: chrono::NaiveDate,
+        start_date: Option<chrono::NaiveDate>,
+        end_date: Option<chrono::NaiveDate>,
+    ) -> Result<Vec<PriceHistoryEntry>, AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait GetCardPriceHistoryUseCase: Send + Sync {
+    async fn get_card_price_history(
+        &self,
+        scryfall_id: uuid::Uuid,
+        start_date: Option<chrono::NaiveDate>,
+        end_date: Option<chrono::NaiveDate>,
     ) -> Result<Vec<PriceHistoryEntry>, AppError>;
 }
 

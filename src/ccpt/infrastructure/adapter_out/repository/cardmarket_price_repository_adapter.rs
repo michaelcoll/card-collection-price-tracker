@@ -1,8 +1,8 @@
 use crate::application::error::AppError;
 use crate::application::repository::CardMarketPriceRepository;
-use crate::domain::price::FullPriceGuide;
+use crate::domain::price::{FullPriceGuide, PriceHistoryEntry};
 use crate::infrastructure::adapter_out::repository::entities::{
-    CardMarketPriceEntity, CardMarketPriceRaw,
+    CardMarketPriceEntity, CardMarketPriceHistoryEntity, CardMarketPriceRaw,
 };
 use async_trait::async_trait;
 use chrono::NaiveDate;
@@ -89,6 +89,33 @@ impl CardMarketPriceRepository for CardMarketPriceRepositoryAdapter {
         Ok(record
             .map(CardMarketPriceEntity::from)
             .map(FullPriceGuide::from))
+    }
+
+    async fn find_by_id_and_date_range(
+        &self,
+        id_product: u32,
+        foil: bool,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<Vec<PriceHistoryEntry>, AppError> {
+        let entities = sqlx::query_as!(
+            CardMarketPriceHistoryEntity,
+            r#"SELECT date,
+                      CASE WHEN $2::boolean THEN low_foil ELSE low END as "low",
+                      CASE WHEN $2::boolean THEN trend_foil ELSE trend END as "trend",
+                      CASE WHEN $2::boolean THEN avg_foil ELSE avg END as "avg"
+               FROM cardmarket_price
+               WHERE id_produit = $1 AND date >= $3 AND date <= $4
+               ORDER BY date"#,
+            id_product as i32,
+            foil,
+            start_date,
+            end_date,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(entities.into_iter().map(PriceHistoryEntry::from).collect())
     }
 }
 
@@ -271,5 +298,148 @@ mod tests {
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
+    }
+
+    #[sqlx::test]
+    async fn find_by_id_and_date_range_returns_normal_prices_sorted_by_date(pool: Pool<Postgres>) {
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
+        let id_produit = 20001u32;
+        let date1 = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+        let date2 = NaiveDate::from_ymd_opt(2024, 1, 16).unwrap();
+
+        repository
+            .save(
+                date2,
+                vec![FullPriceGuide::from_values(
+                    id_produit,
+                    (12, 17, 22),
+                    (120, 170, 220),
+                )],
+            )
+            .await
+            .unwrap();
+        repository
+            .save(
+                date1,
+                vec![FullPriceGuide::from_values(
+                    id_produit,
+                    (10, 15, 20),
+                    (100, 150, 200),
+                )],
+            )
+            .await
+            .unwrap();
+
+        let result = repository
+            .find_by_id_and_date_range(id_produit, false, date1, date2)
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].date, date1);
+        assert_eq!(result[0].price_guide.low.value, Some(10));
+        assert_eq!(result[0].price_guide.trend.value, Some(15));
+        assert_eq!(result[0].price_guide.avg.value, Some(20));
+        assert_eq!(result[1].date, date2);
+        assert_eq!(result[1].price_guide.low.value, Some(12));
+    }
+
+    #[sqlx::test]
+    async fn find_by_id_and_date_range_returns_foil_prices_when_foil_true(pool: Pool<Postgres>) {
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
+        let id_produit = 20002u32;
+        let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+
+        repository
+            .save(
+                date,
+                vec![FullPriceGuide::from_values(
+                    id_produit,
+                    (10, 15, 20),
+                    (100, 150, 200),
+                )],
+            )
+            .await
+            .unwrap();
+
+        let result = repository
+            .find_by_id_and_date_range(id_produit, true, date, date)
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].price_guide.low.value, Some(100));
+        assert_eq!(result[0].price_guide.trend.value, Some(150));
+        assert_eq!(result[0].price_guide.avg.value, Some(200));
+    }
+
+    #[sqlx::test]
+    async fn find_by_id_and_date_range_bounds_are_inclusive(pool: Pool<Postgres>) {
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
+        let id_produit = 20003u32;
+        let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+
+        repository
+            .save(
+                date,
+                vec![FullPriceGuide::from_values(
+                    id_produit,
+                    (10, 15, 20),
+                    (100, 150, 200),
+                )],
+            )
+            .await
+            .unwrap();
+
+        let result = repository
+            .find_by_id_and_date_range(id_produit, false, date, date)
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+    }
+
+    #[sqlx::test]
+    async fn find_by_id_and_date_range_returns_empty_when_no_price_in_range(pool: Pool<Postgres>) {
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
+        let id_produit = 20004u32;
+        let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+
+        repository
+            .save(
+                date,
+                vec![FullPriceGuide::from_values(
+                    id_produit,
+                    (10, 15, 20),
+                    (100, 150, 200),
+                )],
+            )
+            .await
+            .unwrap();
+
+        let result = repository
+            .find_by_id_and_date_range(
+                id_produit,
+                false,
+                NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 2, 28).unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert!(result.is_empty());
+    }
+
+    #[sqlx::test]
+    async fn find_by_id_and_date_range_returns_empty_when_product_unknown(pool: Pool<Postgres>) {
+        let repository = CardMarketPriceRepositoryAdapter::new(pool.clone());
+        let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+
+        let result = repository
+            .find_by_id_and_date_range(99999u32, false, date, date)
+            .await
+            .unwrap();
+
+        assert!(result.is_empty());
     }
 }

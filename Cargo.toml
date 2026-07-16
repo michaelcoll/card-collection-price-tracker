@@ -22,7 +22,7 @@ jsonwebtoken = { git = "https://github.com/michaelcoll/jsonwebtoken", branch = "
 ts-rs = "12.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "tracing"] }
-utoipa = { version = "5", features = ["axum_extras", "yaml"] }
+utoipa = { version = "5", features = ["axum_extras", "yaml", "uuid"] }
 sentry = { version = "0.48", features = ["tracing", "logs", "tower-axum-matched-path"] }
 
 [dev-dependencies]

@@ -230,10 +230,12 @@ impl From<CollectionStats> for CollectionStatsResponse {
 }
 
 // --- Price history ---
+/// Shared by `/cards/price-history` (both dates required, enforced by the handler) and
+/// `/cards/{scryfall_id}/price-history` (both optional, defaulted by the use case).
 #[derive(Deserialize)]
 pub(crate) struct PriceHistoryParams {
-    pub(crate) start_date: NaiveDate,
-    pub(crate) end_date: NaiveDate,
+    pub(crate) start_date: Option<NaiveDate>,
+    pub(crate) end_date: Option<NaiveDate>,
 }
 
 #[derive(Serialize, Debug, TS, ToSchema)]
