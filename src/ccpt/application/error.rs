@@ -11,6 +11,7 @@ pub enum AppError {
     CalculationFailed(String),
     RepositoryError(String),
     PriceNotFound,
+    CardNotFound,
     CallError(String),
     QueueError(String),
     AuthenticationError(String),
@@ -28,6 +29,7 @@ impl From<AppError> for String {
             AppError::CalculationFailed(msg) => msg,
             AppError::RepositoryError(msg) => msg,
             AppError::PriceNotFound => "Price not found".to_string(),
+            AppError::CardNotFound => "Card not found".to_string(),
             AppError::CallError(msg) => msg,
             AppError::QueueError(msg) => msg,
             AppError::AuthenticationError(msg) => format!("Authentication error: {}", msg),
@@ -115,6 +117,13 @@ mod tests {
         let error = AppError::PriceNotFound;
         let error_message: String = error.into();
         assert_eq!(error_message, "Price not found");
+    }
+
+    #[test]
+    fn app_error_to_string_for_card_not_found() {
+        let error = AppError::CardNotFound;
+        let error_message: String = error.into();
+        assert_eq!(error_message, "Card not found");
     }
 
     #[test]

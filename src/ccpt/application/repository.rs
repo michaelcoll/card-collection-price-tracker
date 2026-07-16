@@ -30,6 +30,11 @@ pub trait CardRepository: Send + Sync {
     async fn get_all(&self, user: User) -> Result<Vec<Card>, AppError>;
     async fn get_all_without_cardmarket_id(&self) -> Result<Vec<(CardId, uuid::Uuid)>, AppError>;
     async fn get_all_without_gatherer_id(&self) -> Result<Vec<(CardId, String)>, AppError>;
+    /// Returns `(cardmarket_id, foil)` for the card matching `scryfall_id`, if any.
+    async fn find_by_scryfall_id(
+        &self,
+        scryfall_id: uuid::Uuid,
+    ) -> Result<Option<(Option<u32>, bool)>, AppError>;
     async fn save(&self, user: User, card: Card) -> Result<(), AppError>;
     async fn update_cardmarket_id(
         &self,
@@ -78,6 +83,14 @@ pub trait CardMarketPriceRepository: Send + Sync {
         id_product: u32,
         date: NaiveDate,
     ) -> Result<Option<FullPriceGuide>, AppError>;
+
+    async fn find_by_id_and_date_range(
+        &self,
+        id_product: u32,
+        foil: bool,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<Vec<PriceHistoryEntry>, AppError>;
 }
 
 #[async_trait]

@@ -239,6 +239,27 @@ impl From<CollectionPriceHistoryEntity> for PriceHistoryEntry {
     }
 }
 
+#[derive(sqlx::FromRow)]
+pub struct CardMarketPriceHistoryEntity {
+    pub date: NaiveDate,
+    pub low: Option<i32>,
+    pub trend: Option<i32>,
+    pub avg: Option<i32>,
+}
+
+impl From<CardMarketPriceHistoryEntity> for PriceHistoryEntry {
+    fn from(e: CardMarketPriceHistoryEntity) -> Self {
+        PriceHistoryEntry {
+            date: e.date,
+            price_guide: PriceGuide {
+                low: e.low.into(),
+                trend: e.trend.into(),
+                avg: e.avg.into(),
+            },
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CountEntity {
     pub count: Option<i64>,

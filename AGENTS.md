@@ -9,11 +9,23 @@
 - Always ask clarifying questions
 - Never assume design, tech stack or features
 
+## DESTRUCTIVE ACTIONS
+
+- Before any destructive or hard-to-reverse action, stop and ask for explicit confirmation first — never assume
+  consent from a prior instruction on a different task
+- This includes (non-exhaustive): dropping/truncating DB tables or schemas, running migrations that drop columns
+  or data, `rm -rf`, `git reset --hard`, `git push --force`, `git clean`, deleting branches, overwriting
+  uncommitted changes, and any `mise run` task whose effect is destructive (e.g. `clean`, `migrate` if it involves
+  down-migrations)
+- State plainly what will be destroyed (table, file, branch, data) and wait for a clear yes before running it —
+  a vague or implied approval is not enough
+
 ## CHANGE / EDIT MODE
 
-- After completing features (large or small), always run commands like `mise lint-backend` ou `mise lint-frontend` to
-  type check and next build to check code
-  quality and format the code with `mise format`
+- After completing features (large or small), always run `mise run lint-backend` and/or `mise run lint-frontend` to type
+  check, and `mise run format` to format the code
+- Always use `mise run <task>` (see [mise.instructions.md](.agents/mise.instructions.md)) instead of calling
+  `cargo`/`pnpm`/`npm` directly — if a mise task exists for what you're doing, use it rather than the raw command
 
 ## TESTING
 
@@ -37,10 +49,10 @@
 - Finding files by name/pattern → `Glob`, never `find` in Bash
 - Editing a file → `Edit` (diff-only), never `sed`/`awk`
 - Creating a file → `Write`, never heredoc/`echo >` in Bash
-- Reserve `Bash` for what only a shell can do: running builds, tests, git, mise, npm/pnpm/cargo commands,
-  moving/deleting
-  files
+- Reserve `Bash` for what only a shell can do: running `mise run <task>`, git, moving/deleting files
 - If a dedicated tool exists for the job, using Bash instead is a mistake — not a style choice
+- Prefer `mise run <task>` over calling `cargo`/`pnpm` directly — see
+  [mise.instructions.md](.agents/mise.instructions.md) for the full task list
 
 ## PLAYWRIGHT
 

@@ -96,6 +96,33 @@ pub async fn insert_collection_entry(
     .unwrap();
 }
 
+#[allow(clippy::too_many_arguments)]
+pub async fn insert_card_with_scryfall_id(
+    pool: &PgPool,
+    set_code: &str,
+    collector_number: &str,
+    language_code: &str,
+    foil: bool,
+    name: &str,
+    scryfall_id: Uuid,
+    cardmarket_id: Option<i32>,
+) {
+    sqlx::query(
+        r#"INSERT INTO card (set_code, collector_number, language_code, foil, name, rarity, scryfall_id, cardmarket_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#)
+        .bind(set_code)
+        .bind(collector_number)
+        .bind(language_code)
+        .bind(foil)
+        .bind(name)
+        .bind("C")
+        .bind(scryfall_id)
+        .bind(cardmarket_id)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
 pub async fn insert_card_without_cardmarket_id(
     pool: &PgPool,
     set_code: &str,

@@ -1,6 +1,6 @@
 use super::card::dto::{
     CollectionCardResponse, MessageResponse, PaginatedCollectionResponse, PriceGuideResponse,
-    SortByParam, SortDirParam,
+    PriceHistoryEntryResponse, SortByParam, SortDirParam,
 };
 use super::maintenance::dto::{EnqueueResponse, StatsResponse};
 use utoipa::OpenApi;
@@ -11,6 +11,7 @@ use utoipa::OpenApi;
         super::card::controller::get_collection,
         super::card::controller::import_cards,
         super::card::controller::get_card_info,
+        super::card::controller::get_card_price_history,
         super::maintenance::controller::get_stats,
         super::maintenance::controller::trigger_price_update,
         super::maintenance::controller::update_cardmarket_ids,
@@ -21,6 +22,7 @@ use utoipa::OpenApi;
         CollectionCardResponse,
         MessageResponse,
         PaginatedCollectionResponse,
+        PriceHistoryEntryResponse,
         SortByParam,
         SortDirParam,
         StatsResponse,

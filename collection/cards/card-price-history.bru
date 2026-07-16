@@ -1,0 +1,20 @@
+meta {
+  name: card price-history
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/cards/:scryfall_id/price-history?start_date=2026-01-01&end_date=2026-12-31
+  body: none
+  auth: inherit
+}
+
+params:query {
+  start_date: 2026-01-01
+  end_date: 2026-12-31
+}
+
+params:path {
+  scryfall_id: 7a79190f-de60-4eb6-b925-594eb76ca8c3
+}

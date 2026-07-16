@@ -1,5 +1,6 @@
 pub mod auth_service;
 pub mod card_collection_service;
+pub mod card_price_history_service;
 pub mod cardmarket_id_enqueue_service;
 pub mod collection_price_history_service;
 pub mod collection_service;

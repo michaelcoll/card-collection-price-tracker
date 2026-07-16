@@ -16,6 +16,7 @@ impl IntoResponse for AppError {
             AppError::ParseError { .. } => (StatusCode::BAD_REQUEST, String::from(self.clone())),
             AppError::WrongFormat(_) => (StatusCode::BAD_REQUEST, String::from(self.clone())),
             AppError::PriceNotFound => (StatusCode::NOT_FOUND, String::from(self.clone())),
+            AppError::CardNotFound => (StatusCode::NOT_FOUND, String::from(self.clone())),
             AppError::CallError(_) => (StatusCode::BAD_GATEWAY, String::from(self.clone())),
             AppError::AuthenticationError(_) => {
                 (StatusCode::UNAUTHORIZED, String::from(self.clone()))
@@ -78,6 +79,13 @@ mod tests {
     #[test]
     fn price_not_found_returns_not_found_status() {
         let error = AppError::PriceNotFound;
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn card_not_found_returns_not_found_status() {
+        let error = AppError::CardNotFound;
         let response = error.into_response();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
