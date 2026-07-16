@@ -7,7 +7,7 @@ example-files
 screens
 plans
 *.plan.md
-maquette
+/maquette
 .sentryclirc
 .playwright-mcp
 

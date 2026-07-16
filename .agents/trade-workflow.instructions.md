@@ -1,182 +1,181 @@
-# Workflow d'Échange
+# Trade Workflow
 
-## Vue d'ensemble
+## Overview
 
-Échange carte-à-carte entre exactement 2 utilisateurs. Les différences de valeur sont réglées en espèces en dehors de la
-plateforme. Les notations sont optionnelles et mutuelles.
-
----
-
-## Acteurs
-
-| Acteur             | Rôle                                                       |
-|--------------------|------------------------------------------------------------|
-| **Initiateur (A)** | Trouve une carte et demande l'échange                      |
-| **Répondant (B)**  | Propriétaire de la carte demandée, propose sa contre-offre |
+Card-for-card trade between exactly 2 users. Value differences are settled in cash outside the platform. Ratings
+are optional and mutual.
 
 ---
 
-## Déroulement complet
+## Actors
 
-### 1. Découverte
-
-- L'utilisateur *A* recherche une carte par son nom.
-- *A* trouve une carte appartenant à l'utilisateur B.
-
-### 2. Demande d'échange (statut : `PENDING`)
-
-- *A* envoie une demande d'échange pour la carte de B.
-- Aucune carte de *A* n'est encore proposée — *A* dit simplement « je veux cette carte. »
-- *B* reçoit une notification : **« Nouvelle demande d'échange reçue. »**
-
-### 3. Contre-proposition
-
-- *B* parcourt la collection de *A* et sélectionne 0 ou plusieurs cartes qui l'intéressent en échange.
-- L'interface calcule la différence de valeur et affiche le montant en espèces qu'une des deux parties doit à l'autre.
-- *B* soumet la contre-proposition. La transaction liste alors :
-    - Cartes offertes par *B* → à *A*
-    - Cartes offertes par *A* → à *B* (sélectionnées par B, ou aucune)
-    - Delta en espèces (informatif uniquement — réglé en dehors de la plateforme)
-- *A* reçoit une notification : **« *B* a fait une contre-proposition. »**
-
-### 4. Négociation (`PENDING`)
-
-- Chaque partie peut modifier la transaction (ajouter/retirer des cartes, ajuster) à tout moment **tant que le statut
-  est `PENDING`**.
-- Chaque modification déclenche une notification à l'autre partie.
-
-### 5. Première acceptation (statut : `ONE_ACCEPTED`)
-
-- Une des parties clique sur « Accepter. »
-- Une modale avertit : **« Une fois acceptée, la transaction sera verrouillée. Si l'autre partie modifie la transaction,
-  elle repassera en attente et devra être acceptée à nouveau. »**
-- À la confirmation :
-    - Statut → `ONE_ACCEPTED`.
-    - Toutes les cartes des deux côtés de la transaction sont **réservées** (visible dans la collection de chaque
-      utilisateur).
-    - Toutes les autres transactions `PENDING` ou `ONE_ACCEPTED` impliquant ces mêmes cartes sont automatiquement *
-      *abandonnées**.
-    - Les parties concernées reçoivent une notification : **« Une transaction impliquant l'une de vos cartes réservées a
-      été validée par un autre échange. Votre transaction a été annulée. »**
-    - L'autre partie reçoit une notification : **« Votre partenaire a accepté. Acceptez à votre tour ou modifiez la
-      transaction pour relancer la négociation. »**
-
-### 5b. Modification après acceptation (retour à `PENDING`)
-
-- Si l'une des parties modifie la transaction alors que le statut est `ONE_ACCEPTED` :
-    - Statut → `PENDING`.
-    - Les cartes réservées sont **libérées**.
-    - Les deux acceptations précédentes sont annulées — les deux parties devront accepter à nouveau.
-    - L'autre partie reçoit une notification : **« La transaction a été modifiée. Elle repasse en négociation. »**
-
-### 6. Acceptation complète (statut : `FULLY_ACCEPTED`)
-
-- La seconde partie accepte (même modale d'avertissement).
-- Statut → `FULLY_ACCEPTED`.
-- Les deux parties reçoivent une notification : **« Les deux parties ont accepté. Procédez à l'échange physique. »**
-
-### 7. Échange physique
-
-- Les cartes (et les espèces le cas échéant) sont échangées en personne, en dehors de la plateforme.
-
-### 8. Confirmation de l'échange (statut : `COMPLETED`)
-
-- Chaque partie confirme « Échange réalisé » dans l'application.
-- Statut → `COMPLETED` une fois que **les deux** ont confirmé.
-- Les deux parties reçoivent une notification : **« Échange confirmé par les deux parties. »**
-
-### 9. Notation (optionnelle, statut : `CLOSED`)
-
-- Chaque partie peut noter l'autre de 0 à 5 étoiles.
-- La notation est optionnelle — la passer ne bloque pas la clôture.
-- Une fois que les deux ont noté (ou passé), statut → `CLOSED`.
+| Actor               | Role                                                          |
+|----------------------|------------------------------------------------------------------|
+| **Initiator (A)**    | Finds a card and requests the trade                              |
+| **Respondent (B)**   | Owner of the requested card, makes a counter-offer               |
 
 ---
 
-## Référence des statuts
+## Full Flow
+
+### 1. Discovery
+
+- User *A* searches for a card by name.
+- *A* finds a card owned by user B.
+
+### 2. Trade Request (status: `PENDING`)
+
+- *A* sends a trade request for B's card.
+- No card from *A* is proposed yet — *A* is simply saying "I want this card."
+- *B* receives a notification: **"New trade request received."**
+
+### 3. Counter-Proposal
+
+- *B* browses *A*'s collection and selects 0 or more cards they're interested in, in exchange.
+- The interface computes the value difference and displays the cash amount owed by one party to the other.
+- *B* submits the counter-proposal. The transaction then lists:
+    - Cards offered by *B* → to *A*
+    - Cards offered by *A* → to *B* (selected by B, or none)
+    - Cash delta (informational only — settled outside the platform)
+- *A* receives a notification: **"*B* made a counter-proposal."**
+
+### 4. Negotiation (`PENDING`)
+
+- Either party can modify the transaction (add/remove cards, adjust) at any time **while the status is
+  `PENDING`**.
+- Each modification triggers a notification to the other party.
+
+### 5. First Acceptance (status: `ONE_ACCEPTED`)
+
+- One party clicks "Accept."
+- A modal warns: **"Once accepted, the transaction will be locked. If the other party modifies the transaction,
+  it will go back to pending and will need to be accepted again."**
+- On confirmation:
+    - Status → `ONE_ACCEPTED`.
+    - All cards on both sides of the transaction are **reserved** (visible in each user's collection).
+    - Any other `PENDING` or `ONE_ACCEPTED` transactions involving these same cards are automatically
+      **abandoned**.
+    - The affected parties receive a notification: **"A transaction involving one of your reserved cards was
+      finalized by another trade. Your transaction has been cancelled."**
+    - The other party receives a notification: **"Your partner accepted. Accept in turn or modify the
+      transaction to restart the negotiation."**
+
+### 5b. Modification After Acceptance (back to `PENDING`)
+
+- If either party modifies the transaction while the status is `ONE_ACCEPTED`:
+    - Status → `PENDING`.
+    - Reserved cards are **released**.
+    - Both previous acceptances are cancelled — both parties will need to accept again.
+    - The other party receives a notification: **"The transaction was modified. It is back in negotiation."**
+
+### 6. Full Acceptance (status: `FULLY_ACCEPTED`)
+
+- The second party accepts (same warning modal).
+- Status → `FULLY_ACCEPTED`.
+- Both parties receive a notification: **"Both parties have accepted. Proceed with the physical exchange."**
+
+### 7. Physical Exchange
+
+- The cards (and cash, if applicable) are exchanged in person, outside the platform.
+
+### 8. Trade Confirmation (status: `COMPLETED`)
+
+- Each party confirms "Trade completed" in the app.
+- Status → `COMPLETED` once **both** have confirmed.
+- Both parties receive a notification: **"Trade confirmed by both parties."**
+
+### 9. Rating (optional, status: `CLOSED`)
+
+- Each party can rate the other from 0 to 5 stars.
+- Rating is optional — skipping it does not block closing.
+- Once both have rated (or skipped), status → `CLOSED`.
+
+---
+
+## Status Reference
 
 ```
 PENDING ◄─────────────────────────────────────────────────────┐
-  │  (une partie accepte)                                     │
+  │  (one party accepts)                                      │
   ▼                                                           │
-ONE_ACCEPTED  ──(modification par l'une des parties)──────────┘
-  │  (l'autre partie accepte)
+ONE_ACCEPTED  ──(modification by either party)─────────────────┘
+  │  (the other party accepts)
   ▼
 FULLY_ACCEPTED
-  │  (les deux confirment l'échange physique)
+  │  (both confirm the physical exchange)
   ▼
 COMPLETED
-  │  (les deux notent ou passent la notation)
+  │  (both rate or skip rating)
   ▼
 CLOSED
 
-ABANDONED  ← accessible depuis n'importe quel statut avant COMPLETED
+ABANDONED  ← reachable from any status before COMPLETED
 ```
 
-| Statut           | Description                                                                 |
-|------------------|-----------------------------------------------------------------------------|
-| `PENDING`        | Ouverte à la modification par les deux parties                              |
-| `ONE_ACCEPTED`   | Une partie a accepté ; cartes réservées ; modifiable (repasse en `PENDING`) |
-| `FULLY_ACCEPTED` | Les deux ont accepté ; en attente de l'échange physique                     |
-| `COMPLETED`      | Échange physique confirmé par les deux parties                              |
-| `CLOSED`         | Transaction terminée ; notations soumises ou passées                        |
-| `ABANDONED`      | Transaction annulée par l'une des parties à tout moment avant `COMPLETED`   |
+| Status            | Description                                                                 |
+|---------------------|---------------------------------------------------------------------------------|
+| `PENDING`          | Open to modification by both parties                                            |
+| `ONE_ACCEPTED`     | One party has accepted; cards reserved; modifiable (goes back to `PENDING`)     |
+| `FULLY_ACCEPTED`   | Both have accepted; awaiting the physical exchange                              |
+| `COMPLETED`        | Physical exchange confirmed by both parties                                     |
+| `CLOSED`           | Transaction finished; ratings submitted or skipped                              |
+| `ABANDONED`        | Transaction cancelled by either party at any time before `COMPLETED`            |
 
 ---
 
-## Règles de réservation des cartes
+## Card Reservation Rules
 
-- Les cartes sont réservées à l'étape `ONE_ACCEPTED`.
-- Une carte réservée est visible comme telle dans la collection de son propriétaire (badge ou indicateur).
-- Si la même carte apparaît dans plusieurs transactions simultanées :
-    - La **première transaction à atteindre `ONE_ACCEPTED`** réserve la carte.
-    - Toutes les autres transactions impliquant cette carte sont automatiquement `ABANDONED`.
-    - Toutes les parties concernées sont notifiées immédiatement.
-
----
-
-## Règles de modification
-
-| Qui peut modifier | Quand                              | Effet sur le statut                  |
-|-------------------|------------------------------------|--------------------------------------|
-| L'une ou l'autre  | Statut `PENDING`                   | Reste `PENDING`                      |
-| L'une ou l'autre  | Statut `ONE_ACCEPTED`              | Repasse à `PENDING`, cartes libérées |
-| Personne          | Statut `FULLY_ACCEPTED` ou au-delà | Impossible                           |
-
-Toute modification notifie l'autre partie.
+- Cards are reserved at the `ONE_ACCEPTED` step.
+- A reserved card is shown as such in its owner's collection (badge or indicator).
+- If the same card appears in several simultaneous transactions:
+    - The **first transaction to reach `ONE_ACCEPTED`** reserves the card.
+    - All other transactions involving that card are automatically `ABANDONED`.
+    - All affected parties are notified immediately.
 
 ---
 
-## Règles d'abandon
+## Modification Rules
 
-- L'une ou l'autre des parties peut abandonner la transaction à tout moment avant `COMPLETED`.
-- À l'abandon :
-    - Statut → `ABANDONED`.
-    - Les cartes réservées (le cas échéant) sont libérées.
-    - L'autre partie reçoit une notification : **« L'échange a été abandonné par votre partenaire. »**
-    - La partie abandonnant peut être notée par l'autre partie (optionnel, 0–5 étoiles).
+| Who can modify   | When                                 | Effect on status                          |
+|--------------------|------------------------------------------|-----------------------------------------------|
+| Either party       | Status `PENDING`                         | Stays `PENDING`                               |
+| Either party       | Status `ONE_ACCEPTED`                    | Goes back to `PENDING`, cards released        |
+| No one              | Status `FULLY_ACCEPTED` or beyond        | Not possible                                  |
 
----
-
-## Récapitulatif des notifications
-
-| Déclencheur                                          | Destinataire(s)               |
-|------------------------------------------------------|-------------------------------|
-| Demande d'échange envoyée                            | *B*                           |
-| Contre-proposition soumise                           | *A*                           |
-| Transaction modifiée (statut `PENDING`)              | L'autre partie                |
-| Première acceptation (`ONE_ACCEPTED`)                | L'autre partie                |
-| Modification après acceptation (retour à `PENDING`)  | L'autre partie                |
-| Autres transactions rendues caduques                 | Toutes les parties concernées |
-| Les deux ont accepté (`FULLY_ACCEPTED`)              | Les deux                      |
-| Échange physique confirmé par les deux (`COMPLETED`) | Les deux                      |
-| Transaction abandonnée                               | L'autre partie                |
+Any modification notifies the other party.
 
 ---
 
-## Hors périmètre (MVP)
+## Abandonment Rules
 
-- Paiement en ligne — le delta en espèces est informatif uniquement.
-- Expiration des transactions — les transactions restent actives indéfiniment jusqu'à acceptation ou abandon.
-- Historique des échanges — prévu post-MVP.
-- Messagerie intégrée — pourra être ajoutée si jugée indispensable.
+- Either party can abandon the transaction at any time before `COMPLETED`.
+- On abandonment:
+    - Status → `ABANDONED`.
+    - Reserved cards (if any) are released.
+    - The other party receives a notification: **"The trade was abandoned by your partner."**
+    - The abandoning party can be rated by the other party (optional, 0–5 stars).
+
+---
+
+## Notification Summary
+
+| Trigger                                                | Recipient(s)                        |
+|-----------------------------------------------------------|-------------------------------------------|
+| Trade request sent                                         | *B*                                       |
+| Counter-proposal submitted                                  | *A*                                       |
+| Transaction modified (status `PENDING`)                     | The other party                           |
+| First acceptance (`ONE_ACCEPTED`)                            | The other party                           |
+| Modification after acceptance (back to `PENDING`)           | The other party                           |
+| Other transactions invalidated                               | All affected parties                      |
+| Both have accepted (`FULLY_ACCEPTED`)                         | Both                                      |
+| Physical exchange confirmed by both (`COMPLETED`)            | Both                                      |
+| Transaction abandoned                                         | The other party                           |
+
+---
+
+## Out of Scope (MVP)
+
+- Online payment — the cash delta is informational only.
+- Transaction expiration — transactions remain active indefinitely until accepted or abandoned.
+- Trade history — planned post-MVP.
+- Built-in messaging — may be added if deemed necessary.

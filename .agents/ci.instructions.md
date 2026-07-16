@@ -1,43 +1,39 @@
----
-applyTo: ".github/**,Dockerfile,Dockerfile.*,docker-compose.yml,.dockerignore,codecov.yml"
----
-
 # GitHub Actions CI/CD Guide
 
 ## Pipelines
 
-### 1. Backend CI (`lint-test.yml`) — déclenché à chaque push
+### 1. Backend CI (`lint-test.yml`) — triggered on every push
 
-- **lint** : `rustfmt` + `clippy` (dans conteneur `rust:1-bullseye` avec PostgreSQL 18 en service)
-- **test** : `cargo llvm-cov nextest` avec envoi de couverture vers Codecov
-- **build-offline** : `SQLX_OFFLINE=true cargo build` pour valider les métadonnées SQLX
-- **check-openapi** : régénère `doc/openapi.yml` et vérifie qu'il est à jour
+- **lint**: `rustfmt` + `clippy` (in a `rust:1-bullseye` container with PostgreSQL 18 as a service)
+- **test**: `cargo llvm-cov nextest` with coverage uploaded to Codecov
+- **build-offline**: `SQLX_OFFLINE=true cargo build` to validate SQLX metadata
+- **check-openapi**: regenerates `doc/openapi.yml` and checks it's up to date
 
-### 2. Frontend CI (`frontend-lint-test.yml`) — déclenché à chaque push
+### 2. Frontend CI (`frontend-lint-test.yml`) — triggered on every push
 
-- **format** : Prettier (`pnpm lint`)
-- **test** : Vitest avec couverture (`pnpm test:coverage`)
-- **build** : builds dev et production Angular
+- **format**: Prettier (`pnpm lint`)
+- **test**: Vitest with coverage (`pnpm test:coverage`)
+- **build**: dev and production Angular builds
 
-### 3. Build & Push (`build-push.yml`) — déclenché sur push à `main` ou release
+### 3. Build & Push (`build-push.yml`) — triggered on push to `main` or on release
 
-- Construit et publie les images Docker backend et frontend vers **GHCR**
-- Sur release : bump semver + publication des sourcemaps vers Sentry
-- Plates-forme : `linux/amdtd64` uniquement
+- Builds and publishes backend and frontend Docker images to **GHCR**
+- On release: semver bump + sourcemap upload to Sentry
+- Platform: `linux/amdtd64` only
 
-### 4. Automatisation PR (`automerge.yml`, `pr-label.yml`, `clean-cache.yml`)
+### 4. PR Automation (`automerge.yml`, `pr-label.yml`, `clean-cache.yml`)
 
-- **automerge** : dependabot patch/minor auto-merged
-- **pr-label** : labels conventionnels (fix/feat/chore/ci) depuis le titre du PR
-- **clean-cache** : suppression du cache GitHub runner à la fermeture d'un PR
+- **automerge**: dependabot patch/minor auto-merged
+- **pr-label**: conventional labels (fix/feat/chore/ci) from the PR title
+- **clean-cache**: removes the GitHub runner cache when a PR is closed
 
-## Configuration locale
+## Local Configuration
 
-- **mise** (`mise.toml`) : gestion des toolchains et tâches (`mise run`, `mise back`, `mise front`, `mise test`, `mise lint`)
-- **pnpm** : version CI = `10.32.1` (à noter : `mise.toml` spécifie `pnpm 11`)
+- **mise** (`mise.toml`): toolchain and task management (`mise run`, `mise back`, `mise front`, `mise test`, `mise lint`)
+- **pnpm**: CI version = `10.32.1` (note: `mise.toml` specifies `pnpm 11`)
 
 ## Docker
 
-- **Backend** : multi-stage (rust → distroless nonroot, port 8080)
-- **Frontend** : multi-stage (node → nginx-alpine, route SPA)
-- **docker-compose** : postgres 18, ccpt backend, frontend nginx (port 9797)
+- **Backend**: multi-stage (rust → distroless nonroot, port 8080)
+- **Frontend**: multi-stage (node → nginx-alpine, SPA routing)
+- **docker-compose**: postgres 18, ccpt backend, frontend nginx (port 9797)
