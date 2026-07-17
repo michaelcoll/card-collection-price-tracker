@@ -1,20 +1,11 @@
 <script setup lang="ts">
 import type { CollectionCard } from '~/bindings/CollectionCard';
+import type { PriceHistoryEntry } from '~/bindings/PriceHistoryEntry';
 import type { SortBy } from '~/bindings/SortBy';
 import type { SortDir } from '~/bindings/SortDir';
 
-type CardDisplay = {
-  name: string;
-  qty: number;
-  unit: number;
-  trend: number;
-  rar: string;
-  set: string;
-  language: string;
-  foil: boolean;
-};
-
-const { getCollection, getCollectionStats, importCards, getPriceHistory } = useCardsService();
+const { getCollection, getCollectionStats, importCards, getPriceHistory, getCardPriceHistory } =
+  useCardsService();
 
 const RARITY_CODES: Record<string, string> = {
   Mythique: 'M',
@@ -101,19 +92,6 @@ watch(sentinel, (el, oldEl) => {
   if (el) io?.observe(el);
 });
 
-const cards = computed<CardDisplay[]>(() =>
-  allCards.value.map((c) => ({
-    name: c.name,
-    qty: c.collection_entry?.quantity ?? 0,
-    unit: c.collection_entry?.purchase_price ?? 0,
-    trend: c.price_guide?.trend ?? 0,
-    rar: c.rarity_code,
-    set: c.set_code,
-    language: c.language_code,
-    foil: c.foil,
-  })),
-);
-
 const view = ref<'grid' | 'list'>('grid');
 const size = ref<'sm' | 'md' | 'lg'>('md');
 const graph = ref<'compact' | 'expanded'>('compact');
@@ -149,8 +127,8 @@ watch(graphRange, (range) => {
   refreshPriceHistory();
 });
 
-const envelopeData = computed(() =>
-  (priceHistoryData.value ?? []).map((e) => {
+const toEnvelopeData = (entries: PriceHistoryEntry[]) =>
+  entries.map((e) => {
     const [year, month, day] = e.date.split('-').map(Number);
     return {
       low: e.low / 100,
@@ -158,8 +136,17 @@ const envelopeData = computed(() =>
       trend: e.trend / 100,
       label: dayLabelFormatter.format(new Date(year!, month! - 1, day)),
     };
-  }),
-);
+  });
+
+const computeVariation = (entries: PriceHistoryEntry[]) => {
+  if (entries.length < 2) return { pct: 0, positive: true };
+  const first = entries[0]!.trend;
+  const last = entries[entries.length - 1]!.trend;
+  const pct = first !== 0 ? ((last - first) / first) * 100 : 0;
+  return { pct, positive: pct >= 0 };
+};
+
+const envelopeData = computed(() => toEnvelopeData(priceHistoryData.value ?? []));
 const hasEnoughHistory = computed(() => envelopeData.value.length >= 2);
 
 const totalValueCents = computed(() => {
@@ -167,14 +154,7 @@ const totalValueCents = computed(() => {
   return entries && entries.length > 0 ? entries[entries.length - 1]!.trend : 0;
 });
 
-const variation = computed(() => {
-  const entries = priceHistoryData.value ?? [];
-  if (entries.length < 2) return { pct: 0, positive: true };
-  const first = entries[0]!.trend;
-  const last = entries[entries.length - 1]!.trend;
-  const pct = first !== 0 ? ((last - first) / first) * 100 : 0;
-  return { pct, positive: pct >= 0 };
-});
+const variation = computed(() => computeVariation(priceHistoryData.value ?? []));
 
 const sheet = ref(false);
 const importOpen = ref(false);
@@ -186,12 +166,23 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 const active = ref({ rar: [] as string[], sets: [] as string[] });
 const detail = ref<CollectionCard | null>(null);
 
-const detailDelta = (card: CollectionCard) => {
-  const u = card.collection_entry?.purchase_price ?? 0;
-  const t = card.price_guide?.trend ?? 0;
-  if (!u) return 0;
-  return Math.round(((t - u) / u) * 100);
-};
+const cardHistoryData = ref<PriceHistoryEntry[]>([]);
+const cardHistoryPending = ref(false);
+
+watch(detail, async (card) => {
+  cardHistoryData.value = [];
+  if (!card) return;
+  cardHistoryPending.value = true;
+  try {
+    cardHistoryData.value = await getCardPriceHistory(card.scryfall_id);
+  } finally {
+    cardHistoryPending.value = false;
+  }
+});
+
+const cardEnvelopeData = computed(() => toEnvelopeData(cardHistoryData.value));
+const cardHasEnoughHistory = computed(() => cardEnvelopeData.value.length >= 2);
+const cardVariation = computed(() => computeVariation(cardHistoryData.value));
 
 const toggle = (k: 'rar' | 'sets', v: string) => {
   const arr = active.value[k];
@@ -732,31 +723,33 @@ const onDragLeave = () => {
               <div class="flex items-center justify-between">
                 <span
                   class="text-2xs font-mono font-medium tracking-widest whitespace-nowrap text-slate-400 uppercase dark:text-slate-500"
-                  >Marché · CardMarket</span
+                  >Marché · CardMarket · 30 j</span
                 >
                 <span
                   :class="[
                     'font-mono text-xs',
-                    detailDelta(detail) >= 0
+                    cardVariation.positive
                       ? 'text-cyan-600 dark:text-cyan-400'
                       : 'text-red-500 dark:text-red-400',
                   ]"
                 >
-                  {{ detailDelta(detail) >= 0 ? '▴' : '▾' }}
-                  {{ Math.abs(detailDelta(detail)) }} %
+                  {{ cardVariation.positive ? '▴' : '▾' }}
+                  {{ Math.abs(cardVariation.pct).toFixed(0) }} %
                 </span>
               </div>
               <div class="mt-2 flex items-center gap-2.5">
                 <span class="font-mono text-xl font-bold">{{
                   formatPrice(detail.price_guide?.trend ?? 0)
                 }}</span>
-                <Sparkline
-                  :data="
-                    detailDelta(detail) >= 0
-                      ? [40, 46, 42, 55, 52, 64, 60, 78]
-                      : [78, 66, 70, 58, 60, 50, 52, 40]
-                  "
-                />
+              </div>
+              <div class="mt-2 h-[140px]">
+                <EnvelopeGraph v-if="cardHasEnoughHistory" :data="cardEnvelopeData" detail />
+                <div
+                  v-else
+                  class="text-2xs flex h-full items-center justify-center font-mono tracking-wide text-slate-400 uppercase dark:text-slate-500"
+                >
+                  {{ cardHistoryPending ? 'Chargement…' : "Pas encore assez d'historique" }}
+                </div>
               </div>
             </div>
 

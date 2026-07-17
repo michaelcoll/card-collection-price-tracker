@@ -19,8 +19,7 @@ You are consulting this project's UI mockup to use it as a visual/UX reference b
 ## How to consult it
 
 - Main page: `maquette/The Arcane Exchange.html`, served by the http-server web server run using the mise command
-  `mise maquette`, at:
-  `http://localhost:4000/The%20Arcane%20Exchange.html`
+  `mise maquette`, at: `http://localhost:4000/The%20Arcane%20Exchange.html`
 - To explore it: Playwright MCP tools — `browser_navigate` to the URL, `browser_snapshot` to read the structure,
   `browser_take_screenshot` for a visual capture, `browser_click` to navigate between screens. Save captures to
   `.playwright-mcp/` at the repo root (project rule, see AGENTS.md).
