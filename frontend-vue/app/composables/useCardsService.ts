@@ -10,6 +10,8 @@ type GetPriceHistoryParams = {
   end_date: string;
 };
 
+type GetCardPriceHistoryParams = Partial<GetPriceHistoryParams>;
+
 type GetCollectionParams = {
   page?: number;
   page_size?: number;
@@ -57,6 +59,9 @@ export const useCardsService = () => {
       { lazy: true },
     );
 
+  const getCardPriceHistory = (scryfallId: string, params?: GetCardPriceHistoryParams) =>
+    apiCall<PriceHistoryEntry[]>(`/cards/${scryfallId}/price-history`, { query: params });
+
   return {
     getCollection,
     getCollection2,
@@ -64,5 +69,6 @@ export const useCardsService = () => {
     getCardInfo,
     getCollectionStats,
     getPriceHistory,
+    getCardPriceHistory,
   };
 };

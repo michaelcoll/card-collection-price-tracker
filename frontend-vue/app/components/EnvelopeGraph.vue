@@ -48,8 +48,8 @@ const envSmooth = (pts: [number, number][]) => {
 const fmt = (v: number) => Math.round(v).toLocaleString('fr-FR') + ' €';
 
 const n = computed(() => props.data.length);
-const minVal = computed(() => Math.min(...props.data.map((d) => d.low)));
-const maxVal = computed(() => Math.max(...props.data.map((d) => d.avg)));
+const minVal = computed(() => Math.min(...props.data.map((d) => Math.min(d.low, d.avg, d.trend))));
+const maxVal = computed(() => Math.max(...props.data.map((d) => Math.max(d.low, d.avg, d.trend))));
 const pad = computed(() => (maxVal.value - minVal.value) * 0.12 || 1);
 const lo0 = computed(() => minVal.value - pad.value);
 const hi0 = computed(() => maxVal.value + pad.value);
