@@ -122,6 +122,11 @@ description = "Runs the frontend development server"
 dir = "frontend-vue"
 run = "pnpm dev"
 
+[tasks.maquette]
+description = "Serve the static mockups of the app"
+dir = "frontend-vue"
+run = "pnpm serve:maquette"
+
 [tasks.build-backend]
 description = "Builds the backend"
 run = "cargo build"

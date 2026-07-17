@@ -7,22 +7,20 @@ You are consulting this project's UI mockup to use it as a visual/UX reference b
 
 ## What the mockup is
 
-- A standalone UI prototype ("The Arcane Exchange"), React 18 + Babel standalone loaded from CDN, **no build
-  step**. This is not code to port as-is: the real stack is `frontend-vue` (Nuxt 4 / Vue 3 / Tailwind), not React.
-- Lives in the `maquette/` folder at the repo root. It is in `.gitignore`: never committed, never referenced in a
-  PR, don't try to version it.
+- A standalone UI prototype ("The Arcane Exchange"), React 18 + Babel standalone loaded from CDN, **no build step**.
+  This is not code to port as-is: the real stack is `frontend-vue` (Nuxt 4 / Vue 3 / Tailwind), not React.
+- Lives in the `maquette/` folder at the repo root. It is in `.gitignore`: never committed, never referenced in a PR,
+  don't try to version it.
 - Serves as the visual source of truth behind `.agents/design-system.instructions.md` (color tokens, spacing,
-  components) and `.agents/frontend.instructions.md` — those files partly document what's visible in the mockup.
-  Check them for the translation into Tailwind classes, but ignore the Angular code sample they contain: the
-  project's real stack is Vue, not Angular.
+  components) and `.agents/frontend.instructions.md` — those files partly document what's visible in the mockup. Check
+  them for the translation into Tailwind classes, but ignore the Angular code sample they contain: the project's real
+  stack is Vue, not Angular.
 
 ## How to consult it
 
-- Main page: `maquette/The Arcane Exchange.html`, served by the JetBrains IDE's built-in web server, at:
-  `http://localhost:63342/card-collection-price-tracker/maquette/The%20Arcane%20Exchange.html`
-- This server only works while the project is open in the JetBrains IDE (IntelliJ/WebStorm). If the URL returns
-  404 or doesn't respond, flag it to the user and ask them to open the project in the IDE rather than trying to
-  start a server yourself — it's not a process you can launch from the CLI.
+- Main page: `maquette/The Arcane Exchange.html`, served by the http-server web server run using the mise command
+  `mise maquette`, at:
+  `http://localhost:4000/The%20Arcane%20Exchange.html`
 - To explore it: Playwright MCP tools — `browser_navigate` to the URL, `browser_snapshot` to read the structure,
   `browser_take_screenshot` for a visual capture, `browser_click` to navigate between screens. Save captures to
   `.playwright-mcp/` at the repo root (project rule, see AGENTS.md).
@@ -31,10 +29,10 @@ You are consulting this project's UI mockup to use it as a visual/UX reference b
 
 ## Folder structure
 
-- `app.jsx` — app shell: client-side routing (state + `localStorage`, no real per-screen URL), dark/light theme
-  toggle (`data-theme`), dev tweaks panel.
-- `screen_home.jsx`, `screen_collection.jsx`, `screen_trade.jsx`, `screen_find.jsx`, `screen_prefs.jsx` — one
-  file per screen.
+- `app.jsx` — app shell: client-side routing (state + `localStorage`, no real per-screen URL), dark/light theme toggle
+  (`data-theme`), dev tweaks panel.
+- `screen_home.jsx`, `screen_collection.jsx`, `screen_trade.jsx`, `screen_find.jsx`, `screen_prefs.jsx` — one file per
+  screen.
 - `components.jsx` — shared UI components (icons, etc.).
 - `trade_store.jsx` — mocked state and data for the trade flow.
 - `error_states.jsx` + the "Simuler une panne" toggle in the tweaks panel — for viewing API error states.
@@ -48,10 +46,9 @@ You are consulting this project's UI mockup to use it as a visual/UX reference b
 
 ## Working method
 
-1. Before implementing a screen or component that already exists in the mockup, consult it with Playwright and
-   note layout, visual hierarchy, and behaviors (hover, transitions, empty/error states) rather than guessing.
-2. Translate into Vue/Tailwind following the conventions already in place in `frontend-vue`, not by copying the
-   mockup's JSX/CSS. Use `.agents/design-system.instructions.md` for tokens (colors, spacing, radius,
-   button/badge variants).
+1. Before implementing a screen or component that already exists in the mockup, consult it with Playwright and note
+   layout, visual hierarchy, and behaviors (hover, transitions, empty/error states) rather than guessing.
+2. Translate into Vue/Tailwind following the conventions already in place in `frontend-vue`, not by copying the mockup's
+   JSX/CSS. Use `.agents/design-system.instructions.md` for tokens (colors, spacing, radius, button/badge variants).
 3. If the mockup diverges from `.agents/design-system.instructions.md`, flag it to the user rather than deciding
    unilaterally — the mockup may have evolved since the instructions were written.
