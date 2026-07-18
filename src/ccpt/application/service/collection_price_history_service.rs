@@ -3,6 +3,7 @@ use crate::application::error::AppError;
 use crate::application::repository::CollectionPriceHistoryRepository;
 use crate::application::use_case::GetCollectionPriceHistoryUseCase;
 use crate::domain::price::PriceHistoryEntry;
+use crate::domain::user::UserId;
 use async_trait::async_trait;
 use chrono::NaiveDate;
 use std::sync::Arc;
@@ -21,7 +22,7 @@ impl CollectionPriceHistoryService {
 impl GetCollectionPriceHistoryUseCase for CollectionPriceHistoryService {
     async fn get_collection_price_history(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         start_date: Option<NaiveDate>,
         end_date: Option<NaiveDate>,
     ) -> Result<Vec<PriceHistoryEntry>, AppError> {
@@ -48,7 +49,7 @@ mod tests {
         let mut mock = MockCollectionPriceHistoryRepository::new();
         mock.expect_get_price_history()
             .withf(|uid, s, e| {
-                uid == "user1"
+                uid == &UserId::new("user1")
                     && *s == NaiveDate::from_ymd_opt(2025, 1, 1).unwrap()
                     && *e == NaiveDate::from_ymd_opt(2025, 1, 31).unwrap()
             })
@@ -67,7 +68,11 @@ mod tests {
 
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
         let result = service
-            .get_collection_price_history("user1", Some(date(2025, 1, 1)), Some(date(2025, 1, 31)))
+            .get_collection_price_history(
+                &UserId::new("user1"),
+                Some(date(2025, 1, 1)),
+                Some(date(2025, 1, 31)),
+            )
             .await;
 
         assert!(result.is_ok());
@@ -84,7 +89,11 @@ mod tests {
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
 
         let result = service
-            .get_collection_price_history("user1", Some(date(2025, 2, 1)), Some(date(2025, 1, 1)))
+            .get_collection_price_history(
+                &UserId::new("user1"),
+                Some(date(2025, 2, 1)),
+                Some(date(2025, 1, 1)),
+            )
             .await;
 
         assert!(result.is_err());
@@ -104,7 +113,11 @@ mod tests {
 
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
         let result = service
-            .get_collection_price_history("user1", Some(date(2025, 6, 1)), Some(date(2025, 6, 1)))
+            .get_collection_price_history(
+                &UserId::new("user1"),
+                Some(date(2025, 6, 1)),
+                Some(date(2025, 6, 1)),
+            )
             .await;
 
         assert!(result.is_ok());
@@ -119,7 +132,11 @@ mod tests {
 
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
         let result = service
-            .get_collection_price_history("user1", Some(date(2025, 1, 1)), Some(date(2025, 1, 31)))
+            .get_collection_price_history(
+                &UserId::new("user1"),
+                Some(date(2025, 1, 1)),
+                Some(date(2025, 1, 31)),
+            )
             .await;
 
         assert!(result.is_err());
@@ -143,7 +160,7 @@ mod tests {
 
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
         let result = service
-            .get_collection_price_history("user1", None, None)
+            .get_collection_price_history(&UserId::new("user1"), None, None)
             .await;
 
         assert!(result.is_ok());

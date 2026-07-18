@@ -37,7 +37,7 @@ impl CardRepository for CardRepositoryAdapter {
                 card.language_code = collection_entry.language_code AND
                 card.foil = collection_entry.foil AND
                 collection_entry.user_id = $1",
-            user.id
+            user.id.as_str()
         )
         .fetch_all(&self.pool)
         .await?
@@ -141,7 +141,7 @@ impl CardRepository for CardRepositoryAdapter {
             card.id.collector_number,
             card.id.language_code.to_string(),
             card.id.foil,
-            user.id,
+            user.id.as_str(),
             *quantity as i32,
             *purchase_price as i32,
             added_at
@@ -193,9 +193,12 @@ impl CardRepository for CardRepositoryAdapter {
     }
 
     async fn delete_all(&self, user: User) -> Result<(), AppError> {
-        sqlx::query!("DELETE FROM collection_entry WHERE user_id = $1", user.id)
-            .execute(&self.pool)
-            .await?;
+        sqlx::query!(
+            "DELETE FROM collection_entry WHERE user_id = $1",
+            user.id.as_str()
+        )
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }

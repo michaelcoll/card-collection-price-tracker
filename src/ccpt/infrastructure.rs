@@ -269,14 +269,9 @@ impl AppState {
         });
 
         let mut mock_auth = MockAuthService::new();
-        mock_auth.expect_validate_token().returning(|_| {
-            Ok(User::new(
-                "test-user-id".to_string(),
-                "test@example.com".to_string(),
-                None,
-                None,
-            ))
-        });
+        mock_auth
+            .expect_validate_token()
+            .returning(|_| Ok(User::new("test-user-id".to_string(), None, None)));
 
         Self {
             import_card_use_case: Arc::new(mock_import_card),

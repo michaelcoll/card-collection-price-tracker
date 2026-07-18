@@ -28,7 +28,7 @@ impl UserRepository for UserRepositoryAdapter {
                 ON CONFLICT (id)
                     DO UPDATE
                     SET username = $2"#,
-            user.id,
+            user.id.as_str(),
             username,
         )
         .execute(&self.pool)
@@ -44,12 +44,7 @@ mod tests {
     use sqlx::PgPool;
 
     fn make_user(id: &str, username: &str) -> User {
-        User::new(
-            id.to_string(),
-            format!("{}@example.com", id),
-            None,
-            Some(username.to_string()),
-        )
+        User::new(id.to_string(), None, Some(username.to_string()))
     }
 
     #[sqlx::test]
@@ -88,12 +83,7 @@ mod tests {
     #[sqlx::test]
     async fn should_return_wrong_format_error_when_username_missing(pool: PgPool) {
         let adapter = UserRepositoryAdapter::new(pool);
-        let user = User::new(
-            "user_3".to_string(),
-            "user_3@example.com".to_string(),
-            None,
-            None,
-        );
+        let user = User::new("user_3".to_string(), None, None);
 
         let result = adapter.upsert(&user).await;
 

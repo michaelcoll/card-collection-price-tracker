@@ -57,6 +57,7 @@ mod tests {
     use crate::application::caller::MockEdhRecCaller;
     use crate::application::service::auth_service::{AuthService, MockAuthService};
     use crate::application::use_case::{MockImportCardUseCase, MockStatsUseCase};
+    use crate::domain::user::UserId;
     use axum::http::Request;
     use std::sync::Arc;
 
@@ -122,12 +123,7 @@ mod tests {
 
     #[tokio::test]
     async fn valid_bearer_token_returns_user() {
-        let expected_user = User::new(
-            "user_clerk123".to_string(),
-            "user@example.com".to_string(),
-            None,
-            None,
-        );
+        let expected_user = User::new("user_clerk123".to_string(), None, None);
 
         let mut mock_auth = MockAuthService::new();
         mock_auth
@@ -146,8 +142,7 @@ mod tests {
 
         assert!(result.is_ok());
         let AuthenticatedUser(user) = result.unwrap();
-        assert_eq!(user.id, "user_clerk123");
-        assert_eq!(user.email, "user@example.com");
+        assert_eq!(user.id, UserId::new("user_clerk123"));
         assert_eq!(user.name, None);
     }
 }

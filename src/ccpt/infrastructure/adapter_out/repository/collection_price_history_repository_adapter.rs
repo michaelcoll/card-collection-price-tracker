@@ -1,7 +1,7 @@
 use crate::application::error::AppError;
 use crate::application::repository::CollectionPriceHistoryRepository;
 use crate::domain::price::PriceHistoryEntry;
-use crate::domain::user::User;
+use crate::domain::user::{User, UserId};
 use crate::infrastructure::adapter_out::repository::entities::CollectionPriceHistoryEntity;
 use async_trait::async_trait;
 use chrono::NaiveDate;
@@ -30,7 +30,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
 
         let result = rows
             .into_iter()
-            .map(|row| (row.date, User::from_id(row.user_id)))
+            .map(|row| (row.date, User::from_id(UserId::new(row.user_id))))
             .collect();
 
         Ok(result)
@@ -64,7 +64,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
                     low   = EXCLUDED.low,
                     trend = EXCLUDED.trend,
                     avg   = EXCLUDED.avg"#,
-            user.id,
+            user.id.as_str(),
             date,
         )
         .execute(&self.pool)
@@ -75,7 +75,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
 
     async fn get_price_history(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<Vec<PriceHistoryEntry>, AppError> {
@@ -87,7 +87,7 @@ impl CollectionPriceHistoryRepository for CollectionPriceHistoryRepositoryAdapte
                   AND date >= $2
                   AND date <= $3
                 ORDER BY date"#,
-            user_id,
+            user_id.as_str(),
             start_date,
             end_date,
         )
@@ -145,7 +145,7 @@ mod tests {
 
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, NaiveDate::from_ymd_opt(2025, 12, 25).unwrap());
-        assert_eq!(result[0].1.id, "user1");
+        assert_eq!(result[0].1.id, UserId::new("user1"));
     }
 
     #[sqlx::test]
@@ -178,7 +178,7 @@ mod tests {
 
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].0, date);
-        assert_eq!(result[0].1.id, "user1");
+        assert_eq!(result[0].1.id, UserId::new("user1"));
     }
 
     #[sqlx::test]
@@ -229,7 +229,7 @@ mod tests {
     #[sqlx::test]
     async fn update_for_date_and_user_filters_by_user(pool: PgPool) {
         let adapter = CollectionPriceHistoryRepositoryAdapter::new(pool.clone());
-        let user1 = User::from_id("user1".to_string());
+        let user1 = User::from_id(UserId::new("user1"));
         let date = NaiveDate::from_ymd_opt(2025, 12, 25).unwrap();
 
         let added_at = date.and_hms_opt(0, 0, 0).unwrap().and_utc();

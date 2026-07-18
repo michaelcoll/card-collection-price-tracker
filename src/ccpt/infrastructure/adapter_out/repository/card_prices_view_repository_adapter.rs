@@ -4,6 +4,7 @@ use crate::domain::card::Card;
 #[cfg(test)]
 use crate::domain::card::CollectionEntry;
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
+use crate::domain::user::UserId;
 use crate::infrastructure::adapter_out::repository::entities::CardWithPriceEntity;
 use async_trait::async_trait;
 use sqlx::{AssertSqlSafe, Pool, Postgres, query_as, query_scalar};
@@ -71,7 +72,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
 
     async fn get_paginated(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError> {
         let (filter_clause, order_prefix, _) = build_filter_clause(&query, 5);
@@ -110,7 +111,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
 
         let mut base_query = query_as::<_, CardWithPriceEntity>(AssertSqlSafe(sql.as_str()))
             .bind(query.owned)
-            .bind(user_id)
+            .bind(user_id.as_str())
             .bind(limit)
             .bind(offset);
         if let Some(q) = &query.search_query {
@@ -147,7 +148,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
 
         let mut base_count = query_scalar::<_, i64>(AssertSqlSafe(count_sql.as_str()))
             .bind(query.owned)
-            .bind(user_id);
+            .bind(user_id.as_str());
         if let Some(q) = &query.search_query {
             base_count = base_count.bind(q.clone());
         }
@@ -251,7 +252,7 @@ mod tests {
     async fn get_paginated_returns_empty_when_no_cards_in_collection(pool: PgPool) {
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -269,7 +270,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -295,7 +296,10 @@ mod tests {
             page_size: 2,
             ..CollectionQuery::default()
         };
-        let result = adapter.get_paginated("user1", query).await.unwrap();
+        let result = adapter
+            .get_paginated(&UserId::new("user1"), query)
+            .await
+            .unwrap();
 
         assert_eq!(result.items.len(), 2);
         assert_eq!(result.total, 5);
@@ -326,8 +330,14 @@ mod tests {
             ..CollectionQuery::default()
         };
 
-        let page0 = adapter.get_paginated("user1", query_page0).await.unwrap();
-        let page1 = adapter.get_paginated("user1", query_page1).await.unwrap();
+        let page0 = adapter
+            .get_paginated(&UserId::new("user1"), query_page0)
+            .await
+            .unwrap();
+        let page1 = adapter
+            .get_paginated(&UserId::new("user1"), query_page1)
+            .await
+            .unwrap();
 
         assert_eq!(page0.items.len(), 2);
         assert_eq!(page1.items.len(), 2);
@@ -361,7 +371,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -395,7 +405,10 @@ mod tests {
             sort_dir: SortDirection::Asc,
             ..CollectionQuery::default()
         };
-        let result = adapter.get_paginated("user1", query).await.unwrap();
+        let result = adapter
+            .get_paginated(&UserId::new("user1"), query)
+            .await
+            .unwrap();
 
         assert_eq!(result.items[0].id.set_code.to_string(), "AAA");
         assert_eq!(result.items[1].id.set_code.to_string(), "ZZZ");
@@ -418,7 +431,10 @@ mod tests {
             sort_dir: SortDirection::Asc,
             ..CollectionQuery::default()
         };
-        let result = adapter.get_paginated("user1", query).await.unwrap();
+        let result = adapter
+            .get_paginated(&UserId::new("user1"), query)
+            .await
+            .unwrap();
 
         assert_eq!(result.items.len(), 2);
         let first_lang = result.items[0].id.language_code.to_string();
@@ -440,7 +456,10 @@ mod tests {
             page_size: 10,
             ..CollectionQuery::default()
         };
-        let result = adapter.get_paginated("user1", query).await.unwrap();
+        let result = adapter
+            .get_paginated(&UserId::new("user1"), query)
+            .await
+            .unwrap();
 
         assert!(result.items.is_empty());
         assert_eq!(result.total, 1);
@@ -466,10 +485,13 @@ mod tests {
             ..CollectionQuery::default()
         };
         let result_a = adapter
-            .get_paginated("userA", owned_query.clone())
+            .get_paginated(&UserId::new("userA"), owned_query.clone())
             .await
             .unwrap();
-        let result_b = adapter.get_paginated("userB", owned_query).await.unwrap();
+        let result_b = adapter
+            .get_paginated(&UserId::new("userB"), owned_query)
+            .await
+            .unwrap();
 
         assert_eq!(result_a.total, 1);
         assert_eq!(result_b.total, 1);
@@ -493,7 +515,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("userA", CollectionQuery::default())
+            .get_paginated(&UserId::new("userA"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -512,7 +534,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("userA", CollectionQuery::default())
+            .get_paginated(&UserId::new("userA"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -536,7 +558,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("userA", CollectionQuery::default())
+            .get_paginated(&UserId::new("userA"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -568,7 +590,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("userA", CollectionQuery::default())
+            .get_paginated(&UserId::new("userA"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -597,7 +619,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -619,7 +641,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -642,7 +664,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -668,7 +690,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -687,7 +709,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -708,7 +730,7 @@ mod tests {
 
         let adapter = CardPricesViewRepositoryAdapter::new(pool);
         let result = adapter
-            .get_paginated("user1", CollectionQuery::default())
+            .get_paginated(&UserId::new("user1"), CollectionQuery::default())
             .await
             .unwrap();
 
@@ -732,7 +754,10 @@ mod tests {
             search_query: Some("gob".to_string()),
             ..CollectionQuery::default()
         };
-        let result = adapter.get_paginated("user1", query).await.unwrap();
+        let result = adapter
+            .get_paginated(&UserId::new("user1"), query)
+            .await
+            .unwrap();
 
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.total, 1);
@@ -757,7 +782,10 @@ mod tests {
             rarity: vec![RarityCode::M],
             ..CollectionQuery::default()
         };
-        let result = adapter.get_paginated("user1", query).await.unwrap();
+        let result = adapter
+            .get_paginated(&UserId::new("user1"), query)
+            .await
+            .unwrap();
 
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.total, 1);
@@ -781,7 +809,10 @@ mod tests {
             sets: vec!["TS2".to_string()],
             ..CollectionQuery::default()
         };
-        let result = adapter.get_paginated("user1", query).await.unwrap();
+        let result = adapter
+            .get_paginated(&UserId::new("user1"), query)
+            .await
+            .unwrap();
 
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.total, 1);
@@ -805,7 +836,10 @@ mod tests {
             price_max: Some(10000),
             ..CollectionQuery::default()
         };
-        let result = adapter.get_paginated("user1", query).await.unwrap();
+        let result = adapter
+            .get_paginated(&UserId::new("user1"), query)
+            .await
+            .unwrap();
 
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.total, 1);

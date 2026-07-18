@@ -4,7 +4,7 @@ use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::{FullPriceGuide, PriceHistoryEntry};
 use crate::domain::set_name::{SetCode, SetName};
-use crate::domain::user::User;
+use crate::domain::user::{User, UserId};
 use async_trait::async_trait;
 use chrono::NaiveDate;
 #[cfg(test)]
@@ -63,7 +63,7 @@ pub trait CollectionPriceHistoryRepository: Send + Sync {
     async fn update_for_date_and_user(&self, date: NaiveDate, user: User) -> Result<(), AppError>;
     async fn get_price_history(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<Vec<PriceHistoryEntry>, AppError>;
@@ -99,7 +99,7 @@ pub trait CardPricesViewRepository: Send + Sync {
     async fn refresh(&self) -> Result<(), AppError>;
     async fn get_paginated(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError>;
 }
@@ -117,7 +117,7 @@ pub trait StatsRepository: Send + Sync {
 pub trait CollectionRepository: Send + Sync {
     async fn get_paginated(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError>;
 }
@@ -125,7 +125,7 @@ pub trait CollectionRepository: Send + Sync {
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub trait CollectionStatsRepository: Send + Sync {
-    async fn get_collection_stats(&self, user_id: &str) -> Result<CollectionStats, AppError>;
+    async fn get_collection_stats(&self, user_id: &UserId) -> Result<CollectionStats, AppError>;
 }
 
 #[async_trait]

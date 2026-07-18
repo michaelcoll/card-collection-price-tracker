@@ -132,7 +132,7 @@ pub(crate) async fn import_cards(
     let csv = String::from_utf8(bytes.to_vec())
         .map_err(|_| AppError::WrongFormat("Body is not valid UTF-8".to_string()))?;
 
-    tracing::info!("Importing cards for user: {} ({})", user.email, user.id);
+    tracing::info!("Importing cards for user: {}", user.id);
 
     state
         .import_card_use_case
@@ -159,7 +159,7 @@ pub(crate) async fn get_card_info(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
 ) -> Result<String, (StatusCode, String)> {
-    tracing::info!("Getting card info for user: {} ({})", user.email, user.id);
+    tracing::info!("Getting card info for user: {}", user.id);
 
     state
         .edh_rec_caller_adapter
