@@ -3,7 +3,7 @@ use crate::domain::language_code::LanguageCode;
 use crate::domain::price::{FullPriceGuide, Price, PriceGuide, PriceHistoryEntry};
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
-use crate::domain::user::User;
+use crate::domain::user::{User, UserId};
 use chrono::{DateTime, NaiveDate, Utc};
 use uuid::Uuid;
 
@@ -208,10 +208,9 @@ impl Price {
 }
 
 impl User {
-    pub fn from_id(id: String) -> Self {
+    pub fn from_id(id: UserId) -> Self {
         User {
-            id: id.clone(),
-            email: format!("{}@placeholder.local", id),
+            id,
             name: None,
             username: None,
         }
@@ -522,31 +521,23 @@ mod tests {
 
     #[test]
     fn user_from_id_sets_id_correctly() {
-        let user = User::from_id("abc123".to_string());
+        let user = User::from_id(UserId::new("abc123"));
 
-        assert_eq!(user.id, "abc123");
-    }
-
-    #[test]
-    fn user_from_id_builds_placeholder_email_from_id() {
-        let user = User::from_id("abc123".to_string());
-
-        assert_eq!(user.email, "abc123@placeholder.local");
+        assert_eq!(user.id, UserId::new("abc123"));
     }
 
     #[test]
     fn user_from_id_has_no_name() {
-        let user = User::from_id("abc123".to_string());
+        let user = User::from_id(UserId::new("abc123"));
 
         assert_eq!(user.name, None);
     }
 
     #[test]
-    fn user_from_id_with_complex_id_builds_correct_email() {
-        let user = User::from_id("google|105262637836230123456".to_string());
+    fn user_from_id_with_complex_id() {
+        let user = User::from_id(UserId::new("google|105262637836230123456"));
 
-        assert_eq!(user.id, "google|105262637836230123456");
-        assert_eq!(user.email, "google|105262637836230123456@placeholder.local");
+        assert_eq!(user.id, UserId::new("google|105262637836230123456"));
     }
 
     #[test]

@@ -30,7 +30,6 @@ mod tests {
     fn make_user() -> User {
         User::new(
             "user_clerk123".to_string(),
-            "test@example.com".to_string(),
             None,
             Some("testuser".to_string()),
         )

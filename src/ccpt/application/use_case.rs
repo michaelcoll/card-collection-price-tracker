@@ -5,7 +5,7 @@ use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::PriceHistoryEntry;
 use crate::domain::stats::Stats;
-use crate::domain::user::User;
+use crate::domain::user::{User, UserId};
 #[cfg(test)]
 use mockall::automock;
 
@@ -56,7 +56,7 @@ pub trait StatsUseCase: Send + Sync {
 pub trait GetCollectionUseCase: Send + Sync {
     async fn get_collection(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError>;
 }
@@ -66,7 +66,7 @@ pub trait GetCollectionUseCase: Send + Sync {
 pub trait GetCollectionPriceHistoryUseCase: Send + Sync {
     async fn get_collection_price_history(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         start_date: Option<chrono::NaiveDate>,
         end_date: Option<chrono::NaiveDate>,
     ) -> Result<Vec<PriceHistoryEntry>, AppError>;
@@ -86,5 +86,5 @@ pub trait GetCardPriceHistoryUseCase: Send + Sync {
 #[async_trait]
 #[cfg_attr(test, automock)]
 pub trait GetCollectionStatsUseCase: Send + Sync {
-    async fn get_collection_stats(&self, user_id: &str) -> Result<CollectionStats, AppError>;
+    async fn get_collection_stats(&self, user_id: &UserId) -> Result<CollectionStats, AppError>;
 }

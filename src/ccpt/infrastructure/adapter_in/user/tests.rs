@@ -26,7 +26,6 @@ async fn register_returns_no_content_when_username_present() {
     let state = make_app_state(mock_register);
     let user = User::new(
         "user_clerk123".to_string(),
-        "test@example.com".to_string(),
         None,
         Some("testuser".to_string()),
     );
@@ -41,12 +40,7 @@ async fn register_returns_no_content_when_username_present() {
 async fn register_returns_bad_request_when_username_missing() {
     let mock_register = MockRegisterUserUseCase::new();
     let state = make_app_state(mock_register);
-    let user = User::new(
-        "user_clerk123".to_string(),
-        "test@example.com".to_string(),
-        None,
-        None,
-    );
+    let user = User::new("user_clerk123".to_string(), None, None);
 
     let result = register(State(state), AuthenticatedUser(user)).await;
 
@@ -68,7 +62,6 @@ async fn register_propagates_use_case_error() {
     let state = make_app_state(mock_register);
     let user = User::new(
         "user_clerk123".to_string(),
-        "test@example.com".to_string(),
         None,
         Some("testuser".to_string()),
     );

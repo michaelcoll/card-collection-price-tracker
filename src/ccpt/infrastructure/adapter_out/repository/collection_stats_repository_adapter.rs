@@ -3,6 +3,7 @@ use crate::application::repository::CollectionStatsRepository;
 use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::Price;
 use crate::domain::set_name::{SetCode, SetName};
+use crate::domain::user::UserId;
 use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 
@@ -18,7 +19,7 @@ impl CollectionStatsRepositoryAdapter {
 
 #[async_trait]
 impl CollectionStatsRepository for CollectionStatsRepositoryAdapter {
-    async fn get_collection_stats(&self, user_id: &str) -> Result<CollectionStats, AppError> {
+    async fn get_collection_stats(&self, user_id: &UserId) -> Result<CollectionStats, AppError> {
         let totals = sqlx::query!(
             r#"
             SELECT
@@ -27,7 +28,7 @@ impl CollectionStatsRepository for CollectionStatsRepositoryAdapter {
             FROM collection_entry ce
             WHERE ce.user_id = $1
             "#,
-            user_id
+            user_id.as_str()
         )
         .fetch_one(&self.pool)
         .await?;
@@ -46,7 +47,7 @@ impl CollectionStatsRepository for CollectionStatsRepositoryAdapter {
                 AND cp.user_id          = ce.user_id
             WHERE ce.user_id = $1
             "#,
-            user_id
+            user_id.as_str()
         )
         .fetch_one(&self.pool)
         .await?;
@@ -62,9 +63,9 @@ impl CollectionStatsRepository for CollectionStatsRepositoryAdapter {
                 AND c.foil             = ce.foil
             JOIN set_name sn ON sn.set_code = c.set_code
             WHERE ce.user_id = $1
-            ORDER BY sn.name ASC
+            ORDER BY sn.name
             "#,
-            user_id
+            user_id.as_str()
         )
         .fetch_all(&self.pool)
         .await?;
@@ -96,7 +97,9 @@ mod tests {
     #[sqlx::test]
     async fn returns_zeros_for_empty_collection(pool: PgPool) {
         let adapter = CollectionStatsRepositoryAdapter::new(pool);
-        let result = adapter.get_collection_stats("unknown-user").await;
+        let result = adapter
+            .get_collection_stats(&UserId::new("unknown-user"))
+            .await;
         assert!(result.is_ok());
         let stats = result.unwrap();
         assert_eq!(stats.total_cards, 0);
@@ -130,7 +133,7 @@ mod tests {
             .unwrap();
 
         let adapter = CollectionStatsRepositoryAdapter::new(pool);
-        let result = adapter.get_collection_stats("user-1").await;
+        let result = adapter.get_collection_stats(&UserId::new("user-1")).await;
         assert!(result.is_ok());
         let stats = result.unwrap();
         assert_eq!(stats.total_cards, 5);
@@ -156,7 +159,7 @@ mod tests {
             .unwrap();
 
         let adapter = CollectionStatsRepositoryAdapter::new(pool);
-        let result = adapter.get_collection_stats("user-1").await;
+        let result = adapter.get_collection_stats(&UserId::new("user-1")).await;
         assert!(result.is_ok());
         let stats = result.unwrap();
         assert_eq!(stats.total_cards, 0);

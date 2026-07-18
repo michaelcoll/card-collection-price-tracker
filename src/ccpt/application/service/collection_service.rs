@@ -2,6 +2,7 @@ use crate::application::error::AppError;
 use crate::application::repository::CardPricesViewRepository;
 use crate::application::use_case::GetCollectionUseCase;
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
+use crate::domain::user::UserId;
 use async_trait::async_trait;
 use std::sync::Arc;
 
@@ -19,7 +20,7 @@ impl CollectionService {
 impl GetCollectionUseCase for CollectionService {
     async fn get_collection(
         &self,
-        user_id: &str,
+        user_id: &UserId,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError> {
         self.repository.get_paginated(user_id, query).await
@@ -58,7 +59,7 @@ mod tests {
         mock_repo
             .expect_get_paginated()
             .withf(|uid, q| {
-                uid == "user-1"
+                uid == &UserId::new("user-1")
                     && q.page == 1
                     && q.page_size == 10
                     && q.sort_by == CollectionSortField::SetCode
@@ -70,7 +71,9 @@ mod tests {
             });
 
         let service = CollectionService::new(Arc::new(mock_repo));
-        let result = service.get_collection("user-1", expected_query).await;
+        let result = service
+            .get_collection(&UserId::new("user-1"), expected_query)
+            .await;
         assert!(result.is_ok());
         let paginated = result.unwrap();
         assert_eq!(paginated.page, 1);
@@ -87,7 +90,7 @@ mod tests {
 
         let service = CollectionService::new(Arc::new(mock_repo));
         let result = service
-            .get_collection("user-1", CollectionQuery::default())
+            .get_collection(&UserId::new("user-1"), CollectionQuery::default())
             .await;
         assert!(result.is_err());
     }
