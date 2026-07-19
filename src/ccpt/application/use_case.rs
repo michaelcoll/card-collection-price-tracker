@@ -1,10 +1,12 @@
 use crate::application::error::AppError;
 use async_trait::async_trait;
 
+use crate::domain::card::CardId;
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::PriceHistoryEntry;
 use crate::domain::stats::Stats;
+use crate::domain::trade::TradeId;
 use crate::domain::user::{User, UserId};
 #[cfg(test)]
 use mockall::automock;
@@ -87,4 +89,16 @@ pub trait GetCardPriceHistoryUseCase: Send + Sync {
 #[cfg_attr(test, automock)]
 pub trait GetCollectionStatsUseCase: Send + Sync {
     async fn get_collection_stats(&self, user_id: &UserId) -> Result<CollectionStats, AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait CreateTradeUseCase: Send + Sync {
+    async fn create_trade(
+        &self,
+        initiator_user_id: UserId,
+        respondent_user_id: UserId,
+        card_id: CardId,
+        quantity: u8,
+    ) -> Result<TradeId, AppError>;
 }

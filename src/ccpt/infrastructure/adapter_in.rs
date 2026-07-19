@@ -8,6 +8,7 @@ pub mod auth_extractor;
 pub mod card;
 pub mod maintenance;
 pub mod openapi;
+pub mod trade;
 pub mod user;
 
 impl IntoResponse for AppError {
@@ -22,6 +23,8 @@ impl IntoResponse for AppError {
                 (StatusCode::UNAUTHORIZED, String::from(self.clone()))
             }
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, String::from(self.clone())),
+            AppError::SelfTrade => (StatusCode::BAD_REQUEST, String::from(self.clone())),
+            AppError::TradeNotModifiable => (StatusCode::CONFLICT, String::from(self.clone())),
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 String::from(self.clone()),
@@ -88,6 +91,20 @@ mod tests {
         let error = AppError::CardNotFound;
         let response = error.into_response();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn self_trade_returns_bad_request_status() {
+        let error = AppError::SelfTrade;
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn trade_not_modifiable_returns_conflict_status() {
+        let error = AppError::TradeNotModifiable;
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::CONFLICT);
     }
 
     #[test]

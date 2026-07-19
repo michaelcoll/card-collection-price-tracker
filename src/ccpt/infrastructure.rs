@@ -11,15 +11,17 @@ use crate::application::service::import_card_service::ImportCardService;
 use crate::application::service::import_price_service::ImportPriceService;
 use crate::application::service::register_user_service::RegisterUserService;
 use crate::application::service::stats_service::StatsService;
+use crate::application::service::trade_service::CreateTradeService;
 use crate::application::service::update_card_market_service::CardMarketIdWorker;
 use crate::application::service::update_gatherer_service::GathererIdWorker;
 use crate::application::use_case::{
-    EnqueueCardMarketIdUpdateUseCase, EnqueueGathererIdUpdateUseCase, GetCardPriceHistoryUseCase,
-    GetCollectionPriceHistoryUseCase, GetCollectionStatsUseCase, GetCollectionUseCase,
-    ImportCardUseCase, ImportPriceUseCase, RegisterUserUseCase, StatsUseCase,
+    CreateTradeUseCase, EnqueueCardMarketIdUpdateUseCase, EnqueueGathererIdUpdateUseCase,
+    GetCardPriceHistoryUseCase, GetCollectionPriceHistoryUseCase, GetCollectionStatsUseCase,
+    GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase, RegisterUserUseCase, StatsUseCase,
 };
 use crate::domain::card::CardId;
 use crate::infrastructure::adapter_in::card::controller::create_card_router;
+use crate::infrastructure::adapter_in::trade::controller::create_trade_router;
 use crate::infrastructure::adapter_in::user::controller::create_user_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
 use crate::infrastructure::adapter_out::caller::edhrec_caller_adapter::EdhRecCallerAdapter;
@@ -28,6 +30,7 @@ use crate::infrastructure::adapter_out::repository::cardmarket_price_repository_
 use crate::infrastructure::adapter_out::repository::collection_price_history_repository_adapter::CollectionPriceHistoryRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::collection_stats_repository_adapter::CollectionStatsRepositoryAdapter;
 use crate::infrastructure::adapter_out::repository::stats_repository_adapter::StatsRepositoryAdapter;
+use crate::infrastructure::adapter_out::repository::trade_repository_adapter::TradeRepositoryAdapter;
 use adapter_in::maintenance::controller::create_maintenance_router;
 use adapter_out::caller::gatherer_caller_adapter::GathererCallerAdapter;
 use adapter_out::caller::scryfall_caller_adapter::ScryfallCallerAdapter;
@@ -63,6 +66,7 @@ pub struct AppState {
     pub get_card_price_history_use_case: Arc<dyn GetCardPriceHistoryUseCase>,
     pub get_collection_stats_use_case: Arc<dyn GetCollectionStatsUseCase>,
     pub register_user_use_case: Arc<dyn RegisterUserUseCase>,
+    pub create_trade_use_case: Arc<dyn CreateTradeUseCase>,
 }
 
 pub async fn create_infra(pool: Pool<Postgres>) -> Router {
@@ -187,6 +191,10 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let register_user_service: Arc<dyn RegisterUserUseCase> =
         Arc::new(RegisterUserService::new(user_repository_adapter));
 
+    let trade_repository_adapter = Arc::new(TradeRepositoryAdapter::new(pool.clone()));
+    let create_trade_service: Arc<dyn CreateTradeUseCase> =
+        Arc::new(CreateTradeService::new(trade_repository_adapter));
+
     let app_state = AppState {
         import_card_use_case: import_card_service,
         edh_rec_caller_adapter,
@@ -200,6 +208,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         get_card_price_history_use_case: card_price_history_service,
         get_collection_stats_use_case: collection_stats_service,
         register_user_use_case: register_user_service,
+        create_trade_use_case: create_trade_service,
     };
 
     let mut cron = AsyncCron::new(Utc);
@@ -222,6 +231,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         .nest("/cards", create_card_router())
         .nest("/maintenance", create_maintenance_router())
         .nest("/user", create_user_router())
+        .nest("/trades", create_trade_router())
         .with_state(app_state)
         .layer(NewSentryLayer::<Request<Body>>::new_from_top())
         .layer(SentryHttpLayer::new().enable_transaction())
@@ -245,10 +255,10 @@ impl AppState {
         use crate::application::caller::MockEdhRecCaller;
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
-            MockEnqueueCardMarketIdUpdateUseCase, MockEnqueueGathererIdUpdateUseCase,
-            MockGetCardPriceHistoryUseCase, MockGetCollectionPriceHistoryUseCase,
-            MockGetCollectionStatsUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
-            MockRegisterUserUseCase,
+            MockCreateTradeUseCase, MockEnqueueCardMarketIdUpdateUseCase,
+            MockEnqueueGathererIdUpdateUseCase, MockGetCardPriceHistoryUseCase,
+            MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
+            MockGetCollectionUseCase, MockImportCardUseCase, MockRegisterUserUseCase,
         };
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
@@ -288,6 +298,7 @@ impl AppState {
             get_card_price_history_use_case: Arc::new(MockGetCardPriceHistoryUseCase::new()),
             get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
             register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
+            create_trade_use_case: Arc::new(MockCreateTradeUseCase::new()),
         }
     }
 
@@ -303,6 +314,21 @@ impl AppState {
         let mut base =
             Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
         base.enqueue_cardmarket_id_use_case = enqueue_cardmarket_id_use_case;
+        base
+    }
+
+    pub fn for_testing_with_create_trade(
+        stats_use_case: Arc<dyn StatsUseCase>,
+        create_trade_use_case: Arc<dyn CreateTradeUseCase>,
+    ) -> Self {
+        use crate::application::use_case::MockImportPriceUseCase;
+        let mut mock_import_price = MockImportPriceUseCase::new();
+        mock_import_price
+            .expect_import_prices_for_current_date()
+            .returning(|| Box::pin(async { Ok(()) }));
+        let mut base =
+            Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
+        base.create_trade_use_case = create_trade_use_case;
         base
     }
 

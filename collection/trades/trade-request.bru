@@ -1,0 +1,22 @@
+meta {
+  name: trade request
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/trades
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "set_code": "FDN",
+    "collector_number": "87",
+    "language_code": "FR",
+    "foil": false,
+    "respondent_user_id": "user_2hK9...",
+    "quantity": 1
+  }
+}

@@ -3,6 +3,7 @@ use super::card::dto::{
     PriceHistoryEntryResponse, SortByParam, SortDirParam,
 };
 use super::maintenance::dto::{EnqueueResponse, StatsResponse};
+use super::trade::dto::CreateTradeRequest;
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]
@@ -16,6 +17,7 @@ use utoipa::OpenApi;
         super::maintenance::controller::trigger_price_update,
         super::maintenance::controller::update_cardmarket_ids,
         super::user::controller::register,
+        super::trade::controller::create_trade,
     ),
     components(schemas(
         PriceGuideResponse,
@@ -27,6 +29,7 @@ use utoipa::OpenApi;
         SortDirParam,
         StatsResponse,
         EnqueueResponse,
+        CreateTradeRequest,
     )),
     modifiers(&SecurityAddon),
     info(
@@ -39,6 +42,7 @@ use utoipa::OpenApi;
         (name = "cards", description = "Collection management (authentication required)"),
         (name = "maintenance", description = "Maintenance operations (public)"),
         (name = "auth", description = "Authentication and user registration (authentication required)"),
+        (name = "trades", description = "Trade requests between two collectors (authentication required)"),
     )
 )]
 pub struct ApiDoc;

@@ -4,6 +4,7 @@ use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::{FullPriceGuide, PriceHistoryEntry};
 use crate::domain::set_name::{SetCode, SetName};
+use crate::domain::trade::{TradeId, TradeStatus};
 use crate::domain::user::{User, UserId};
 use async_trait::async_trait;
 use chrono::NaiveDate;
@@ -132,4 +133,42 @@ pub trait CollectionStatsRepository: Send + Sync {
 #[cfg_attr(test, automock)]
 pub trait UserRepository: Send + Sync {
     async fn upsert(&self, user: &User) -> Result<(), AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait TradeRepository: Send + Sync {
+    async fn find_collection_entry_quantity(
+        &self,
+        user_id: &UserId,
+        card_id: &CardId,
+    ) -> Result<Option<i32>, AppError>;
+
+    /// Finds the active trade (`PENDING`, `ONE_ACCEPTED` or `FULLY_ACCEPTED`) between two users, if any,
+    /// regardless of which one is `initiator_user_id` vs `respondent_user_id` on that trade.
+    async fn find_active_trade(
+        &self,
+        user_a: &UserId,
+        user_b: &UserId,
+    ) -> Result<Option<(TradeId, TradeStatus)>, AppError>;
+
+    async fn create(
+        &self,
+        id: TradeId,
+        initiator_id: &UserId,
+        respondent_id: &UserId,
+        card_id: &CardId,
+        quantity: u8,
+    ) -> Result<(), AppError>;
+
+    /// Adds `card_id` to an existing trade (or increments its `quantity` if already present for `owner_id`).
+    /// When `reopen_to_pending` is true, the trade's status is reset to `PENDING`.
+    async fn merge_card_into_trade(
+        &self,
+        trade_id: TradeId,
+        card_id: &CardId,
+        owner_id: &UserId,
+        quantity: u8,
+        reopen_to_pending: bool,
+    ) -> Result<(), AppError>;
 }
