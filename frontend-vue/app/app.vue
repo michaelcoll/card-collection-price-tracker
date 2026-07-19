@@ -95,7 +95,7 @@ const bottomNavLinkClass = (path: string) => [
           >
         </NuxtLink>
 
-        <nav class="ml-2 flex gap-0.5 self-stretch max-md:hidden">
+        <nav v-if="isLoaded && isSignedIn" class="ml-2 flex gap-0.5 self-stretch max-md:hidden">
           <NuxtLink to="/collection" :class="navLinkClass('/collection')">Collection</NuxtLink>
           <NuxtLink to="/trade" :class="navLinkClass('/trade')">Échanges</NuxtLink>
           <NuxtLink to="/find" :class="navLinkClass('/find')">Rechercher</NuxtLink>
@@ -142,6 +142,7 @@ const bottomNavLinkClass = (path: string) => [
 
     <!-- MOBILE BOTTOM NAV -->
     <nav
+      v-if="isLoaded && isSignedIn"
       class="hidden max-md:fixed max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:z-50 max-md:flex max-md:border-t max-md:border-slate-200 max-md:bg-slate-100/80 max-md:px-2 max-md:pt-2 max-md:pb-[calc(0.5rem+env(safe-area-inset-bottom))] max-md:backdrop-blur-md dark:max-md:border-white/10 dark:max-md:bg-zinc-950/80"
     >
       <NuxtLink to="/collection" :class="bottomNavLinkClass('/collection')">
