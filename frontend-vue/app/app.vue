@@ -1,9 +1,9 @@
 <script setup lang="ts">
-const { theme, clerkAppearance } = useAppTheme();
+const { theme, themePreference, cycleThemePreference, clerkAppearance } = useAppTheme();
 
 if (import.meta.client) {
   const saved = localStorage.getItem('tae_theme');
-  if (saved === 'light' || saved === 'dark') theme.value = saved;
+  if (saved === 'light' || saved === 'dark' || saved === 'auto') themePreference.value = saved;
 }
 
 const htmlClass = computed(() => (theme.value === 'dark' ? 'dark' : ''));
@@ -13,13 +13,23 @@ useHead({
   bodyAttrs: { 'data-bg': 'aurora' },
 });
 
-watch(theme, (val) => {
+watch(themePreference, (val) => {
   if (import.meta.client) localStorage.setItem('tae_theme', val);
 });
 
-const toggleTheme = () => {
-  theme.value = theme.value === 'dark' ? 'light' : 'dark';
-};
+const themeToggleIcon = computed(
+  () =>
+    ({ auto: 'lucide:sun-moon', light: 'lucide:sun', dark: 'lucide:moon' })[themePreference.value],
+);
+
+const themeToggleLabel = computed(
+  () =>
+    ({
+      auto: 'Thème automatique (suit le système)',
+      light: 'Mode clair',
+      dark: 'Mode sombre',
+    })[themePreference.value],
+);
 
 const { isSignedIn, isLoaded } = useAuth();
 
@@ -45,7 +55,7 @@ const bottomNavLinkClass = (path: string) => [
 
     <!-- HEADER -->
     <header
-      class="sticky top-0 z-40 border-b border-slate-200 bg-slate-100/60 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/60"
+      class="sticky top-0 z-40 border-b border-slate-200 bg-slate-100/60 pt-[env(safe-area-inset-top)] backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/60"
     >
       <div class="mx-auto flex h-16 max-w-[1180px] items-center gap-4 px-5 max-md:h-14 max-md:px-4">
         <NuxtLink to="/" class="font-display flex cursor-pointer items-center gap-2.5">
@@ -105,11 +115,11 @@ const bottomNavLinkClass = (path: string) => [
 
         <button
           class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-100 text-slate-600 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/15 dark:hover:bg-zinc-800 dark:hover:text-slate-100"
-          @click="toggleTheme"
-          :aria-label="theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'"
-          :title="theme === 'dark' ? 'Mode clair' : 'Mode sombre'"
+          @click="cycleThemePreference"
+          :aria-label="themeToggleLabel"
+          :title="themeToggleLabel"
         >
-          <Icon :name="theme === 'dark' ? 'lucide:sun' : 'lucide:moon'" size="17" />
+          <Icon :name="themeToggleIcon" size="17" />
         </button>
 
         <button

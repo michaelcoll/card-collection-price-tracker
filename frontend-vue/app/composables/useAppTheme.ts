@@ -1,5 +1,25 @@
+export type ThemePreference = 'auto' | 'light' | 'dark';
+
 export const useAppTheme = () => {
-  const theme = useState<'dark' | 'light'>('tae_theme', () => 'dark');
+  const themePreference = useState<ThemePreference>('tae_theme_pref', () => 'auto');
+  const prefersLight = useMediaQuery('(prefers-color-scheme: light)');
+
+  const theme = computed<'dark' | 'light'>(() =>
+    themePreference.value === 'auto'
+      ? prefersLight.value
+        ? 'light'
+        : 'dark'
+      : themePreference.value,
+  );
+
+  const cycleThemePreference = () => {
+    themePreference.value =
+      themePreference.value === 'auto'
+        ? 'light'
+        : themePreference.value === 'light'
+          ? 'dark'
+          : 'auto';
+  };
 
   const clerkAppearance = computed(() => {
     const isDark = theme.value === 'dark';
@@ -48,5 +68,5 @@ export const useAppTheme = () => {
     };
   });
 
-  return { theme, clerkAppearance };
+  return { theme, themePreference, cycleThemePreference, clerkAppearance };
 };

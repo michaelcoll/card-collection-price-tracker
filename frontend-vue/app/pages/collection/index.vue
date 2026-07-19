@@ -622,11 +622,11 @@ const onDragLeave = () => {
     <!-- ── CARD DETAIL MODAL ── -->
     <div
       v-if="detail"
-      class="fixed inset-0 z-[80] grid animate-[fade_0.2s_ease] place-items-center bg-black/60 p-5 backdrop-blur-sm"
+      class="fixed inset-0 z-[80] grid animate-[fade_0.2s_ease] place-items-center bg-black/60 px-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-5 backdrop-blur-sm"
       @click="detail = null"
     >
       <div
-        class="relative max-h-[calc(100dvh-40px)] w-full max-w-[840px] animate-[pop_0.26s_cubic-bezier(0.3,1.2,0.4,1)] overflow-hidden rounded-3xl border border-slate-300 p-0 shadow-2xl max-[720px]:max-w-[440px] dark:border-white/15"
+        class="relative max-h-[calc(100dvh-40px-env(safe-area-inset-top))] w-full max-w-[840px] animate-[pop_0.26s_cubic-bezier(0.3,1.2,0.4,1)] overflow-hidden rounded-3xl border border-slate-300 p-0 shadow-2xl max-[720px]:max-w-[440px] dark:border-white/15"
         @click.stop
       >
         <!-- close -->
@@ -639,7 +639,7 @@ const onDragLeave = () => {
 
         <!-- body grid -->
         <div
-          class="grid max-h-[calc(100dvh-40px)] [grid-template-columns:minmax(300px,360px)_1fr] overflow-y-auto max-[720px]:[grid-template-columns:1fr]"
+          class="grid max-h-[calc(100dvh-40px-env(safe-area-inset-top))] [grid-template-columns:minmax(300px,360px)_1fr] overflow-y-auto max-[720px]:[grid-template-columns:1fr]"
         >
           <!-- art -->
           <div

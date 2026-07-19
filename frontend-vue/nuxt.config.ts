@@ -8,11 +8,51 @@ export default defineNuxtConfig({
     head: {
       title: 'Arcane Exchange',
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' },
+        { rel: 'icon', type: 'image/png', href: '/favicon-96x96.png?v=20260719', sizes: '96x96' },
+        {
+          rel: 'icon',
+          type: 'image/svg+xml',
+          href: '/favicon.svg?v=20260719',
+        },
+        {
+          rel: 'shortcut icon',
+          href: '/favicon.ico?v=20260719',
+        },
+        {
+          rel: 'apple-touch-icon',
+          href: '/apple-touch-icon.png?v=20260719',
+          sizes: '180x180',
+        },
+        {
+          rel: 'apple-mobile-web-app-title',
+          href: '/apple-touch-icon.png?v=20260719',
+          sizes: '180x180',
+        },
+        {
+          rel: 'manifest',
+          href: '/site.webmanifest?v=20260719',
+        },
         {
           rel: 'stylesheet',
           type: 'text/css',
           href: '//cdn.jsdelivr.net/npm/keyrune@latest/css/keyrune.css',
+        },
+      ],
+      meta: [
+        { name: 'application-name', content: 'Arcane Exchange' },
+        { name: 'apple-mobile-web-app-title', content: 'Arcane Exchange' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        {
+          name: 'theme-color',
+          content: '#0f1414',
+          media: '(prefers-color-scheme: dark)',
+        },
+        {
+          name: 'theme-color',
+          content: '#edeff5',
+          media: '(prefers-color-scheme: light)',
         },
       ],
     },
