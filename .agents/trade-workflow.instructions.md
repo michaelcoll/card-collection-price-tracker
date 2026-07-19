@@ -2,17 +2,17 @@
 
 ## Overview
 
-Card-for-card trade between exactly 2 users. Value differences are settled in cash outside the platform. Ratings
-are optional and mutual.
+Card-for-card trade between exactly 2 users. Value differences are settled in cash outside the platform. Ratings are
+optional and mutual.
 
 ---
 
 ## Actors
 
-| Actor               | Role                                                          |
-|----------------------|------------------------------------------------------------------|
-| **Initiator (A)**    | Finds a card and requests the trade                              |
-| **Respondent (B)**   | Owner of the requested card, makes a counter-offer               |
+| Actor              | Role                                               |
+|--------------------|----------------------------------------------------|
+| **Initiator (A)**  | Finds a card and requests the trade                |
+| **Respondent (B)** | Owner of the requested card, makes a counter-offer |
 
 ---
 
@@ -33,7 +33,7 @@ are optional and mutual.
 
 - *B* browses *A*'s collection and selects 0 or more cards they're interested in, in exchange.
 - The interface computes the value difference and displays the cash amount owed by one party to the other.
-- *B* submits the counter-proposal. The transaction then lists:
+- *B* submits the counter-proposal. The trade then lists:
     - Cards offered by *B* → to *A*
     - Cards offered by *A* → to *B* (selected by B, or none)
     - Cash delta (informational only — settled outside the platform)
@@ -41,32 +41,31 @@ are optional and mutual.
 
 ### 4. Negotiation (`PENDING`)
 
-- Either party can modify the transaction (add/remove cards, adjust) at any time **while the status is
+- Either party can modify the trade (add/remove cards, adjust) at any time **while the status is
   `PENDING`**.
 - Each modification triggers a notification to the other party.
 
 ### 5. First Acceptance (status: `ONE_ACCEPTED`)
 
 - One party clicks "Accept."
-- A modal warns: **"Once accepted, the transaction will be locked. If the other party modifies the transaction,
-  it will go back to pending and will need to be accepted again."**
+- A modal warns: **"Once accepted, the trade will be locked. If the other party modifies the trade, it will go back to
+  pending and will need to be accepted again."**
 - On confirmation:
     - Status → `ONE_ACCEPTED`.
-    - All cards on both sides of the transaction are **reserved** (visible in each user's collection).
-    - Any other `PENDING` or `ONE_ACCEPTED` transactions involving these same cards are automatically
-      **abandoned**.
-    - The affected parties receive a notification: **"A transaction involving one of your reserved cards was
-      finalized by another trade. Your transaction has been cancelled."**
-    - The other party receives a notification: **"Your partner accepted. Accept in turn or modify the
-      transaction to restart the negotiation."**
+    - All cards on both sides of the trade are **reserved** (visible in each user's collection).
+    - Any other `PENDING` or `ONE_ACCEPTED` trades involving these same cards are automatically **abandoned**.
+    - The affected parties receive a notification: **"A trade involving one of your reserved cards was finalized by
+      another trade. Your trade has been cancelled."**
+    - The other party receives a notification: **"Your partner accepted. Accept in turn or modify the trade to restart
+      the negotiation."**
 
 ### 5b. Modification After Acceptance (back to `PENDING`)
 
-- If either party modifies the transaction while the status is `ONE_ACCEPTED`:
+- If either party modifies the trade while the status is `ONE_ACCEPTED`:
     - Status → `PENDING`.
     - Reserved cards are **released**.
     - Both previous acceptances are cancelled — both parties will need to accept again.
-    - The other party receives a notification: **"The transaction was modified. It is back in negotiation."**
+    - The other party receives a notification: **"The trade was modified. It is back in negotiation."**
 
 ### 6. Full Acceptance (status: `FULLY_ACCEPTED`)
 
@@ -98,7 +97,7 @@ are optional and mutual.
 PENDING ◄─────────────────────────────────────────────────────┐
   │  (one party accepts)                                      │
   ▼                                                           │
-ONE_ACCEPTED  ──(modification by either party)─────────────────┘
+ONE_ACCEPTED ───(modification by either party)────────────────┘
   │  (the other party accepts)
   ▼
 FULLY_ACCEPTED
@@ -112,14 +111,14 @@ CLOSED
 ABANDONED  ← reachable from any status before COMPLETED
 ```
 
-| Status            | Description                                                                 |
-|---------------------|---------------------------------------------------------------------------------|
-| `PENDING`          | Open to modification by both parties                                            |
-| `ONE_ACCEPTED`     | One party has accepted; cards reserved; modifiable (goes back to `PENDING`)     |
-| `FULLY_ACCEPTED`   | Both have accepted; awaiting the physical exchange                              |
-| `COMPLETED`        | Physical exchange confirmed by both parties                                     |
-| `CLOSED`           | Transaction finished; ratings submitted or skipped                              |
-| `ABANDONED`        | Transaction cancelled by either party at any time before `COMPLETED`            |
+| Status           | Description                                                                 |
+|------------------|-----------------------------------------------------------------------------|
+| `PENDING`        | Open to modification by both parties                                        |
+| `ONE_ACCEPTED`   | One party has accepted; cards reserved; modifiable (goes back to `PENDING`) |
+| `FULLY_ACCEPTED` | Both have accepted; awaiting the physical exchange                          |
+| `COMPLETED`      | Physical exchange confirmed by both parties                                 |
+| `CLOSED`         | Trade finished; ratings submitted or skipped                                |
+| `ABANDONED`      | Trade cancelled by either party at any time before `COMPLETED`              |
 
 ---
 
@@ -127,20 +126,20 @@ ABANDONED  ← reachable from any status before COMPLETED
 
 - Cards are reserved at the `ONE_ACCEPTED` step.
 - A reserved card is shown as such in its owner's collection (badge or indicator).
-- If the same card appears in several simultaneous transactions:
-    - The **first transaction to reach `ONE_ACCEPTED`** reserves the card.
-    - All other transactions involving that card are automatically `ABANDONED`.
+- If the same card appears in several simultaneous trades:
+    - The **first trade to reach `ONE_ACCEPTED`** reserves the card.
+    - All other trades involving that card are automatically `ABANDONED`.
     - All affected parties are notified immediately.
 
 ---
 
 ## Modification Rules
 
-| Who can modify   | When                                 | Effect on status                          |
-|--------------------|------------------------------------------|-----------------------------------------------|
-| Either party       | Status `PENDING`                         | Stays `PENDING`                               |
-| Either party       | Status `ONE_ACCEPTED`                    | Goes back to `PENDING`, cards released        |
-| No one              | Status `FULLY_ACCEPTED` or beyond        | Not possible                                  |
+| Who can modify | When                              | Effect on status                       |
+|----------------|-----------------------------------|----------------------------------------|
+| Either party   | Status `PENDING`                  | Stays `PENDING`                        |
+| Either party   | Status `ONE_ACCEPTED`             | Goes back to `PENDING`, cards released |
+| No one         | Status `FULLY_ACCEPTED` or beyond | Not possible                           |
 
 Any modification notifies the other party.
 
@@ -148,7 +147,7 @@ Any modification notifies the other party.
 
 ## Abandonment Rules
 
-- Either party can abandon the transaction at any time before `COMPLETED`.
+- Either party can abandon the trade at any time before `COMPLETED`.
 - On abandonment:
     - Status → `ABANDONED`.
     - Reserved cards (if any) are released.
@@ -159,23 +158,23 @@ Any modification notifies the other party.
 
 ## Notification Summary
 
-| Trigger                                                | Recipient(s)                        |
-|-----------------------------------------------------------|-------------------------------------------|
-| Trade request sent                                         | *B*                                       |
-| Counter-proposal submitted                                  | *A*                                       |
-| Transaction modified (status `PENDING`)                     | The other party                           |
-| First acceptance (`ONE_ACCEPTED`)                            | The other party                           |
-| Modification after acceptance (back to `PENDING`)           | The other party                           |
-| Other transactions invalidated                               | All affected parties                      |
-| Both have accepted (`FULLY_ACCEPTED`)                         | Both                                      |
-| Physical exchange confirmed by both (`COMPLETED`)            | Both                                      |
-| Transaction abandoned                                         | The other party                           |
+| Trigger                                           | Recipient(s)         |
+|---------------------------------------------------|----------------------|
+| Trade request sent                                | *B*                  |
+| Counter-proposal submitted                        | *A*                  |
+| Trade modified (status `PENDING`)                 | The other party      |
+| First acceptance (`ONE_ACCEPTED`)                 | The other party      |
+| Modification after acceptance (back to `PENDING`) | The other party      |
+| Other trades invalidated                          | All affected parties |
+| Both have accepted (`FULLY_ACCEPTED`)             | Both                 |
+| Physical exchange confirmed by both (`COMPLETED`) | Both                 |
+| Trade abandoned                                   | The other party      |
 
 ---
 
 ## Out of Scope (MVP)
 
 - Online payment — the cash delta is informational only.
-- Transaction expiration — transactions remain active indefinitely until accepted or abandoned.
+- Trade expiration — trades remain active indefinitely until accepted or abandoned.
 - Trade history — planned post-MVP.
 - Built-in messaging — may be added if deemed necessary.

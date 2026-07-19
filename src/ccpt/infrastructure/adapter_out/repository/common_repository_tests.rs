@@ -238,6 +238,85 @@ pub async fn insert_user(pool: &PgPool, id: &str, username: &str) {
         .unwrap();
 }
 
+pub async fn insert_trade(
+    pool: &PgPool,
+    id: Uuid,
+    initiator_user_id: &str,
+    respondent_user_id: &str,
+    status: &str,
+) {
+    sqlx::query(
+        r#"INSERT INTO trade (id, initiator_user_id, respondent_user_id, status)
+             VALUES ($1, $2, $3, $4)"#,
+    )
+    .bind(id)
+    .bind(initiator_user_id)
+    .bind(respondent_user_id)
+    .bind(status)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+pub async fn insert_trade_with_created_at(
+    pool: &PgPool,
+    id: Uuid,
+    initiator_user_id: &str,
+    respondent_user_id: &str,
+    status: &str,
+    created_at: chrono::DateTime<chrono::Utc>,
+) {
+    sqlx::query(
+        r#"INSERT INTO trade (id, initiator_user_id, respondent_user_id, status, created_at)
+             VALUES ($1, $2, $3, $4, $5)"#,
+    )
+    .bind(id)
+    .bind(initiator_user_id)
+    .bind(respondent_user_id)
+    .bind(status)
+    .bind(created_at)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+pub async fn mark_trade_accepted_by_both(pool: &PgPool, id: Uuid) {
+    sqlx::query(
+        r#"UPDATE trade SET initiator_accepted_at = NOW(), respondent_accepted_at = NOW()
+             WHERE id = $1"#,
+    )
+    .bind(id)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn insert_trade_card(
+    pool: &PgPool,
+    trade_id: Uuid,
+    set_code: &str,
+    collector_number: &str,
+    language_code: &str,
+    foil: bool,
+    owner_user_id: &str,
+    quantity: i32,
+) {
+    sqlx::query(
+        r#"INSERT INTO trade_card (trade_id, set_code, collector_number, language_code, foil, owner_user_id, quantity)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)"#)
+        .bind(trade_id)
+        .bind(set_code)
+        .bind(collector_number)
+        .bind(language_code)
+        .bind(foil)
+        .bind(owner_user_id)
+        .bind(quantity)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
 pub async fn refresh_view(pool: &PgPool) {
     sqlx::query("REFRESH MATERIALIZED VIEW mv_card_prices")
         .execute(pool)

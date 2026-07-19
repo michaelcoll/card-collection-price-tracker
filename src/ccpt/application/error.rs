@@ -16,6 +16,8 @@ pub enum AppError {
     QueueError(String),
     AuthenticationError(String),
     Unauthorized,
+    SelfTrade,
+    TradeNotModifiable,
 }
 
 impl From<AppError> for String {
@@ -34,6 +36,11 @@ impl From<AppError> for String {
             AppError::QueueError(msg) => msg,
             AppError::AuthenticationError(msg) => format!("Authentication error: {}", msg),
             AppError::Unauthorized => "Unauthorized".to_string(),
+            AppError::SelfTrade => "Cannot request your own card".to_string(),
+            AppError::TradeNotModifiable => {
+                "This trade has already been fully accepted and can no longer be modified"
+                    .to_string()
+            }
         }
     }
 }
@@ -152,5 +159,22 @@ mod tests {
         let error = AppError::Unauthorized;
         let error_message: String = error.into();
         assert_eq!(error_message, "Unauthorized");
+    }
+
+    #[test]
+    fn app_error_to_string_for_self_trade() {
+        let error = AppError::SelfTrade;
+        let error_message: String = error.into();
+        assert_eq!(error_message, "Cannot request your own card");
+    }
+
+    #[test]
+    fn app_error_to_string_for_trade_not_modifiable() {
+        let error = AppError::TradeNotModifiable;
+        let error_message: String = error.into();
+        assert_eq!(
+            error_message,
+            "This trade has already been fully accepted and can no longer be modified"
+        );
     }
 }

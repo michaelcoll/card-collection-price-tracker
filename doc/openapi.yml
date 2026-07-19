@@ -203,6 +203,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EnqueueResponse'
+  /trades:
+    post:
+      tags:
+      - trades
+      operationId: create_trade
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTradeRequest'
+        required: true
+      responses:
+        '201':
+          description: Trade created, or card added to (merged into) the active trade with this user
+        '400':
+          description: Invalid payload or respondent is the initiator
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Card not found, not owned by respondent, or respondent unknown
+        '409':
+          description: The active trade with this user is already fully accepted and can no longer be modified
+      security:
+      - bearer_auth: []
   /user/register:
     post:
       tags:
@@ -280,6 +304,30 @@ components:
           type: integer
           format: int32
           minimum: 0
+    CreateTradeRequest:
+      type: object
+      required:
+      - set_code
+      - collector_number
+      - language_code
+      - foil
+      - respondent_user_id
+      - quantity
+      properties:
+        collector_number:
+          type: string
+        foil:
+          type: boolean
+        language_code:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+          minimum: 0
+        respondent_user_id:
+          type: string
+        set_code:
+          type: string
     EnqueueResponse:
       type: object
       required:
@@ -403,3 +451,5 @@ tags:
   description: Maintenance operations (public)
 - name: auth
   description: Authentication and user registration (authentication required)
+- name: trades
+  description: Trade requests between two collectors (authentication required)

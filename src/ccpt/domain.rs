@@ -7,4 +7,5 @@ pub mod price;
 pub mod rarity_code;
 pub mod set_name;
 pub mod stats;
+pub mod trade;
 pub mod user;
