@@ -169,6 +169,11 @@ const detail = ref<CollectionCard | null>(null);
 const cardHistoryData = ref<PriceHistoryEntry[]>([]);
 const cardHistoryPending = ref(false);
 
+const bodyScrollLocked = useScrollLock(document.body);
+watch([detail, sheet, importOpen], ([d, s, i]) => {
+  bodyScrollLocked.value = !!d || s || i;
+});
+
 watch(detail, async (card) => {
   cardHistoryData.value = [];
   if (!card) return;

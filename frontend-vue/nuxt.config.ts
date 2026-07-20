@@ -24,11 +24,6 @@ export default defineNuxtConfig({
           sizes: '180x180',
         },
         {
-          rel: 'apple-mobile-web-app-title',
-          href: '/apple-touch-icon.png?v=20260719',
-          sizes: '180x180',
-        },
-        {
           rel: 'manifest',
           href: '/site.webmanifest?v=20260719',
         },
@@ -41,9 +36,9 @@ export default defineNuxtConfig({
       meta: [
         { name: 'application-name', content: 'Arcane Exchange' },
         { name: 'apple-mobile-web-app-title', content: 'Arcane Exchange' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         {
           name: 'theme-color',
           content: '#0f1414',

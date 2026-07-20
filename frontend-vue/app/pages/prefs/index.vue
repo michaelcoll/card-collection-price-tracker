@@ -14,6 +14,11 @@ const proximity = ref(true);
 const accent = ref('#00daf3');
 const manageOpen = ref(false);
 
+const bodyScrollLocked = useScrollLock(document.body);
+watch(manageOpen, (open) => {
+  bodyScrollLocked.value = open;
+});
+
 const THEMES = [
   { c: '#00daf3', name: 'Cyan néon', sub: 'Défaut' },
   { c: '#00f0c8', name: 'Turquoise', sub: '#00F0C8' },
