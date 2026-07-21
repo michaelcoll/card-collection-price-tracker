@@ -1,5 +1,5 @@
 use crate::application::caller::GathererCaller;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::application::repository::{CardPricesViewRepository, CardRepository};
 use crate::domain::card::CardId;
 use std::collections::HashSet;
@@ -69,7 +69,7 @@ impl GathererIdWorker {
                 let mut set = self
                     .dedup_set
                     .lock()
-                    .map_err(|_| AppError::QueueError("Mutex poisoned".into()))?;
+                    .map_err(|_| InfraError::QueueError("Mutex poisoned".into()))?;
                 set.remove(&card_id);
             }
 
@@ -88,7 +88,7 @@ impl GathererIdWorker {
 mod tests {
     use super::*;
     use crate::application::caller::MockGathererCaller;
-    use crate::application::error::AppError;
+    use crate::application::error::{AppError, InfraError};
     use crate::application::repository::{MockCardPricesViewRepository, MockCardRepository};
     use crate::domain::language_code::LanguageCode;
     use crate::domain::set_name::SetCode;
@@ -197,7 +197,11 @@ mod tests {
         gatherer_caller
             .expect_get_gatherer_id()
             .returning(|_, _, _, _| {
-                Box::pin(async { Err(AppError::CallError("Gatherer error".to_string())) })
+                Box::pin(async {
+                    Err(AppError::Infra(InfraError::CallError(
+                        "Gatherer error".to_string(),
+                    )))
+                })
             });
         card_repository.expect_update_gatherer_id().times(0);
 

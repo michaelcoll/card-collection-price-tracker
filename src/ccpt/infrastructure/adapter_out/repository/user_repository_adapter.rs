@@ -1,5 +1,6 @@
 use crate::application::error::AppError;
 use crate::application::repository::UserRepository;
+use crate::domain::error::FunctionalError;
 use crate::domain::user::User;
 use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
@@ -17,10 +18,9 @@ impl UserRepositoryAdapter {
 #[async_trait]
 impl UserRepository for UserRepositoryAdapter {
     async fn upsert(&self, user: &User) -> Result<(), AppError> {
-        let username = user
-            .username
-            .clone()
-            .ok_or_else(|| AppError::WrongFormat("Missing username claim in token".to_string()))?;
+        let username = user.username.clone().ok_or_else(|| {
+            FunctionalError::WrongFormat("Missing username claim in token".to_string())
+        })?;
 
         sqlx::query!(
             r#"INSERT INTO users (id, username)
@@ -89,7 +89,9 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::WrongFormat(msg) => assert_eq!(msg, "Missing username claim in token"),
+            AppError::Functional(FunctionalError::WrongFormat(msg)) => {
+                assert_eq!(msg, "Missing username claim in token")
+            }
             _ => panic!("Expected WrongFormat"),
         }
     }

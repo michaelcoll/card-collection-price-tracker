@@ -1,4 +1,4 @@
-use crate::domain::error::CardParsingError;
+use crate::domain::error::FunctionalError;
 use std::fmt::Display;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -12,7 +12,7 @@ pub enum LanguageCode {
 }
 
 impl LanguageCode {
-    pub fn try_new<S: AsRef<str>>(s: S) -> Result<Self, CardParsingError> {
+    pub fn try_new<S: AsRef<str>>(s: S) -> Result<Self, FunctionalError> {
         let s_ref = s.as_ref();
         match s_ref.to_uppercase().as_str() {
             "DE" => Ok(LanguageCode::DE),
@@ -21,7 +21,7 @@ impl LanguageCode {
             "IT" => Ok(LanguageCode::IT),
             "JA" => Ok(LanguageCode::JA),
             "SP" => Ok(LanguageCode::SP),
-            _ => Err(CardParsingError::InvalidLanguageCode(s_ref.to_string())),
+            _ => Err(FunctionalError::InvalidLanguageCode(s_ref.to_string())),
         }
     }
 
@@ -105,7 +105,7 @@ mod tests {
     fn try_new_language_code_with_invalid_code_contains_msg() {
         let result = LanguageCode::try_new("XX");
         match result {
-            Err(CardParsingError::InvalidLanguageCode(msg)) => assert_eq!(msg, "XX"),
+            Err(FunctionalError::InvalidLanguageCode(msg)) => assert_eq!(msg, "XX"),
             _ => panic!("Expected InvalidLanguageCode variant"),
         }
     }

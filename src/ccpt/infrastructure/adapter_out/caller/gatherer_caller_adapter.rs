@@ -1,5 +1,5 @@
 use crate::application::caller::GathererCaller;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::domain::language_code::LanguageCode;
 use crate::domain::set_name::SetCode;
 use async_trait::async_trait;
@@ -82,14 +82,15 @@ impl GathererCaller for GathererCallerAdapter {
                     tokio::time::sleep(duration).await;
                 }
                 TryWaitError::ExceedsCapacity => {
-                    return Err(AppError::CallError(
+                    return Err(InfraError::CallError(
                         "Gatherer rate limiter overflow".to_string(),
-                    ));
+                    )
+                    .into());
                 }
                 _ => {
-                    return Err(AppError::CallError(
-                        "Gatherer rate limiter error".to_string(),
-                    ));
+                    return Err(
+                        InfraError::CallError("Gatherer rate limiter error".to_string()).into(),
+                    );
                 }
             }
         }
@@ -108,7 +109,7 @@ impl GathererCaller for GathererCallerAdapter {
 
         let document = scraper::Html::parse_document(&html);
         let selector = scraper::Selector::parse(r#"meta[property="og:image"]"#)
-            .map_err(|e| AppError::CallError(format!("invalid selector: {e}")))?;
+            .map_err(|e| InfraError::CallError(format!("invalid selector: {e}")))?;
 
         let Some(content) = document
             .select(&selector)

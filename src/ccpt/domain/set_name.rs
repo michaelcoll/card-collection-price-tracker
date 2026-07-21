@@ -1,16 +1,16 @@
-use crate::domain::error::CardParsingError;
+use crate::domain::error::FunctionalError;
 use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SetCode(String);
 
 impl SetCode {
-    pub fn try_new(s: impl Into<String>) -> Result<Self, CardParsingError> {
+    pub fn try_new(s: impl Into<String>) -> Result<Self, FunctionalError> {
         let name = s.into().to_uppercase();
         if name.chars().count() >= 3 && name.chars().count() <= 5 {
             Ok(SetCode(name))
         } else {
-            Err(CardParsingError::InvalidSetCode(format!(
+            Err(FunctionalError::InvalidSetCode(format!(
                 "set code must be between 3 and 5 characters (got {})",
                 name
             )))
@@ -70,7 +70,7 @@ mod tests {
     fn new_set_code_with_invalid_length_contains_message() {
         let result = SetCode::try_new("AB");
         match result {
-            Err(CardParsingError::InvalidSetCode(msg)) => {
+            Err(FunctionalError::InvalidSetCode(msg)) => {
                 assert!(msg.contains("set code must be between 3 and 5 characters"))
             }
             _ => panic!("Expected InvalidSetCode variant"),

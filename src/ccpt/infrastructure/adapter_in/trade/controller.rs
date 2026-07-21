@@ -1,6 +1,7 @@
 use super::dto::CreateTradeRequest;
 use crate::application::error::AppError;
 use crate::domain::card::CardId;
+use crate::domain::error::FunctionalError;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::user::UserId;
 use crate::infrastructure::AppState;
@@ -32,21 +33,19 @@ pub(crate) async fn create_trade(
     State(state): State<AppState>,
     axum::Json(payload): axum::Json<CreateTradeRequest>,
 ) -> Result<StatusCode, AppError> {
-    let language_code = LanguageCode::try_new(&payload.language_code).map_err(|_| {
-        AppError::WrongFormat(format!("Invalid language code '{}'", payload.language_code))
-    })?;
+    let language_code = LanguageCode::try_new(&payload.language_code).map_err(AppError::from)?;
     let card_id = CardId::try_new(
         payload.set_code.as_str(),
         payload.collector_number,
         language_code,
         payload.foil,
     )
-    .map_err(|e| AppError::WrongFormat(String::from(e)))?;
+    .map_err(AppError::from)?;
 
     if payload.quantity == 0 {
-        return Err(AppError::WrongFormat(
+        return Err(AppError::Functional(FunctionalError::WrongFormat(
             "quantity must be at least 1".to_string(),
-        ));
+        )));
     }
 
     state

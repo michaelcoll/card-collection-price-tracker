@@ -36,7 +36,9 @@ impl GetCollectionPriceHistoryUseCase for CollectionPriceHistoryService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::error::InfraError;
     use crate::application::repository::MockCollectionPriceHistoryRepository;
+    use crate::domain::error::FunctionalError;
     use crate::domain::price::{Price, PriceGuide};
     use chrono::NaiveDate;
 
@@ -98,7 +100,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::WrongFormat(msg) => {
+            AppError::Functional(FunctionalError::WrongFormat(msg)) => {
                 assert_eq!(msg, "start_date must be before or equal to end_date");
             }
             _ => panic!("Expected WrongFormat error"),
@@ -127,7 +129,11 @@ mod tests {
     async fn propagates_repository_error() {
         let mut mock = MockCollectionPriceHistoryRepository::new();
         mock.expect_get_price_history().returning(|_, _, _| {
-            Box::pin(async { Err(AppError::RepositoryError("db error".to_string())) })
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "db error".to_string(),
+                )))
+            })
         });
 
         let service = CollectionPriceHistoryService::new(Arc::new(mock));
@@ -141,7 +147,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::RepositoryError(msg) => assert_eq!(msg, "db error"),
+            AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "db error"),
             _ => panic!("Expected RepositoryError"),
         }
     }

@@ -25,6 +25,7 @@ impl RegisterUserUseCase for RegisterUserService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::error::InfraError;
     use crate::application::repository::MockUserRepository;
 
     fn make_user() -> User {
@@ -53,7 +54,11 @@ mod tests {
     async fn register_user_returns_error_on_repository_error() {
         let mut mock_repository = MockUserRepository::new();
         mock_repository.expect_upsert().times(1).returning(|_| {
-            Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) })
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "DB error".to_string(),
+                )))
+            })
         });
 
         let service = RegisterUserService::new(Arc::new(mock_repository));
@@ -61,7 +66,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::RepositoryError(msg) => assert_eq!(msg, "DB error"),
+            AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "DB error"),
             _ => panic!("Expected RepositoryError"),
         }
     }

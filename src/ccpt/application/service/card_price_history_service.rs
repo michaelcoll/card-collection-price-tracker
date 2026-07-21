@@ -2,6 +2,7 @@ use crate::application::date_range::resolve_date_range;
 use crate::application::error::AppError;
 use crate::application::repository::{CardMarketPriceRepository, CardRepository};
 use crate::application::use_case::GetCardPriceHistoryUseCase;
+use crate::domain::error::FunctionalError;
 use crate::domain::price::PriceHistoryEntry;
 use async_trait::async_trait;
 use chrono::NaiveDate;
@@ -39,7 +40,7 @@ impl GetCardPriceHistoryUseCase for CardPriceHistoryService {
             .find_by_scryfall_id(scryfall_id)
             .await?
         else {
-            return Err(AppError::CardNotFound);
+            return Err(FunctionalError::CardNotFound.into());
         };
 
         let Some(cardmarket_id) = cardmarket_id else {
@@ -55,6 +56,7 @@ impl GetCardPriceHistoryUseCase for CardPriceHistoryService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::error::InfraError;
     use crate::application::repository::{MockCardMarketPriceRepository, MockCardRepository};
     use crate::domain::price::{Price, PriceGuide};
     use chrono::NaiveDate;
@@ -131,7 +133,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::CardNotFound => {}
+            AppError::Functional(FunctionalError::CardNotFound) => {}
             other => panic!("Expected CardNotFound, got {:?}", other),
         }
     }
@@ -180,7 +182,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::WrongFormat(msg) => {
+            AppError::Functional(FunctionalError::WrongFormat(msg)) => {
                 assert_eq!(msg, "start_date must be before or equal to end_date");
             }
             other => panic!("Expected WrongFormat, got {:?}", other),
@@ -226,7 +228,11 @@ mod tests {
         mock_price_repo
             .expect_find_by_id_and_date_range()
             .returning(|_, _, _, _| {
-                Box::pin(async { Err(AppError::RepositoryError("db error".to_string())) })
+                Box::pin(async {
+                    Err(AppError::Infra(InfraError::RepositoryError(
+                        "db error".to_string(),
+                    )))
+                })
             });
 
         let service =
@@ -242,7 +248,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::RepositoryError(msg) => assert_eq!(msg, "db error"),
+            AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "db error"),
             other => panic!("Expected RepositoryError, got {:?}", other),
         }
     }

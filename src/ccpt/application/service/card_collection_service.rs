@@ -40,6 +40,7 @@ impl CardCollectionPriceCalculationUseCase for CardCollectionService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::error::InfraError;
     use crate::application::repository::MockCollectionPriceHistoryRepository;
     use crate::domain::user::User;
     use chrono::NaiveDate;
@@ -130,7 +131,11 @@ mod tests {
             .expect_get_date_and_user_to_update()
             .times(1)
             .returning(|| {
-                Box::pin(async { Err(AppError::CallError("database error".to_string())) })
+                Box::pin(async {
+                    Err(AppError::Infra(InfraError::CallError(
+                        "database error".to_string(),
+                    )))
+                })
             });
 
         let service = CardCollectionService::new(Arc::new(mock_repository));
@@ -165,7 +170,11 @@ mod tests {
             .expect_update_for_date_and_user()
             .times(1)
             .returning(|_, _| {
-                Box::pin(async { Err(AppError::CallError("update failed".to_string())) })
+                Box::pin(async {
+                    Err(AppError::Infra(InfraError::CallError(
+                        "update failed".to_string(),
+                    )))
+                })
             });
 
         let service = CardCollectionService::new(Arc::new(mock_repository));

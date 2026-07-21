@@ -1,4 +1,4 @@
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::application::repository::CardPricesViewRepository;
 use crate::domain::card::Card;
 #[cfg(test)]
@@ -139,7 +139,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
         let entities = base_query
             .fetch_all(&self.pool)
             .await
-            .map_err(|e| AppError::RepositoryError(e.to_string()))?;
+            .map_err(|e| AppError::Infra(InfraError::RepositoryError(e.to_string())))?;
 
         let count_sql = format!(
             "SELECT COUNT(*) FROM mv_card_prices cp WHERE ($1::boolean = false OR cp.user_id = $2) {}",
@@ -174,7 +174,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
         let total: i64 = base_count
             .fetch_one(&self.pool)
             .await
-            .map_err(|e| AppError::RepositoryError(e.to_string()))?;
+            .map_err(|e| AppError::Infra(InfraError::RepositoryError(e.to_string())))?;
 
         Ok(PaginatedCollection {
             items: entities.into_iter().map(Card::from).collect(),

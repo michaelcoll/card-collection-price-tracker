@@ -1,5 +1,5 @@
 use crate::application::caller::ScryfallCaller;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::infrastructure::adapter_out::caller::dto::ScryfallCardInfo;
 use async_trait::async_trait;
 use ratelimit::{Ratelimiter, TryWaitError};
@@ -35,14 +35,15 @@ impl ScryfallCaller for ScryfallCallerAdapter {
                     tokio::time::sleep(duration).await;
                 }
                 TryWaitError::ExceedsCapacity => {
-                    return Err(AppError::CallError(
+                    return Err(InfraError::CallError(
                         "Scryfall rate limiter overflow".to_string(),
-                    ));
+                    )
+                    .into());
                 }
                 _ => {
-                    return Err(AppError::CallError(
-                        "Scryfall rate limiter error".to_string(),
-                    ));
+                    return Err(
+                        InfraError::CallError("Scryfall rate limiter error".to_string()).into(),
+                    );
                 }
             }
         }

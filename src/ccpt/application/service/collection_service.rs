@@ -30,6 +30,7 @@ impl GetCollectionUseCase for CollectionService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::error::InfraError;
     use crate::application::repository::MockCardPricesViewRepository;
     use crate::domain::collection::{CollectionSortField, SortDirection};
 
@@ -85,7 +86,11 @@ mod tests {
     async fn get_collection_propagates_repository_error() {
         let mut mock_repo = MockCardPricesViewRepository::new();
         mock_repo.expect_get_paginated().returning(|_, _| {
-            Box::pin(async { Err(AppError::RepositoryError("db error".to_string())) })
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "db error".to_string(),
+                )))
+            })
         });
 
         let service = CollectionService::new(Arc::new(mock_repo));

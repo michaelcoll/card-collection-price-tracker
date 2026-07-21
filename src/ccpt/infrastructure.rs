@@ -353,16 +353,16 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::error::AppError;
+    use crate::application::error::{AppError, InfraError};
     use crate::application::use_case::MockStatsUseCase;
     use crate::domain::user::User;
 
     #[tokio::test]
     async fn for_testing_creates_app_state_with_provided_stats_use_case() {
         let mut mock_stats = MockStatsUseCase::new();
-        mock_stats
-            .expect_get_stats()
-            .returning(|| Box::pin(async { Err(AppError::RepositoryError("".to_string())) }));
+        mock_stats.expect_get_stats().returning(|| {
+            Box::pin(async { Err(AppError::Infra(InfraError::RepositoryError("".to_string()))) })
+        });
 
         let app_state = AppState::for_testing(Arc::new(mock_stats));
 

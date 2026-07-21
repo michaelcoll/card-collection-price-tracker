@@ -1,6 +1,7 @@
 use super::controller::*;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::application::use_case::{MockRegisterUserUseCase, MockStatsUseCase};
+use crate::domain::error::FunctionalError;
 use crate::domain::user::User;
 use crate::infrastructure::AppState;
 use crate::infrastructure::adapter_in::auth_extractor::AuthenticatedUser;
@@ -46,7 +47,9 @@ async fn register_returns_bad_request_when_username_missing() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::WrongFormat(msg) => assert_eq!(msg, "Missing username claim in token"),
+        AppError::Functional(FunctionalError::WrongFormat(msg)) => {
+            assert_eq!(msg, "Missing username claim in token")
+        }
         _ => panic!("Expected WrongFormat"),
     }
 }
@@ -57,7 +60,13 @@ async fn register_propagates_use_case_error() {
     mock_register
         .expect_register_user()
         .times(1)
-        .returning(|_| Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) }));
+        .returning(|_| {
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "DB error".to_string(),
+                )))
+            })
+        });
 
     let state = make_app_state(mock_register);
     let user = User::new(
@@ -70,7 +79,7 @@ async fn register_propagates_use_case_error() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::RepositoryError(msg) => assert_eq!(msg, "DB error"),
+        AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "DB error"),
         _ => panic!("Expected RepositoryError"),
     }
 }

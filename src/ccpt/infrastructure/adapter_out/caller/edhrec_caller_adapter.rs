@@ -1,5 +1,5 @@
 use crate::application::caller::EdhRecCaller;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::domain::card::CardInfo;
 use crate::infrastructure::adapter_out::caller::dto::EdhRecCardInfo;
 use async_trait::async_trait;
@@ -39,30 +39,30 @@ impl EdhRecCallerAdapter {
             .get(url)
             .send()
             .await
-            .map_err(|e| AppError::CallError(format!("edhrec request error: {e}")))?
+            .map_err(|e| InfraError::CallError(format!("edhrec request error: {e}")))?
             .text()
             .await
-            .map_err(|e| AppError::CallError(format!("edhrec response read error: {e}")))?;
+            .map_err(|e| InfraError::CallError(format!("edhrec response read error: {e}")))?;
 
         let document = scraper::Html::parse_document(&html);
         let selector = scraper::Selector::parse(r#"script#__NEXT_DATA__"#)
-            .map_err(|e| AppError::CallError(format!("invalid selector: {e}")))?;
+            .map_err(|e| InfraError::CallError(format!("invalid selector: {e}")))?;
 
         let json_text = document
             .select(&selector)
             .next()
             .and_then(|el| el.text().next())
             .ok_or_else(|| {
-                AppError::CallError("unable to find __NEXT_DATA__ script".to_string())
+                InfraError::CallError("unable to find __NEXT_DATA__ script".to_string())
             })?;
 
         let v: serde_json::Value = serde_json::from_str(json_text)
-            .map_err(|e| AppError::CallError(format!("__NEXT_DATA__ is not valid json: {e}")))?;
+            .map_err(|e| InfraError::CallError(format!("__NEXT_DATA__ is not valid json: {e}")))?;
 
         let build_id = v
             .get("buildId")
             .and_then(|x| x.as_str())
-            .ok_or_else(|| AppError::CallError("buildId not found in __NEXT_DATA__".to_string()))?
+            .ok_or_else(|| InfraError::CallError("buildId not found in __NEXT_DATA__".to_string()))?
             .to_string();
 
         println!("Build ID: {build_id}");
@@ -178,7 +178,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::CallError(msg) => assert!(msg.contains("unable to find")),
+            AppError::Infra(InfraError::CallError(msg)) => assert!(msg.contains("unable to find")),
             _ => panic!("Expected CallError"),
         }
     }
@@ -205,7 +205,9 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::CallError(msg) => assert!(msg.contains("buildId not found")),
+            AppError::Infra(InfraError::CallError(msg)) => {
+                assert!(msg.contains("buildId not found"))
+            }
             _ => panic!("Expected CallError"),
         }
     }
@@ -224,7 +226,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::CallError(_) => (),
+            AppError::Infra(InfraError::CallError(_)) => (),
             _ => panic!("Expected CallError"),
         }
     }
@@ -251,7 +253,9 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::CallError(msg) => assert!(msg.contains("is not valid json")),
+            AppError::Infra(InfraError::CallError(msg)) => {
+                assert!(msg.contains("is not valid json"))
+            }
             _ => panic!("Expected CallError"),
         }
     }
@@ -486,7 +490,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::CallError(msg) => {
+            AppError::Infra(InfraError::CallError(msg)) => {
                 assert_eq!(msg, "unable to find __NEXT_DATA__ script");
             }
             _ => panic!("Expected CallError"),
@@ -523,7 +527,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::CallError(msg) => {
+            AppError::Infra(InfraError::CallError(msg)) => {
                 assert!(msg.contains("error decoding response body"))
             }
             _ => panic!("Expected CallError"),
@@ -560,7 +564,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::CallError(msg) => {
+            AppError::Infra(InfraError::CallError(msg)) => {
                 assert!(msg.contains("error decoding response body"))
             }
             _ => panic!("Expected CallError"),

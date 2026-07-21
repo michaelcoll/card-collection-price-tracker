@@ -5,8 +5,11 @@
 - **Architecture**: Clean Architecture (Domain, Application, Infrastructure) under `src/ccpt/`. Unidirectional
   dependencies.
 - **Injection**: Use the `Arc<dyn Trait>` pattern for services, wired up in `infrastructure.rs`.
-- **Errors**: `domain/error.rs` → `application/error.rs` (`AppError`). Infrastructure errors (`RepositoryError`,
-  `CallError`) are variants of `AppError`. Implement `From<T> for AppError` for conversions.
+- **Errors**: `AppError` (`application/error.rs`) is a thin umbrella over three category enums, each carrying its
+  own concern: `FunctionalError` (`domain/error.rs` — business/validation errors: parsing, not-found, business rule
+  violations), `AuthenticationError` and `InfraError` (`application/error.rs` — repository/call/queue failures).
+  `AppError::Functional/Authentication/Infra(...)` wraps the category; `From<T> for AppError` is implemented per
+  category so `?` still works from any layer.
 - **Tests**: `mockall` (automock on traits) and `wiremock` for external HTTP calls. Integration tests use the real
   DB.
 

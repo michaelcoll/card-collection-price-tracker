@@ -1,5 +1,5 @@
 use crate::application::caller::ScryfallCaller;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::application::repository::{CardPricesViewRepository, CardRepository};
 use crate::application::use_case::CardCollectionPriceCalculationUseCase;
 use crate::domain::card::CardId;
@@ -63,7 +63,7 @@ impl CardMarketIdWorker {
                 let mut set = self
                     .dedup_set
                     .lock()
-                    .map_err(|_| AppError::QueueError("Mutex poisoned".into()))?;
+                    .map_err(|_| InfraError::QueueError("Mutex poisoned".into()))?;
                 set.remove(&card_id);
             }
 
@@ -88,7 +88,7 @@ impl CardMarketIdWorker {
 mod tests {
     use super::*;
     use crate::application::caller::MockScryfallCaller;
-    use crate::application::error::AppError;
+    use crate::application::error::{AppError, InfraError};
     use crate::application::repository::{MockCardPricesViewRepository, MockCardRepository};
     use crate::application::use_case::MockCardCollectionPriceCalculationUseCase;
     use crate::domain::language_code::LanguageCode;
@@ -183,7 +183,11 @@ mod tests {
         let mut price_calc = MockCardCollectionPriceCalculationUseCase::new();
 
         scryfall_caller.expect_get_card_market_id().returning(|_| {
-            Box::pin(async { Err(AppError::CallError("Scryfall error".to_string())) })
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::CallError(
+                    "Scryfall error".to_string(),
+                )))
+            })
         });
         // update_cardmarket_id should not be called
         card_repository.expect_update_cardmarket_id().times(0);
