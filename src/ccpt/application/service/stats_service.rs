@@ -33,6 +33,7 @@ impl StatsUseCase for StatsService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::error::InfraError;
     use crate::application::repository::MockStatsRepository;
 
     #[tokio::test]
@@ -72,7 +73,11 @@ mod tests {
             .expect_get_card_number()
             .times(1)
             .returning(|| {
-                Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) })
+                Box::pin(async {
+                    Err(AppError::Infra(InfraError::RepositoryError(
+                        "DB error".to_string(),
+                    )))
+                })
             });
 
         let service = StatsService::new(Arc::new(mock_repository));
@@ -80,7 +85,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::RepositoryError(msg) => assert_eq!(msg, "DB error"),
+            AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "DB error"),
             _ => panic!("Expected RepositoryError"),
         }
     }
@@ -98,7 +103,11 @@ mod tests {
             .expect_get_card_price_number()
             .times(1)
             .returning(|| {
-                Box::pin(async { Err(AppError::RepositoryError("Price DB error".to_string())) })
+                Box::pin(async {
+                    Err(AppError::Infra(InfraError::RepositoryError(
+                        "Price DB error".to_string(),
+                    )))
+                })
             });
 
         let service = StatsService::new(Arc::new(mock_repository));
@@ -106,7 +115,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::RepositoryError(msg) => assert_eq!(msg, "Price DB error"),
+            AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "Price DB error"),
             _ => panic!("Expected RepositoryError"),
         }
     }
@@ -126,7 +135,11 @@ mod tests {
             .returning(|| Box::pin(async { Ok(85) }));
 
         mock_repository.expect_get_db_size().times(1).returning(|| {
-            Box::pin(async { Err(AppError::RepositoryError("Size DB error".to_string())) })
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "Size DB error".to_string(),
+                )))
+            })
         });
 
         let service = StatsService::new(Arc::new(mock_repository));
@@ -134,7 +147,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::RepositoryError(msg) => assert_eq!(msg, "Size DB error"),
+            AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "Size DB error"),
             _ => panic!("Expected RepositoryError"),
         }
     }

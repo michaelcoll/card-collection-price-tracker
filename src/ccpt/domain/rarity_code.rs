@@ -1,4 +1,4 @@
-use crate::domain::error::CardParsingError;
+use crate::domain::error::FunctionalError;
 use std::fmt::Display;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -10,19 +10,15 @@ pub enum RarityCode {
 }
 
 impl RarityCode {
-    pub fn try_new<S: AsRef<str>>(s: S) -> Result<Self, CardParsingError> {
+    pub fn try_new<S: AsRef<str>>(s: S) -> Result<Self, FunctionalError> {
         let s_ref = s.as_ref();
         match s_ref.to_lowercase().as_str() {
             "common" | "c" => Ok(RarityCode::C),
             "uncommon" | "u" => Ok(RarityCode::U),
             "rare" | "r" => Ok(RarityCode::R),
             "mythic" | "m" => Ok(RarityCode::M),
-            _ => Err(CardParsingError::InvalidRarityCode(s_ref.to_string())),
+            _ => Err(FunctionalError::InvalidRarityCode(s_ref.to_string())),
         }
-    }
-
-    pub fn new<S: AsRef<str>>(s: S) -> Self {
-        Self::try_new(s).expect("invalid rarity code")
     }
 }
 
@@ -42,66 +38,66 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_returns_common_for_common_string() {
-        assert_eq!(RarityCode::new("common"), RarityCode::C);
+    fn try_new_returns_common_for_common_string() {
+        assert_eq!(RarityCode::try_new("common"), Ok(RarityCode::C));
     }
 
     #[test]
-    fn new_returns_uncommon_for_uncommon_string() {
-        assert_eq!(RarityCode::new("uncommon"), RarityCode::U);
+    fn try_new_returns_uncommon_for_uncommon_string() {
+        assert_eq!(RarityCode::try_new("uncommon"), Ok(RarityCode::U));
     }
 
     #[test]
-    fn new_returns_rare_for_rare_string() {
-        assert_eq!(RarityCode::new("rare"), RarityCode::R);
+    fn try_new_returns_rare_for_rare_string() {
+        assert_eq!(RarityCode::try_new("rare"), Ok(RarityCode::R));
     }
 
     #[test]
-    fn new_returns_mythic_for_mythic_string() {
-        assert_eq!(RarityCode::new("mythic"), RarityCode::M);
+    fn try_new_returns_mythic_for_mythic_string() {
+        assert_eq!(RarityCode::try_new("mythic"), Ok(RarityCode::M));
     }
 
     #[test]
-    fn new_is_case_insensitive_for_common() {
-        assert_eq!(RarityCode::new("Common"), RarityCode::C);
-        assert_eq!(RarityCode::new("COMMON"), RarityCode::C);
+    fn try_new_is_case_insensitive_for_common() {
+        assert_eq!(RarityCode::try_new("Common"), Ok(RarityCode::C));
+        assert_eq!(RarityCode::try_new("COMMON"), Ok(RarityCode::C));
     }
 
     #[test]
-    fn new_is_case_insensitive_for_uncommon() {
-        assert_eq!(RarityCode::new("Uncommon"), RarityCode::U);
-        assert_eq!(RarityCode::new("UNCOMMON"), RarityCode::U);
+    fn try_new_is_case_insensitive_for_uncommon() {
+        assert_eq!(RarityCode::try_new("Uncommon"), Ok(RarityCode::U));
+        assert_eq!(RarityCode::try_new("UNCOMMON"), Ok(RarityCode::U));
     }
 
     #[test]
-    fn new_is_case_insensitive_for_rare() {
-        assert_eq!(RarityCode::new("Rare"), RarityCode::R);
-        assert_eq!(RarityCode::new("RARE"), RarityCode::R);
+    fn try_new_is_case_insensitive_for_rare() {
+        assert_eq!(RarityCode::try_new("Rare"), Ok(RarityCode::R));
+        assert_eq!(RarityCode::try_new("RARE"), Ok(RarityCode::R));
     }
 
     #[test]
-    fn new_is_case_insensitive_for_mythic() {
-        assert_eq!(RarityCode::new("Mythic"), RarityCode::M);
-        assert_eq!(RarityCode::new("MYTHIC"), RarityCode::M);
+    fn try_new_is_case_insensitive_for_mythic() {
+        assert_eq!(RarityCode::try_new("Mythic"), Ok(RarityCode::M));
+        assert_eq!(RarityCode::try_new("MYTHIC"), Ok(RarityCode::M));
     }
 
     #[test]
-    fn new_returns_error_for_unknown_rarity() {
+    fn try_new_returns_error_for_unknown_rarity() {
         let result = RarityCode::try_new("special");
         assert!(result.is_err());
     }
 
     #[test]
-    fn new_returns_error_for_empty_string() {
+    fn try_new_returns_error_for_empty_string() {
         let result = RarityCode::try_new("");
         assert!(result.is_err());
     }
 
     #[test]
-    fn new_returns_invalid_rarity_code_error_variant() {
+    fn try_new_returns_invalid_rarity_code_error_variant() {
         let result = RarityCode::try_new("special");
         match result {
-            Err(CardParsingError::InvalidRarityCode(msg)) => assert_eq!(msg, "special"),
+            Err(FunctionalError::InvalidRarityCode(msg)) => assert_eq!(msg, "special"),
             _ => panic!("Expected InvalidRarityCode variant"),
         }
     }

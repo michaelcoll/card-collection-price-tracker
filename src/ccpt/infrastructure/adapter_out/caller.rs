@@ -1,4 +1,4 @@
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 
 pub mod cardmarket_caller_adapter;
 mod dto;
@@ -9,6 +9,6 @@ pub mod scryfall_caller_adapter;
 impl From<reqwest::Error> for AppError {
     fn from(value: reqwest::Error) -> Self {
         println!("Reqwest error: {:?}", value);
-        AppError::CallError(value.to_string())
+        InfraError::CallError(value.to_string()).into()
     }
 }

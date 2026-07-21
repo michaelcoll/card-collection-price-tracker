@@ -1,9 +1,10 @@
 use super::controller::*;
 use super::dto::*;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::application::use_case::{
     MockEnqueueCardMarketIdUpdateUseCase, MockImportPriceUseCase, MockStatsUseCase,
 };
+use crate::domain::error::FunctionalError;
 use crate::domain::stats::Stats;
 use crate::infrastructure::AppState;
 use axum::Json;
@@ -57,13 +58,19 @@ async fn test_get_stats_returns_error_on_repository_error() {
     mock_stats_use_case
         .expect_get_stats()
         .times(1)
-        .returning(|| Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) }));
+        .returning(|| {
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "DB error".to_string(),
+                )))
+            })
+        });
 
     let result = get_stats(State(AppState::for_testing(Arc::new(mock_stats_use_case)))).await;
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::RepositoryError(msg) => assert_eq!(msg, "DB error"),
+        AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "DB error"),
         _ => panic!("Expected RepositoryError"),
     }
 }
@@ -74,13 +81,15 @@ async fn test_get_stats_returns_error_on_price_not_found() {
     mock_stats_use_case
         .expect_get_stats()
         .times(1)
-        .returning(|| Box::pin(async { Err(AppError::PriceNotFound) }));
+        .returning(|| {
+            Box::pin(async { Err(AppError::Functional(FunctionalError::PriceNotFound)) })
+        });
 
     let result = get_stats(State(AppState::for_testing(Arc::new(mock_stats_use_case)))).await;
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::PriceNotFound => {}
+        AppError::Functional(FunctionalError::PriceNotFound) => {}
         _ => panic!("Expected PriceNotFound"),
     }
 }
@@ -132,7 +141,9 @@ async fn trigger_price_update_returns_price_not_found_error() {
     mock_import_price
         .expect_import_prices_for_current_date()
         .times(1)
-        .returning(|| Box::pin(async { Err(AppError::PriceNotFound) }));
+        .returning(|| {
+            Box::pin(async { Err(AppError::Functional(FunctionalError::PriceNotFound)) })
+        });
 
     let app_state = AppState::for_testing_with_import_price(
         Arc::new(MockStatsUseCase::new()),
@@ -142,7 +153,7 @@ async fn trigger_price_update_returns_price_not_found_error() {
     let result = trigger_price_update(State(app_state)).await;
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::PriceNotFound => {}
+        AppError::Functional(FunctionalError::PriceNotFound) => {}
         _ => panic!("Expected PriceNotFound"),
     }
 }
@@ -179,14 +190,18 @@ async fn get_stats_returns_error_when_use_case_returns_call_error() {
         .expect_get_stats()
         .times(1)
         .returning(|| {
-            Box::pin(async { Err(AppError::CallError("external service down".to_string())) })
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::CallError(
+                    "external service down".to_string(),
+                )))
+            })
         });
 
     let result = get_stats(State(AppState::for_testing(Arc::new(mock_stats_use_case)))).await;
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::CallError(msg) => assert_eq!(msg, "external service down"),
+        AppError::Infra(InfraError::CallError(msg)) => assert_eq!(msg, "external service down"),
         _ => panic!("Expected CallError"),
     }
 }
@@ -198,7 +213,11 @@ async fn test_trigger_price_update_returns_error_on_failure() {
         .expect_import_prices_for_current_date()
         .times(1)
         .returning(|| {
-            Box::pin(async { Err(AppError::RepositoryError("Import failed".to_string())) })
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "Import failed".to_string(),
+                )))
+            })
         });
 
     let app_state = AppState::for_testing_with_import_price(
@@ -209,7 +228,7 @@ async fn test_trigger_price_update_returns_error_on_failure() {
     let result = trigger_price_update(State(app_state)).await;
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::RepositoryError(msg) => assert_eq!(msg, "Import failed"),
+        AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "Import failed"),
         _ => panic!("Expected RepositoryError"),
     }
 }
@@ -262,7 +281,13 @@ async fn test_update_cardmarket_ids_returns_error_on_repository_error() {
     mock_enqueue
         .expect_enqueue_pending_updates()
         .times(1)
-        .returning(|| Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) }));
+        .returning(|| {
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "DB error".to_string(),
+                )))
+            })
+        });
 
     let app_state = AppState::for_testing_with_enqueue_cardmarket_id(
         Arc::new(MockStatsUseCase::new()),
@@ -272,7 +297,7 @@ async fn test_update_cardmarket_ids_returns_error_on_repository_error() {
     let result = update_cardmarket_ids(State(app_state)).await;
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::RepositoryError(msg) => assert_eq!(msg, "DB error"),
+        AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "DB error"),
         _ => panic!("Expected RepositoryError"),
     }
 }
@@ -332,7 +357,13 @@ async fn test_update_gatherer_ids_returns_error_on_repository_error() {
     mock_enqueue
         .expect_enqueue_pending_updates()
         .times(1)
-        .returning(|| Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) }));
+        .returning(|| {
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "DB error".to_string(),
+                )))
+            })
+        });
 
     let app_state = AppState::for_testing_with_enqueue_gatherer_id(
         Arc::new(MockStatsUseCase::new()),
@@ -342,7 +373,7 @@ async fn test_update_gatherer_ids_returns_error_on_repository_error() {
     let result = update_gatherer_ids(State(app_state)).await;
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::RepositoryError(msg) => assert_eq!(msg, "DB error"),
+        AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "DB error"),
         _ => panic!("Expected RepositoryError"),
     }
 }

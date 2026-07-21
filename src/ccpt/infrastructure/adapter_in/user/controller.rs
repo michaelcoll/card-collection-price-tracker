@@ -1,4 +1,5 @@
 use crate::application::error::AppError;
+use crate::domain::error::FunctionalError;
 use crate::infrastructure::AppState;
 use crate::infrastructure::adapter_in::auth_extractor::AuthenticatedUser;
 use axum::extract::State;
@@ -25,9 +26,9 @@ pub(crate) async fn register(
     AuthenticatedUser(user): AuthenticatedUser,
 ) -> Result<StatusCode, AppError> {
     if user.username.is_none() {
-        return Err(AppError::WrongFormat(
-            "Missing username claim in token".to_string(),
-        ));
+        return Err(
+            FunctionalError::WrongFormat("Missing username claim in token".to_string()).into(),
+        );
     }
 
     state.register_user_use_case.register_user(&user).await?;

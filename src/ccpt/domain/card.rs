@@ -1,4 +1,4 @@
-use crate::domain::error::CardParsingError;
+use crate::domain::error::FunctionalError;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::price::PriceGuide;
 use crate::domain::rarity_code::RarityCode;
@@ -19,10 +19,10 @@ impl CardId {
         collector_number: impl Into<String>,
         language_code: LanguageCode,
         foil: bool,
-    ) -> Result<Self, CardParsingError> {
+    ) -> Result<Self, FunctionalError> {
         let collector_number = collector_number.into();
         if collector_number.chars().count() > 10 {
-            return Err(CardParsingError::InvalidCollectorNumber(format!(
+            return Err(FunctionalError::InvalidCollectorNumber(format!(
                 "collector number must be 10 characters or less (got {})",
                 collector_number
             )));
@@ -172,7 +172,7 @@ mod tests {
     fn try_new_card_id_with_too_long_collector_number_returns_error() {
         let result = CardId::try_new("FDN", "12345678901", LanguageCode::EN, true);
         match result {
-            Err(CardParsingError::InvalidCollectorNumber(msg)) => {
+            Err(FunctionalError::InvalidCollectorNumber(msg)) => {
                 assert!(msg.contains("collector number must be 10 characters or less"))
             }
             _ => panic!("Expected InvalidCollectorNumber variant"),

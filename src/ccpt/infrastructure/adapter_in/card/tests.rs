@@ -1,6 +1,7 @@
 use super::controller::*;
 use super::dto::*;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
+use crate::domain::error::FunctionalError;
 use crate::domain::user::User;
 use crate::infrastructure::AppState;
 use crate::infrastructure::adapter_in::auth_extractor::AuthenticatedUser;
@@ -83,7 +84,7 @@ async fn import_cards_fails_with_invalid_utf8() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::WrongFormat(msg) => {
+        AppError::Functional(FunctionalError::WrongFormat(msg)) => {
             assert_eq!(msg, "Body is not valid UTF-8");
         }
         _ => panic!("Expected WrongFormat error"),
@@ -235,9 +236,9 @@ async fn get_collection_price_history_propagates_use_case_error() {
     mock.expect_get_collection_price_history()
         .returning(|_, _, _| {
             Box::pin(async {
-                Err(AppError::WrongFormat(
+                Err(AppError::Functional(FunctionalError::WrongFormat(
                     "start_date must be before or equal to end_date".to_string(),
-                ))
+                )))
             })
         });
 
@@ -256,7 +257,7 @@ async fn get_collection_price_history_propagates_use_case_error() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::WrongFormat(msg) => {
+        AppError::Functional(FunctionalError::WrongFormat(msg)) => {
             assert_eq!(msg, "start_date must be before or equal to end_date");
         }
         _ => panic!("Expected WrongFormat error"),
@@ -340,8 +341,9 @@ async fn get_card_price_history_returns_404_when_card_not_found() {
     use uuid::Uuid;
 
     let mut mock = MockGetCardPriceHistoryUseCase::new();
-    mock.expect_get_card_price_history()
-        .returning(|_, _, _| Box::pin(async { Err(AppError::CardNotFound) }));
+    mock.expect_get_card_price_history().returning(|_, _, _| {
+        Box::pin(async { Err(AppError::Functional(FunctionalError::CardNotFound)) })
+    });
 
     let app_state = make_app_state_with_card_price_history(mock);
 
@@ -358,7 +360,7 @@ async fn get_card_price_history_returns_404_when_card_not_found() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::CardNotFound => {}
+        AppError::Functional(FunctionalError::CardNotFound) => {}
         other => panic!("Expected CardNotFound, got {:?}", other),
     }
 }
@@ -371,9 +373,9 @@ async fn get_card_price_history_propagates_wrong_format_error() {
     let mut mock = MockGetCardPriceHistoryUseCase::new();
     mock.expect_get_card_price_history().returning(|_, _, _| {
         Box::pin(async {
-            Err(AppError::WrongFormat(
+            Err(AppError::Functional(FunctionalError::WrongFormat(
                 "start_date must be before or equal to end_date".to_string(),
-            ))
+            )))
         })
     });
 
@@ -393,7 +395,7 @@ async fn get_card_price_history_propagates_wrong_format_error() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::WrongFormat(msg) => {
+        AppError::Functional(FunctionalError::WrongFormat(msg)) => {
             assert_eq!(msg, "start_date must be before or equal to end_date");
         }
         _ => panic!("Expected WrongFormat error"),
@@ -502,7 +504,11 @@ async fn get_collection_stats_propagates_error_from_use_case() {
 
     let mut mock = MockGetCollectionStatsUseCase::new();
     mock.expect_get_collection_stats().returning(|_| {
-        Box::pin(async { Err(AppError::RepositoryError("db failure".to_string())) })
+        Box::pin(async {
+            Err(AppError::Infra(InfraError::RepositoryError(
+                "db failure".to_string(),
+            )))
+        })
     });
 
     let app_state = make_app_state_with_stats(mock);
@@ -511,7 +517,7 @@ async fn get_collection_stats_propagates_error_from_use_case() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::RepositoryError(msg) => assert_eq!(msg, "db failure"),
+        AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "db failure"),
         _ => panic!("Expected RepositoryError"),
     }
 }

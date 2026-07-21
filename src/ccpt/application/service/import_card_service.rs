@@ -67,6 +67,7 @@ impl ImportCardUseCase for ImportCardService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::error::InfraError;
     use crate::application::repository::{
         MockCardPricesViewRepository, MockCardRepository, MockSetNameRepository,
     };
@@ -202,7 +203,11 @@ mod tests {
             .expect_save()
             .with(eq(User::for_testing()), eq(card.clone()))
             .returning(|_, _| {
-                Box::pin(async { Err(AppError::RepositoryError("Save failed".to_string())) })
+                Box::pin(async {
+                    Err(AppError::Infra(InfraError::RepositoryError(
+                        "Save failed".to_string(),
+                    )))
+                })
             });
 
         let mock_enqueue = MockEnqueueCardMarketIdUpdateUseCase::new();

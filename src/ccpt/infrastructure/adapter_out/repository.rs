@@ -1,4 +1,4 @@
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::application::repository::PersistenceError;
 use sqlx::Error;
 
@@ -17,7 +17,7 @@ pub mod user_repository_adapter;
 
 impl From<Error> for AppError {
     fn from(err: Error) -> Self {
-        AppError::RepositoryError(err.to_string())
+        AppError::Infra(InfraError::RepositoryError(err.to_string()))
     }
 }
 

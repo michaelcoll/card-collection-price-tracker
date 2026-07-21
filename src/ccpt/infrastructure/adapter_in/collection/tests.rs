@@ -1,6 +1,6 @@
 use super::controller::*;
 use super::dto::*;
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::application::use_case::MockGetCollectionUseCase;
 use crate::domain::card::{Card, CollectionEntry};
 use crate::domain::collection::{CollectionSortField, PaginatedCollection, SortDirection};
@@ -101,7 +101,11 @@ async fn get_collection_returns_cards_from_use_case() {
 async fn get_collection_propagates_error_from_use_case() {
     let mut mock = MockGetCollectionUseCase::new();
     mock.expect_get_collection().returning(|_, _| {
-        Box::pin(async { Err(AppError::RepositoryError("db failure".to_string())) })
+        Box::pin(async {
+            Err(AppError::Infra(InfraError::RepositoryError(
+                "db failure".to_string(),
+            )))
+        })
     });
 
     let app_state = make_app_state_with_collection(mock);
@@ -115,7 +119,7 @@ async fn get_collection_propagates_error_from_use_case() {
 
     assert!(result.is_err());
     match result.err().unwrap() {
-        AppError::RepositoryError(msg) => assert_eq!(msg, "db failure"),
+        AppError::Infra(InfraError::RepositoryError(msg)) => assert_eq!(msg, "db failure"),
         _ => panic!("Expected RepositoryError"),
     }
 }

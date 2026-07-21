@@ -1,46 +1,48 @@
-use crate::domain::error::CardParsingError;
+use crate::domain::error::FunctionalError;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InfraError {
+    RepositoryError(String),
+    CallError(String),
+    QueueError(String),
+}
+
+impl From<InfraError> for String {
+    fn from(val: InfraError) -> String {
+        match val {
+            InfraError::RepositoryError(msg) => msg,
+            InfraError::CallError(msg) => msg,
+            InfraError::QueueError(msg) => msg,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AuthenticationError {
+    InvalidToken(String),
+}
+
+impl From<AuthenticationError> for String {
+    fn from(val: AuthenticationError) -> String {
+        match val {
+            AuthenticationError::InvalidToken(msg) => format!("Authentication error: {}", msg),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum AppError {
-    ParseError {
-        line: usize,
-        field: &'static str,
-        value: String,
-    },
-    WrongFormat(String),
-    CalculationFailed(String),
-    RepositoryError(String),
-    PriceNotFound,
-    CardNotFound,
-    CallError(String),
-    QueueError(String),
-    AuthenticationError(String),
-    Unauthorized,
-    SelfTrade,
-    TradeNotModifiable,
+    Functional(FunctionalError),
+    Authentication(AuthenticationError),
+    Infra(InfraError),
 }
 
 impl From<AppError> for String {
     fn from(val: AppError) -> String {
         match val {
-            AppError::ParseError { line, field, value } => format!(
-                "Line {}: invalid {} '{}' (must be a valid value)",
-                line, field, value
-            ),
-            AppError::WrongFormat(msg) => msg,
-            AppError::CalculationFailed(msg) => msg,
-            AppError::RepositoryError(msg) => msg,
-            AppError::PriceNotFound => "Price not found".to_string(),
-            AppError::CardNotFound => "Card not found".to_string(),
-            AppError::CallError(msg) => msg,
-            AppError::QueueError(msg) => msg,
-            AppError::AuthenticationError(msg) => format!("Authentication error: {}", msg),
-            AppError::Unauthorized => "Unauthorized".to_string(),
-            AppError::SelfTrade => "Cannot request your own card".to_string(),
-            AppError::TradeNotModifiable => {
-                "This trade has already been fully accepted and can no longer be modified"
-                    .to_string()
-            }
+            AppError::Functional(e) => e.into(),
+            AppError::Authentication(e) => e.into(),
+            AppError::Infra(e) => e.into(),
         }
     }
 }
@@ -53,30 +55,21 @@ impl std::fmt::Display for AppError {
 
 impl std::error::Error for AppError {}
 
-impl From<CardParsingError> for AppError {
-    fn from(error: CardParsingError) -> Self {
-        match error {
-            CardParsingError::InvalidLanguageCode(msg) => AppError::ParseError {
-                line: 0,
-                field: "language_code",
-                value: msg,
-            },
-            CardParsingError::InvalidSetCode(msg) => AppError::ParseError {
-                line: 0,
-                field: "set_code",
-                value: msg,
-            },
-            CardParsingError::InvalidRarityCode(msg) => AppError::ParseError {
-                line: 0,
-                field: "rarity",
-                value: msg,
-            },
-            CardParsingError::InvalidCollectorNumber(msg) => AppError::ParseError {
-                line: 0,
-                field: "collector_number",
-                value: msg,
-            },
-        }
+impl From<FunctionalError> for AppError {
+    fn from(error: FunctionalError) -> Self {
+        AppError::Functional(error)
+    }
+}
+
+impl From<AuthenticationError> for AppError {
+    fn from(error: AuthenticationError) -> Self {
+        AppError::Authentication(error)
+    }
+}
+
+impl From<InfraError> for AppError {
+    fn from(error: InfraError) -> Self {
+        AppError::Infra(error)
     }
 }
 
@@ -86,11 +79,11 @@ mod tests {
 
     #[test]
     fn app_error_to_string_for_parse_error() {
-        let error = AppError::ParseError {
+        let error = AppError::Functional(FunctionalError::ParseError {
             line: 1,
             field: "quantity",
             value: "abc".to_string(),
-        };
+        });
         let error_message: String = error.into();
         assert_eq!(
             error_message,
@@ -100,77 +93,66 @@ mod tests {
 
     #[test]
     fn app_error_to_string_for_wrong_format() {
-        let error = AppError::WrongFormat("Invalid format".to_string());
+        let error =
+            AppError::Functional(FunctionalError::WrongFormat("Invalid format".to_string()));
         let error_message: String = error.into();
         assert_eq!(error_message, "Invalid format");
     }
 
     #[test]
-    fn app_error_to_string_for_calculation_failed() {
-        let error = AppError::CalculationFailed("Calculation failed".to_string());
-        let error_message: String = error.into();
-        assert_eq!(error_message, "Calculation failed");
-    }
-
-    #[test]
     fn app_error_to_string_for_repository_error() {
-        let error = AppError::RepositoryError("Repository error".to_string());
+        let error = AppError::Infra(InfraError::RepositoryError("Repository error".to_string()));
         let error_message: String = error.into();
         assert_eq!(error_message, "Repository error");
     }
 
     #[test]
     fn app_error_to_string_for_price_not_found() {
-        let error = AppError::PriceNotFound;
+        let error = AppError::Functional(FunctionalError::PriceNotFound);
         let error_message: String = error.into();
         assert_eq!(error_message, "Price not found");
     }
 
     #[test]
     fn app_error_to_string_for_card_not_found() {
-        let error = AppError::CardNotFound;
+        let error = AppError::Functional(FunctionalError::CardNotFound);
         let error_message: String = error.into();
         assert_eq!(error_message, "Card not found");
     }
 
     #[test]
     fn app_error_to_string_for_call_error() {
-        let error = AppError::CallError("Call failed".to_string());
+        let error = AppError::Infra(InfraError::CallError("Call failed".to_string()));
         let error_message: String = error.into();
         assert_eq!(error_message, "Call failed");
     }
 
     #[test]
     fn app_error_to_string_for_queue_error() {
-        let error = AppError::QueueError("Queue operation failed".to_string());
+        let error = AppError::Infra(InfraError::QueueError("Queue operation failed".to_string()));
         let error_message: String = error.into();
         assert_eq!(error_message, "Queue operation failed");
     }
 
     #[test]
     fn app_error_to_string_for_authentication_error() {
-        let error = AppError::AuthenticationError("Invalid credentials".to_string());
+        let error = AppError::Authentication(AuthenticationError::InvalidToken(
+            "Invalid credentials".to_string(),
+        ));
         let error_message: String = error.into();
         assert_eq!(error_message, "Authentication error: Invalid credentials");
     }
 
     #[test]
-    fn app_error_to_string_for_unauthorized() {
-        let error = AppError::Unauthorized;
-        let error_message: String = error.into();
-        assert_eq!(error_message, "Unauthorized");
-    }
-
-    #[test]
     fn app_error_to_string_for_self_trade() {
-        let error = AppError::SelfTrade;
+        let error = AppError::Functional(FunctionalError::SelfTrade);
         let error_message: String = error.into();
         assert_eq!(error_message, "Cannot request your own card");
     }
 
     #[test]
     fn app_error_to_string_for_trade_not_modifiable() {
-        let error = AppError::TradeNotModifiable;
+        let error = AppError::Functional(FunctionalError::TradeNotModifiable);
         let error_message: String = error.into();
         assert_eq!(
             error_message,

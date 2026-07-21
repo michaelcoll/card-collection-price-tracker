@@ -26,6 +26,7 @@ impl GetCollectionStatsUseCase for CollectionStatsService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::error::InfraError;
     use crate::application::repository::MockCollectionStatsRepository;
     use crate::domain::price::Price;
 
@@ -58,7 +59,11 @@ mod tests {
     async fn propagates_repository_error() {
         let mut mock = MockCollectionStatsRepository::new();
         mock.expect_get_collection_stats().returning(|_| {
-            Box::pin(async { Err(AppError::RepositoryError("db error".to_string())) })
+            Box::pin(async {
+                Err(AppError::Infra(InfraError::RepositoryError(
+                    "db error".to_string(),
+                )))
+            })
         });
 
         let service = CollectionStatsService::new(Arc::new(mock));

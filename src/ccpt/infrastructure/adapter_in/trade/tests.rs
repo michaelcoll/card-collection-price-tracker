@@ -2,6 +2,7 @@ use super::controller::*;
 use super::dto::CreateTradeRequest;
 use crate::application::error::AppError;
 use crate::application::use_case::{MockCreateTradeUseCase, MockStatsUseCase};
+use crate::domain::error::FunctionalError;
 use crate::domain::trade::TradeId;
 use crate::domain::user::User;
 use crate::infrastructure::AppState;
@@ -66,8 +67,10 @@ async fn create_trade_returns_bad_request_on_invalid_language_code() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::WrongFormat(msg) => assert!(msg.contains("language code")),
-        _ => panic!("Expected WrongFormat"),
+        AppError::Functional(FunctionalError::InvalidLanguageCode(msg)) => {
+            assert_eq!(msg, "XX")
+        }
+        _ => panic!("Expected InvalidLanguageCode"),
     }
 }
 
@@ -85,7 +88,12 @@ async fn create_trade_returns_bad_request_on_invalid_card_id() {
     )
     .await;
 
-    assert!(matches!(result, Err(AppError::WrongFormat(_))));
+    assert!(matches!(
+        result,
+        Err(AppError::Functional(
+            FunctionalError::InvalidCollectorNumber(_)
+        ))
+    ));
 }
 
 #[tokio::test]
@@ -104,7 +112,9 @@ async fn create_trade_returns_bad_request_when_quantity_is_zero() {
 
     assert!(result.is_err());
     match result.unwrap_err() {
-        AppError::WrongFormat(msg) => assert_eq!(msg, "quantity must be at least 1"),
+        AppError::Functional(FunctionalError::WrongFormat(msg)) => {
+            assert_eq!(msg, "quantity must be at least 1")
+        }
         _ => panic!("Expected WrongFormat"),
     }
 }
@@ -115,7 +125,9 @@ async fn create_trade_propagates_card_not_found_from_use_case() {
     mock_use_case
         .expect_create_trade()
         .times(1)
-        .returning(|_, _, _, _| Box::pin(async { Err(AppError::CardNotFound) }));
+        .returning(|_, _, _, _| {
+            Box::pin(async { Err(AppError::Functional(FunctionalError::CardNotFound)) })
+        });
 
     let state = make_app_state(mock_use_case);
     let result = create_trade(
@@ -125,7 +137,10 @@ async fn create_trade_propagates_card_not_found_from_use_case() {
     )
     .await;
 
-    assert!(matches!(result, Err(AppError::CardNotFound)));
+    assert!(matches!(
+        result,
+        Err(AppError::Functional(FunctionalError::CardNotFound))
+    ));
 }
 
 #[tokio::test]
@@ -134,7 +149,9 @@ async fn create_trade_propagates_self_trade_from_use_case() {
     mock_use_case
         .expect_create_trade()
         .times(1)
-        .returning(|_, _, _, _| Box::pin(async { Err(AppError::SelfTrade) }));
+        .returning(|_, _, _, _| {
+            Box::pin(async { Err(AppError::Functional(FunctionalError::SelfTrade)) })
+        });
 
     let state = make_app_state(mock_use_case);
     let result = create_trade(
@@ -144,7 +161,10 @@ async fn create_trade_propagates_self_trade_from_use_case() {
     )
     .await;
 
-    assert!(matches!(result, Err(AppError::SelfTrade)));
+    assert!(matches!(
+        result,
+        Err(AppError::Functional(FunctionalError::SelfTrade))
+    ));
 }
 
 #[tokio::test]
@@ -153,7 +173,9 @@ async fn create_trade_propagates_trade_not_modifiable_from_use_case() {
     mock_use_case
         .expect_create_trade()
         .times(1)
-        .returning(|_, _, _, _| Box::pin(async { Err(AppError::TradeNotModifiable) }));
+        .returning(|_, _, _, _| {
+            Box::pin(async { Err(AppError::Functional(FunctionalError::TradeNotModifiable)) })
+        });
 
     let state = make_app_state(mock_use_case);
     let result = create_trade(
@@ -163,5 +185,8 @@ async fn create_trade_propagates_trade_not_modifiable_from_use_case() {
     )
     .await;
 
-    assert!(matches!(result, Err(AppError::TradeNotModifiable)));
+    assert!(matches!(
+        result,
+        Err(AppError::Functional(FunctionalError::TradeNotModifiable))
+    ));
 }

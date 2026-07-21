@@ -2,6 +2,7 @@ use super::dto::{
     CollectionStatsResponse, MessageResponse, PriceHistoryEntryResponse, PriceHistoryParams,
 };
 use crate::application::error::AppError;
+use crate::domain::error::FunctionalError;
 use crate::infrastructure::AppState;
 use crate::infrastructure::adapter_in::auth_extractor::AuthenticatedUser;
 use axum::body::to_bytes;
@@ -42,10 +43,10 @@ pub(crate) async fn import_cards(
 ) -> Result<axum::Json<MessageResponse>, AppError> {
     let bytes = to_bytes(body, 10 * 1024 * 1024)
         .await
-        .map_err(|e| AppError::WrongFormat(format!("Failed to read body: {}", e)))?;
+        .map_err(|e| FunctionalError::WrongFormat(format!("Failed to read body: {}", e)))?;
 
     let csv = String::from_utf8(bytes.to_vec())
-        .map_err(|_| AppError::WrongFormat("Body is not valid UTF-8".to_string()))?;
+        .map_err(|_| FunctionalError::WrongFormat("Body is not valid UTF-8".to_string()))?;
 
     tracing::info!("Importing cards for user: {}", user.id);
 

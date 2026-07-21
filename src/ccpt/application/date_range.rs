@@ -1,4 +1,5 @@
 use crate::application::error::AppError;
+use crate::domain::error::FunctionalError;
 use chrono::{Days, NaiveDate, Utc};
 
 /// Resolves an optional `(start_date, end_date)` pair into concrete dates.
@@ -13,9 +14,10 @@ pub(crate) fn resolve_date_range(
     let start_date = start_date.unwrap_or_else(|| end_date - Days::new(30));
 
     if start_date > end_date {
-        return Err(AppError::WrongFormat(
+        return Err(FunctionalError::WrongFormat(
             "start_date must be before or equal to end_date".to_string(),
-        ));
+        )
+        .into());
     }
 
     Ok((start_date, end_date))
@@ -84,7 +86,7 @@ mod tests {
 
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::WrongFormat(msg) => {
+            AppError::Functional(FunctionalError::WrongFormat(msg)) => {
                 assert_eq!(msg, "start_date must be before or equal to end_date");
             }
             other => panic!("Expected WrongFormat, got {:?}", other),

@@ -1,4 +1,4 @@
-use crate::application::error::AppError;
+use crate::application::error::{AppError, InfraError};
 use crate::application::repository::CardRepository;
 use crate::application::use_case::EnqueueCardMarketIdUpdateUseCase;
 use crate::domain::card::CardId;
@@ -37,9 +37,10 @@ impl EnqueueCardMarketIdUpdateUseCase for CardMarketIdEnqueueService {
         for (card_id, scryfall_id) in cards {
             if set.insert(card_id.clone()) {
                 if self.sender.send((card_id, scryfall_id)).is_err() {
-                    return Err(AppError::QueueError(
+                    return Err(InfraError::QueueError(
                         "Worker channel closed, cannot enqueue card".into(),
-                    ));
+                    )
+                    .into());
                 } else {
                     enqueued += 1;
                 }
@@ -154,7 +155,11 @@ mod tests {
         card_repository
             .expect_get_all_without_cardmarket_id()
             .returning(|| {
-                Box::pin(async { Err(AppError::RepositoryError("DB error".to_string())) })
+                Box::pin(async {
+                    Err(AppError::Infra(InfraError::RepositoryError(
+                        "DB error".to_string(),
+                    )))
+                })
             });
 
         let (tx, _rx) = unbounded_channel();

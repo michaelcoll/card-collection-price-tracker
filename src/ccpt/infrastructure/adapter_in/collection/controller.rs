@@ -48,10 +48,7 @@ pub(crate) async fn get_collection(
         .split(',')
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .map(|s| {
-            crate::domain::rarity_code::RarityCode::try_new(s)
-                .map_err(|_| AppError::WrongFormat(format!("Invalid rarity code '{}'", s)))
-        })
+        .map(|s| crate::domain::rarity_code::RarityCode::try_new(s).map_err(AppError::from))
         .collect::<Result<Vec<_>, _>>()?;
 
     let sets = params

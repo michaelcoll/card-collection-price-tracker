@@ -1,4 +1,4 @@
-use crate::application::error::AppError;
+use crate::application::error::{AppError, AuthenticationError, InfraError};
 use crate::domain::user::User;
 use async_trait::async_trait;
 use jsonwebtoken::jwk::JwkSet;
@@ -46,10 +46,10 @@ impl ClerkAuthService {
 
         let jwks: JwkSet = reqwest::get(&url)
             .await
-            .map_err(|e| AppError::CallError(format!("Failed to fetch Clerk JWKS: {}", e)))?
+            .map_err(|e| InfraError::CallError(format!("Failed to fetch Clerk JWKS: {}", e)))?
             .json()
             .await
-            .map_err(|e| AppError::CallError(format!("Failed to parse Clerk JWKS: {}", e)))?;
+            .map_err(|e| InfraError::CallError(format!("Failed to parse Clerk JWKS: {}", e)))?;
 
         Ok(Self {
             jwks,
@@ -69,19 +69,20 @@ impl ClerkAuthService {
 #[async_trait]
 impl AuthService for ClerkAuthService {
     async fn validate_token(&self, token: &str) -> Result<User, AppError> {
-        let header = decode_header(token)
-            .map_err(|e| AppError::AuthenticationError(format!("Invalid token header: {}", e)))?;
+        let header = decode_header(token).map_err(|e| {
+            AuthenticationError::InvalidToken(format!("Invalid token header: {}", e))
+        })?;
 
         let kid = header
             .kid
-            .ok_or_else(|| AppError::AuthenticationError("Token missing kid".to_string()))?;
+            .ok_or_else(|| AuthenticationError::InvalidToken("Token missing kid".to_string()))?;
 
         let jwk = self
             .find_jwk(&kid)
-            .ok_or_else(|| AppError::AuthenticationError("Unknown key ID".to_string()))?;
+            .ok_or_else(|| AuthenticationError::InvalidToken("Unknown key ID".to_string()))?;
 
         let decoding_key = DecodingKey::from_jwk(jwk)
-            .map_err(|e| AppError::AuthenticationError(format!("Invalid JWK: {}", e)))?;
+            .map_err(|e| AuthenticationError::InvalidToken(format!("Invalid JWK: {}", e)))?;
 
         // Use the algorithm specified in the token header (RS256 or ES256 depending on Clerk config)
         let mut validation = Validation::new(header.alg);
@@ -90,7 +91,7 @@ impl AuthService for ClerkAuthService {
         validation.validate_aud = false;
 
         let token_data = decode::<ClerkClaims>(token, &decoding_key, &validation).map_err(|e| {
-            AppError::AuthenticationError(format!("Token validation failed: {}", e))
+            AuthenticationError::InvalidToken(format!("Token validation failed: {}", e))
         })?;
 
         Ok(User::new(
@@ -362,7 +363,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(msg))) => {
                 assert!(msg.contains("Invalid JWK") || msg.contains("Token validation failed"));
             }
             _ => panic!("Expected AuthenticationError for invalid JWK format"),
@@ -397,7 +398,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(msg))) => {
                 assert!(
                     msg.contains("Invalid JWK")
                         || msg.contains("Token validation failed")
@@ -425,7 +426,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(msg))) => {
                 assert!(msg.contains("Token missing kid"));
             }
             _ => panic!("Expected AuthenticationError with missing kid message"),
@@ -447,7 +448,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(msg))) => {
                 assert!(msg.contains("Unknown key ID"));
             }
             _ => panic!("Expected AuthenticationError with unknown key ID message"),
@@ -467,7 +468,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(msg))) => {
                 assert!(msg.contains("Invalid token header"));
             }
             _ => panic!("Expected AuthenticationError for invalid header"),
@@ -489,7 +490,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(msg))) => {
                 assert!(msg.contains("Invalid token header"));
             }
             _ => panic!("Expected AuthenticationError for invalid base64"),
@@ -523,7 +524,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(_msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(_msg))) => {
                 // Error is expected for wrong algorithm
             }
             _ => panic!("Expected AuthenticationError for wrong algorithm"),
@@ -543,7 +544,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(msg))) => {
                 assert!(msg.contains("Invalid token header"));
             }
             _ => panic!("Expected AuthenticationError for empty token"),
@@ -565,7 +566,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(msg))) => {
                 assert!(msg.contains("Invalid token header"));
             }
             _ => panic!("Expected AuthenticationError for incomplete JWT"),
@@ -588,7 +589,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(_msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(_msg))) => {
                 // Error is expected for corrupted payload
             }
             _ => panic!("Expected AuthenticationError for corrupted payload"),
@@ -642,7 +643,7 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(AppError::CallError(msg)) => {
+            Err(AppError::Infra(InfraError::CallError(msg))) => {
                 assert!(msg.contains("Failed to parse Clerk JWKS"));
             }
             _ => panic!("Expected CallError when response is not JSON"),
@@ -737,7 +738,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(AppError::AuthenticationError(_msg)) => {
+            Err(AppError::Authentication(AuthenticationError::InvalidToken(_msg))) => {
                 // Error is expected for special characters
             }
             _ => panic!("Expected AuthenticationError for special characters"),

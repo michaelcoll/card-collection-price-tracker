@@ -2,6 +2,7 @@ use crate::application::error::AppError;
 use crate::application::repository::TradeRepository;
 use crate::application::use_case::CreateTradeUseCase;
 use crate::domain::card::CardId;
+use crate::domain::error::FunctionalError;
 use crate::domain::trade::{TradeId, TradeStatus};
 use crate::domain::user::UserId;
 use async_trait::async_trait;
@@ -39,11 +40,11 @@ impl CreateTradeUseCase for CreateTradeService {
             .await?;
         match owned_quantity {
             Some(q) if q >= quantity as i32 => {}
-            _ => return Err(AppError::CardNotFound),
+            _ => return Err(FunctionalError::CardNotFound.into()),
         }
 
         if respondent_user_id == initiator_user_id {
-            return Err(AppError::SelfTrade);
+            return Err(FunctionalError::SelfTrade.into());
         }
 
         let active_trade = self
@@ -77,7 +78,9 @@ impl CreateTradeUseCase for CreateTradeService {
                     .await?;
                 Ok(trade_id)
             }
-            Some((_, TradeStatus::FullyAccepted)) => Err(AppError::TradeNotModifiable),
+            Some((_, TradeStatus::FullyAccepted)) => {
+                Err(FunctionalError::TradeNotModifiable.into())
+            }
             Some((_, TradeStatus::Completed | TradeStatus::Closed | TradeStatus::Abandoned)) => {
                 unreachable!(
                     "find_active_trade only returns PENDING, ONE_ACCEPTED or FULLY_ACCEPTED trades"
@@ -142,7 +145,10 @@ mod tests {
             .create_trade(make_initiator_id(), make_respondent_id(), make_card_id(), 1)
             .await;
 
-        assert!(matches!(result, Err(AppError::CardNotFound)));
+        assert!(matches!(
+            result,
+            Err(AppError::Functional(FunctionalError::CardNotFound))
+        ));
     }
 
     #[tokio::test]
@@ -158,7 +164,10 @@ mod tests {
             .create_trade(make_initiator_id(), make_respondent_id(), make_card_id(), 1)
             .await;
 
-        assert!(matches!(result, Err(AppError::CardNotFound)));
+        assert!(matches!(
+            result,
+            Err(AppError::Functional(FunctionalError::CardNotFound))
+        ));
     }
 
     #[tokio::test]
@@ -174,7 +183,10 @@ mod tests {
             .create_trade(make_initiator_id(), make_respondent_id(), make_card_id(), 3)
             .await;
 
-        assert!(matches!(result, Err(AppError::CardNotFound)));
+        assert!(matches!(
+            result,
+            Err(AppError::Functional(FunctionalError::CardNotFound))
+        ));
     }
 
     #[tokio::test]
@@ -191,7 +203,10 @@ mod tests {
             .create_trade(initiator_id.clone(), initiator_id, make_card_id(), 1)
             .await;
 
-        assert!(matches!(result, Err(AppError::SelfTrade)));
+        assert!(matches!(
+            result,
+            Err(AppError::Functional(FunctionalError::SelfTrade))
+        ));
     }
 
     #[tokio::test]
@@ -271,7 +286,10 @@ mod tests {
             .create_trade(make_initiator_id(), make_respondent_id(), make_card_id(), 1)
             .await;
 
-        assert!(matches!(result, Err(AppError::TradeNotModifiable)));
+        assert!(matches!(
+            result,
+            Err(AppError::Functional(FunctionalError::TradeNotModifiable))
+        ));
     }
 
     #[tokio::test]

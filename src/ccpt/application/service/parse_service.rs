@@ -1,5 +1,6 @@
 use crate::application::error::AppError;
 use crate::domain::card::{Card, CardId, CollectionEntry};
+use crate::domain::error::FunctionalError;
 use crate::domain::language_code::LanguageCode;
 use crate::domain::rarity_code::RarityCode;
 use crate::domain::set_name::{SetCode, SetName};
@@ -12,9 +13,9 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
     let mut cards = Vec::new();
 
     if csv.lines().count() <= 1 {
-        return Err(AppError::WrongFormat(
-            "missing headers or empty file".to_string(),
-        ));
+        return Err(
+            FunctionalError::WrongFormat("missing headers or empty file".to_string()).into(),
+        );
     }
 
     let mut reader = ReaderBuilder::new()
@@ -26,28 +27,31 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
     for (index, result) in reader.records().enumerate() {
         let line_number = index + 1 + 1; // +1 car lignes humaines, +1 car header
 
-        let record = result.map_err(|e| AppError::WrongFormat(e.to_string()))?;
+        let record = result.map_err(|e| FunctionalError::WrongFormat(e.to_string()))?;
         let field_refs: Vec<&str> = record.iter().collect();
 
         if field_refs.len() == 15 {
-            return Err(AppError::WrongFormat(
+            return Err(FunctionalError::WrongFormat(
                 "expecting a collection export, got a binder export".to_string(),
-            ));
+            )
+            .into());
         }
 
         if field_refs.len() != 18 {
-            return Err(AppError::WrongFormat(format!(
+            return Err(FunctionalError::WrongFormat(format!(
                 "expected 18 fields per line, got {}",
                 field_refs.len()
-            )));
+            ))
+            .into());
         }
 
         let name = field_refs[2];
-        let set_code = SetCode::try_new(field_refs[3]).map_err(|_| AppError::ParseError {
-            line: line_number,
-            field: "set_code",
-            value: field_refs[3].to_string(),
-        })?;
+        let set_code =
+            SetCode::try_new(field_refs[3]).map_err(|_| FunctionalError::ParseError {
+                line: line_number,
+                field: "set_code",
+                value: field_refs[3].to_string(),
+            })?;
         let set_name = SetName {
             code: set_code.clone(),
             name: field_refs[4].to_string(),
@@ -55,53 +59,60 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
 
         let collector_number = field_refs[5];
 
-        let rarity_code = RarityCode::try_new(field_refs[7]).map_err(|_| AppError::ParseError {
-            line: line_number,
-            field: "rarity",
-            value: field_refs[7].to_string(),
-        })?;
+        let rarity_code =
+            RarityCode::try_new(field_refs[7]).map_err(|_| FunctionalError::ParseError {
+                line: line_number,
+                field: "rarity",
+                value: field_refs[7].to_string(),
+            })?;
 
         let language_code: LanguageCode =
-            LanguageCode::try_new(field_refs[15]).map_err(|_| AppError::ParseError {
+            LanguageCode::try_new(field_refs[15]).map_err(|_| FunctionalError::ParseError {
                 line: line_number,
                 field: "language_code",
                 value: field_refs[15].to_string(),
             })?;
         let foil: bool = field_refs[6] != "normal";
 
-        let quantity: u8 = field_refs[8].parse().map_err(|_e| AppError::ParseError {
-            line: line_number,
-            field: "quantity",
-            value: field_refs[8].to_string(),
-        })?;
+        let quantity: u8 = field_refs[8]
+            .parse()
+            .map_err(|_e| FunctionalError::ParseError {
+                line: line_number,
+                field: "quantity",
+                value: field_refs[8].to_string(),
+            })?;
 
-        let scryfall_id = Uuid::parse_str(field_refs[10]).map_err(|_e| AppError::ParseError {
-            line: line_number,
-            field: "scryfall_id",
-            value: field_refs[10].to_string(),
-        })?;
+        let scryfall_id =
+            Uuid::parse_str(field_refs[10]).map_err(|_e| FunctionalError::ParseError {
+                line: line_number,
+                field: "scryfall_id",
+                value: field_refs[10].to_string(),
+            })?;
 
         let purchase_price_float: f32 =
-            field_refs[11].parse().map_err(|_e| AppError::ParseError {
-                line: line_number,
-                field: "purchase_price",
-                value: field_refs[11].to_string(),
-            })?;
+            field_refs[11]
+                .parse()
+                .map_err(|_e| FunctionalError::ParseError {
+                    line: line_number,
+                    field: "purchase_price",
+                    value: field_refs[11].to_string(),
+                })?;
 
         let purchase_price = (purchase_price_float * 100.0).round() as u32;
 
         let added_at: DateTime<Utc> = {
             let raw = field_refs[17];
             if raw.is_empty() {
-                return Err(AppError::ParseError {
+                return Err(FunctionalError::ParseError {
                     line: line_number,
                     field: "added_at",
                     value: raw.to_string(),
-                });
+                }
+                .into());
             }
             DateTime::parse_from_rfc3339(raw)
                 .map(|dt| dt.with_timezone(&Utc))
-                .map_err(|_e| AppError::ParseError {
+                .map_err(|_e| FunctionalError::ParseError {
                     line: line_number,
                     field: "added_at",
                     value: raw.to_string(),
@@ -114,7 +125,7 @@ pub fn parse_cards(csv: &str) -> Result<Vec<Card>, AppError> {
             language_code.clone(),
             foil,
         )
-        .map_err(|e| AppError::ParseError {
+        .map_err(|e| FunctionalError::ParseError {
             line: line_number,
             field: "collector_number",
             value: String::from(e),
@@ -271,11 +282,11 @@ mod tests {
         let result = parse_cards(csv);
         assert!(matches!(
             result,
-            Err(AppError::ParseError {
+            Err(AppError::Functional(FunctionalError::ParseError {
                 line: 2,
                 field: "set_code",
                 value: _
-            })
+            }))
         ));
     }
 
@@ -287,11 +298,11 @@ mod tests {
         let result = parse_cards(csv);
         assert!(matches!(
             result,
-            Err(AppError::ParseError {
+            Err(AppError::Functional(FunctionalError::ParseError {
                 line: 2,
                 field: "language_code",
                 value: _
-            })
+            }))
         ));
     }
 
@@ -307,11 +318,11 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::ParseError {
+            Err(AppError::Functional(FunctionalError::ParseError {
                 line: 3,
                 field: "quantity",
                 value: _,
-            })
+            }))
         ));
     }
 
@@ -324,11 +335,11 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::ParseError {
+            Err(AppError::Functional(FunctionalError::ParseError {
                 line: 2,
                 field: "purchase_price",
                 value: _
-            })
+            }))
         ));
     }
 
@@ -341,11 +352,11 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::ParseError {
+            Err(AppError::Functional(FunctionalError::ParseError {
                 line: 2,
                 field: "collector_number",
                 value: _
-            })
+            }))
         ));
     }
 
@@ -357,7 +368,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::WrongFormat(err)) if err == "missing headers or empty file"
+            Err(AppError::Functional(FunctionalError::WrongFormat(err))) if err == "missing headers or empty file"
         ));
     }
 
@@ -370,7 +381,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::WrongFormat(err)) if err == "expecting a collection export, got a binder export"
+            Err(AppError::Functional(FunctionalError::WrongFormat(err))) if err == "expecting a collection export, got a binder export"
         ));
     }
 
@@ -383,7 +394,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::WrongFormat(err)) if err.contains("expected 18 fields per line")
+            Err(AppError::Functional(FunctionalError::WrongFormat(err))) if err.contains("expected 18 fields per line")
         ));
     }
 
@@ -422,11 +433,11 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::ParseError {
+            Err(AppError::Functional(FunctionalError::ParseError {
                 line: 2,
                 field: "added_at",
                 value: _,
-            })
+            }))
         ));
     }
 
@@ -439,11 +450,11 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AppError::ParseError {
+            Err(AppError::Functional(FunctionalError::ParseError {
                 line: 2,
                 field: "added_at",
                 value: _,
-            })
+            }))
         ));
     }
 
