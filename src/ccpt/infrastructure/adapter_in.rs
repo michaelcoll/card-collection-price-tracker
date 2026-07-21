@@ -6,6 +6,7 @@ use serde_json::json;
 
 pub mod auth_extractor;
 pub mod card;
+pub mod collection;
 pub mod maintenance;
 pub mod openapi;
 pub mod trade;

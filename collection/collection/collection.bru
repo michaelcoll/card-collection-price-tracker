@@ -1,11 +1,11 @@
 meta {
   name: collection
   type: http
-  seq: 2
+  seq: 1
 }
 
 get {
-  url: {{baseUrl}}/cards?page=0&page_size=20&sort_by=trend&sort_dir=desc&rarity=M&q=&sets=ECL&price_min=0&price_max=20000
+  url: {{baseUrl}}/collection?page=0&page_size=20&sort_by=trend&sort_dir=desc&rarity=M&q=&sets=ECL&price_min=0&price_max=20000
   body: none
   auth: inherit
 }
@@ -16,7 +16,7 @@ params:query {
   sort_by: trend
   sort_dir: desc
   rarity: M
-  q: 
+  q:
   sets: ECL
   price_min: 0
   price_max: 20000

@@ -1,6 +1,7 @@
-use super::card::dto::{
-    CollectionCardResponse, MessageResponse, PaginatedCollectionResponse, PriceGuideResponse,
-    PriceHistoryEntryResponse, SortByParam, SortDirParam,
+use super::card::dto::{MessageResponse, PriceHistoryEntryResponse};
+use super::collection::dto::{
+    CollectionCardResponse, PaginatedCollectionResponse, PriceGuideResponse, SortByParam,
+    SortDirParam,
 };
 use super::maintenance::dto::{EnqueueResponse, StatsResponse};
 use super::trade::dto::CreateTradeRequest;
@@ -9,7 +10,7 @@ use utoipa::OpenApi;
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        super::card::controller::get_collection,
+        super::collection::controller::get_collection,
         super::card::controller::import_cards,
         super::card::controller::get_card_info,
         super::card::controller::get_card_price_history,
@@ -39,7 +40,8 @@ use utoipa::OpenApi;
         license(name = "MIT", url = "https://opensource.org/licenses/MIT")
     ),
     tags(
-        (name = "cards", description = "Collection management (authentication required)"),
+        (name = "cards", description = "Card catalog, import and price history (authentication required)"),
+        (name = "collection", description = "Player's collection (authentication required)"),
         (name = "maintenance", description = "Maintenance operations (public)"),
         (name = "auth", description = "Authentication and user registration (authentication required)"),
         (name = "trades", description = "Trade requests between two collectors (authentication required)"),

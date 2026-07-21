@@ -7,10 +7,89 @@ info:
     url: https://opensource.org/licenses/MIT
   version: 0.1.0
 paths:
-  /cards/:
+  /cards/card-info:
+    post:
+      tags:
+      - cards
+      operationId: get_card_info
+      responses:
+        '200':
+          description: Card info from EDHRec
+        '401':
+          description: Missing or invalid token
+      security:
+      - bearer_auth: []
+  /cards/import:
+    post:
+      tags:
+      - cards
+      operationId: import_cards
+      requestBody:
+        description: ManaBox CSV content (max 10 MB)
+        content:
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        '200':
+          description: Import successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Invalid body (non UTF-8, ...)
+        '401':
+          description: Missing or invalid token
+      security:
+      - bearer_auth: []
+  /cards/{scryfall_id}/price-history:
     get:
       tags:
       - cards
+      operationId: get_card_price_history
+      parameters:
+      - name: scryfall_id
+        in: path
+        description: Card's Scryfall identifier
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: start_date
+        in: query
+        description: 'Start date (ISO 8601: YYYY-MM-DD, inclusive). Defaults to end_date minus 30 days'
+        required: false
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        description: 'End date (ISO 8601: YYYY-MM-DD, inclusive). Defaults to today'
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Card price history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PriceHistoryEntryResponse'
+        '400':
+          description: Invalid date range (start_date > end_date)
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: No card found for this scryfall_id
+      security:
+      - bearer_auth: []
+  /collection:
+    get:
+      tags:
+      - collection
       operationId: get_collection
       parameters:
       - name: page
@@ -90,85 +169,6 @@ paths:
                 $ref: '#/components/schemas/PaginatedCollectionResponse'
         '401':
           description: Missing or invalid token
-      security:
-      - bearer_auth: []
-  /cards/card-info:
-    post:
-      tags:
-      - cards
-      operationId: get_card_info
-      responses:
-        '200':
-          description: Card info from EDHRec
-        '401':
-          description: Missing or invalid token
-      security:
-      - bearer_auth: []
-  /cards/import:
-    post:
-      tags:
-      - cards
-      operationId: import_cards
-      requestBody:
-        description: ManaBox CSV content (max 10 MB)
-        content:
-          text/plain:
-            schema:
-              type: string
-        required: true
-      responses:
-        '200':
-          description: Import successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
-        '400':
-          description: Invalid body (non UTF-8, ...)
-        '401':
-          description: Missing or invalid token
-      security:
-      - bearer_auth: []
-  /cards/{scryfall_id}/price-history:
-    get:
-      tags:
-      - cards
-      operationId: get_card_price_history
-      parameters:
-      - name: scryfall_id
-        in: path
-        description: Card's Scryfall identifier
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: start_date
-        in: query
-        description: 'Start date (ISO 8601: YYYY-MM-DD, inclusive). Defaults to end_date minus 30 days'
-        required: false
-        schema:
-          type: string
-      - name: end_date
-        in: query
-        description: 'End date (ISO 8601: YYYY-MM-DD, inclusive). Defaults to today'
-        required: false
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Card price history
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PriceHistoryEntryResponse'
-        '400':
-          description: Invalid date range (start_date > end_date)
-        '401':
-          description: Missing or invalid token
-        '404':
-          description: No card found for this scryfall_id
       security:
       - bearer_auth: []
   /maintenance/stats:
@@ -446,7 +446,9 @@ components:
       bearerFormat: JWT
 tags:
 - name: cards
-  description: Collection management (authentication required)
+  description: Card catalog, import and price history (authentication required)
+- name: collection
+  description: Player's collection (authentication required)
 - name: maintenance
   description: Maintenance operations (public)
 - name: auth

@@ -31,12 +31,9 @@ export const useCardsService = () => {
   const getCollection = (params?: MaybeRefOrGetter<GetCollectionParams>) =>
     useAsyncData(
       'cards-collection',
-      () => apiCall<PaginatedCollection>('/cards', { query: toValue(params) }),
+      () => apiCall<PaginatedCollection>('/collection', { query: toValue(params) }),
       { lazy: true },
     );
-
-  const getCollection2 = (params?: MaybeRefOrGetter<GetCollectionParams>) =>
-    apiCall<PaginatedCollection>('/cards', { query: toValue(params) });
 
   const importCards = (csv: string) =>
     apiCall<Message>('/cards/import', {
@@ -64,7 +61,6 @@ export const useCardsService = () => {
 
   return {
     getCollection,
-    getCollection2,
     importCards,
     getCardInfo,
     getCollectionStats,
