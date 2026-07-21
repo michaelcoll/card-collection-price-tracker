@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { RarityCode } from '~/bindings/RarityCode';
 import type { SetInfo } from '~/bindings/SetInfo';
 
 const props = defineProps<{
-  active: { rar: string[]; sets: string[] };
+  active: { rar: RarityCode[]; sets: string[] };
   setList: SetInfo[];
   priceMin?: number;
   priceMax?: number;
@@ -13,7 +14,13 @@ const emit = defineEmits<{
   'price-change': [lo: number, hi: number];
 }>();
 
-const RARITIES = ['Mythique', 'Rare', 'Unco', 'Commune'];
+const RARITY_LABELS: Record<RarityCode, string> = {
+  M: 'Mythique',
+  R: 'Rare',
+  U: 'Unco',
+  C: 'Commune',
+};
+const RARITIES: RarityCode[] = ['M', 'R', 'U', 'C'];
 
 const q = defineModel<string>('q', { default: '' });
 
@@ -50,7 +57,7 @@ const onHiInput = (e: Event) => {
   emit('price-change', lo.value, hi.value);
 };
 
-const chipClass = (r: string) =>
+const chipClass = (r: RarityCode) =>
   props.active.rar.includes(r)
     ? 'text-cyan-700 dark:text-cyan-300 border-cyan-500/30 dark:border-cyan-400/30 bg-cyan-500/10 dark:bg-cyan-400/10'
     : 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:text-slate-800 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-white/15 hover:bg-slate-50 dark:hover:bg-zinc-800';
@@ -119,7 +126,7 @@ const clearSets = () => {
           ]"
           @click="emit('toggle', 'rar', r)"
         >
-          {{ r }}
+          {{ RARITY_LABELS[r] }}
         </button>
       </div>
     </div>

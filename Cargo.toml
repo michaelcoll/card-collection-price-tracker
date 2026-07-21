@@ -3,32 +3,9 @@ name = "card-collection-price-tracker"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
-chrono = { version = "0.4", features = ["serde"] }
-csv = "1"
-tokio = { version = "1", features = ["full"] }
-sqlx = { version = "0.9", features = ["postgres", "runtime-tokio", "chrono", "uuid"] }
-async-trait = "0.1"
-axum = "0.8"
-dotenv = "0.15"
-reqwest = { version = "0.13", features = ["json"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-scraper = "0.27"
-uuid = { version = "1.23", features = ["serde", "v4"] }
-ratelimit = "2.0"
-cron_tab = { version = "0.2", features = ["async"] }
-jsonwebtoken = { git = "https://github.com/michaelcoll/jsonwebtoken", branch = "fix/headers-cant-accept-integer-field", features = ["rust_crypto"] }
-ts-rs = "12.0"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "tracing"] }
-utoipa = { version = "5", features = ["axum_extras", "yaml", "uuid"] }
-sentry = { version = "0.48", features = ["tracing", "logs", "tower-axum-matched-path"] }
-
-[dev-dependencies]
-mockall = "0.15"
-wiremock = "0.6"
-cargo-husky = "1"
+[lib]
+name = "ccpt"
+path = "src/ccpt/lib.rs"
 
 [[bin]]
 name = "ccpt"
@@ -38,6 +15,30 @@ path = "src/ccpt/main.rs"
 name = "generate-openapi"
 path = "src/ccpt/generate_openapi.rs"
 
-[lib]
-name = "ccpt"
-path = "src/ccpt/lib.rs"
+[dependencies]
+async-trait = "0.1"
+axum = "0.8"
+axum-extra = { version = "0.12", features = ["query"] }
+chrono = { version = "0.4", features = ["serde"] }
+cron_tab = { version = "0.2", features = ["async"] }
+csv = "1"
+dotenv = "0.15"
+jsonwebtoken = { git = "https://github.com/michaelcoll/jsonwebtoken", branch = "fix/headers-cant-accept-integer-field", features = ["rust_crypto"] }
+ratelimit = "2.0"
+reqwest = { version = "0.13", features = ["json"] }
+scraper = "0.27"
+sentry = { version = "0.48", features = ["tracing", "logs", "tower-axum-matched-path"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sqlx = { version = "0.9", features = ["postgres", "runtime-tokio", "chrono", "uuid"] }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "tracing"] }
+ts-rs = "12.0"
+utoipa = { version = "5", features = ["axum_extras", "yaml", "uuid"] }
+uuid = { version = "1.23", features = ["serde", "v4"] }
+
+[dev-dependencies]
+cargo-husky = "1"
+mockall = "0.15"
+wiremock = "0.6"

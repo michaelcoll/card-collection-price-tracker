@@ -103,10 +103,12 @@ paths:
           type: string
       - name: rarity
         in: query
-        description: Comma-separated rarity codes (C, U, R, M)
+        description: Rarity codes, repeated for multiple values (e.g. rarity=C&rarity=U)
         required: false
         schema:
-          type: string
+          type: array
+          items:
+            $ref: '#/components/schemas/RarityCodeParam'
       - name: sets
         in: query
         description: Comma-separated set codes
@@ -167,6 +169,55 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
         '400':
           description: Invalid body (non UTF-8, ...)
+        '401':
+          description: Missing or invalid token
+      security:
+      - bearer_auth: []
+  /collection/price-history:
+    get:
+      tags:
+      - collection
+      operationId: get_collection_price_history
+      parameters:
+      - name: start_date
+        in: query
+        description: 'Start date (ISO 8601: YYYY-MM-DD, inclusive). Defaults to end_date minus 30 days'
+        required: false
+        schema:
+          type: string
+      - name: end_date
+        in: query
+        description: 'End date (ISO 8601: YYYY-MM-DD, inclusive). Defaults to today'
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Collection price history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PriceHistoryEntryResponse'
+        '400':
+          description: Invalid date range (start_date > end_date)
+        '401':
+          description: Missing or invalid token
+      security:
+      - bearer_auth: []
+  /collection/stats:
+    get:
+      tags:
+      - collection
+      operationId: get_collection_stats
+      responses:
+        '200':
+          description: Collection stats for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionStatsResponse'
         '401':
           description: Missing or invalid token
       security:
@@ -304,6 +355,37 @@ components:
           type: integer
           format: int32
           minimum: 0
+    CollectionStatsResponse:
+      type: object
+      required:
+      - total_cards
+      - unique_cards
+      - sets
+      properties:
+        price_trend_max:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+        price_trend_min:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/SetInfoResponse'
+        total_cards:
+          type: integer
+          format: int64
+          minimum: 0
+        unique_cards:
+          type: integer
+          format: int64
+          minimum: 0
     CreateTradeRequest:
       type: object
       required:
@@ -408,6 +490,23 @@ components:
         trend:
           type: integer
           format: int64
+    RarityCodeParam:
+      type: string
+      enum:
+      - C
+      - U
+      - R
+      - M
+    SetInfoResponse:
+      type: object
+      required:
+      - code
+      - name
+      properties:
+        code:
+          type: string
+        name:
+          type: string
     SortByParam:
       type: string
       enum:
