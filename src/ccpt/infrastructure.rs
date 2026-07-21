@@ -21,6 +21,7 @@ use crate::application::use_case::{
 };
 use crate::domain::card::CardId;
 use crate::infrastructure::adapter_in::card::controller::create_card_router;
+use crate::infrastructure::adapter_in::collection::controller::create_collection_router;
 use crate::infrastructure::adapter_in::trade::controller::create_trade_router;
 use crate::infrastructure::adapter_in::user::controller::create_user_router;
 use crate::infrastructure::adapter_out::caller::cardmarket_caller_adapter::CardMarketCallerAdapter;
@@ -229,6 +230,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
 
     Router::new()
         .nest("/cards", create_card_router())
+        .nest("/collection", create_collection_router())
         .nest("/maintenance", create_maintenance_router())
         .nest("/user", create_user_router())
         .nest("/trades", create_trade_router())
