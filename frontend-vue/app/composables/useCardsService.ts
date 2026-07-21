@@ -36,7 +36,7 @@ export const useCardsService = () => {
     );
 
   const importCards = (csv: string) =>
-    apiCall<Message>('/cards/import', {
+    apiCall<Message>('/collection/import', {
       method: 'POST',
       body: csv,
       headers: { 'Content-Type': 'text/plain' },

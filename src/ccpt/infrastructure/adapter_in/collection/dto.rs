@@ -4,6 +4,13 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use utoipa::ToSchema;
 
+#[derive(Serialize, Debug, TS, ToSchema)]
+#[serde(rename = "Message")]
+#[ts(export, export_to = "Message.ts")]
+pub struct MessageResponse {
+    pub message: String,
+}
+
 // --- Query params ---
 #[derive(Deserialize, Default, TS, ToSchema)]
 #[serde(rename = "SortBy", rename_all = "snake_case")]
