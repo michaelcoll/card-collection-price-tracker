@@ -1,11 +1,12 @@
 use crate::application::error::{AppError, InfraError};
 use crate::application::repository::CardPricesViewRepository;
-use crate::domain::card::Card;
-#[cfg(test)]
-use crate::domain::card::CollectionEntry;
+use crate::domain::card::{Card, CardId, CollectionEntry};
+use crate::domain::card_offer::{CardOfferSortField, PaginatedCardOffers};
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::user::UserId;
-use crate::infrastructure::adapter_out::repository::entities::CardWithPriceEntity;
+use crate::infrastructure::adapter_out::repository::entities::{
+    CardOfferEntity, CardWithPriceEntity,
+};
 use async_trait::async_trait;
 use sqlx::{AssertSqlSafe, Pool, Postgres, query_as, query_scalar};
 
@@ -89,7 +90,7 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
                  cp.rarity,
                  cp.scryfall_id,
                  cp.the_gatherer_id,
-                 CASE WHEN cp.user_id = $2 THEN cp.quantity ELSE NULL END AS quantity,
+                 cp.quantity,
                  CASE WHEN cp.user_id = $2 THEN cp.purchase_price ELSE NULL END AS purchase_price,
                  CASE WHEN cp.user_id = $2 THEN cp.added_at ELSE NULL END AS added_at,
                  CASE WHEN cp.user_id = $2 THEN NULL ELSE u.username END AS owner_username,
@@ -181,6 +182,79 @@ impl CardPricesViewRepository for CardPricesViewRepositoryAdapter {
             total: total as u64,
             page: query.page,
             page_size: query.page_size,
+        })
+    }
+
+    async fn exists(&self, card_id: &CardId) -> Result<bool, AppError> {
+        let exists = sqlx::query_scalar!(
+            r#"SELECT EXISTS(SELECT 1 FROM mv_card_prices
+                 WHERE set_code = $1 AND collector_number = $2 AND language_code = $3 AND foil = $4)"#,
+            card_id.set_code.to_string(),
+            card_id.collector_number,
+            card_id.language_code.to_string(),
+            card_id.foil
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::Infra(InfraError::RepositoryError(e.to_string())))?;
+
+        Ok(exists.unwrap_or(false))
+    }
+
+    async fn get_offers(
+        &self,
+        user_id: &UserId,
+        card_id: &CardId,
+        sort_by: CardOfferSortField,
+        page: u32,
+        page_size: u32,
+    ) -> Result<PaginatedCardOffers, AppError> {
+        let offset = (page * page_size) as i64;
+        let limit = page_size as i64;
+
+        let entities = match sort_by {
+            CardOfferSortField::SellingPrice => sqlx::query_as!(
+                CardOfferEntity,
+                r#"SELECT u.username AS owner_username, cp.quantity AS "quantity!", cp.trend AS selling_price
+                     FROM mv_card_prices cp
+                     JOIN users u ON u.id = cp.user_id
+                     WHERE cp.set_code = $1 AND cp.collector_number = $2 AND cp.language_code = $3
+                       AND cp.foil = $4 AND cp.user_id != $5
+                     ORDER BY cp.trend ASC NULLS LAST, u.username
+                     LIMIT $6 OFFSET $7"#,
+                card_id.set_code.to_string(),
+                card_id.collector_number,
+                card_id.language_code.to_string(),
+                card_id.foil,
+                user_id.as_str(),
+                limit,
+                offset
+            )
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| AppError::Infra(InfraError::RepositoryError(e.to_string())))?,
+        };
+
+        let total = sqlx::query_scalar!(
+            r#"SELECT COUNT(*) FROM mv_card_prices cp
+                 WHERE cp.set_code = $1 AND cp.collector_number = $2 AND cp.language_code = $3
+                   AND cp.foil = $4 AND cp.user_id != $5"#,
+            card_id.set_code.to_string(),
+            card_id.collector_number,
+            card_id.language_code.to_string(),
+            card_id.foil,
+            user_id.as_str()
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::Infra(InfraError::RepositoryError(e.to_string())))?
+        .unwrap_or(0);
+
+        Ok(PaginatedCardOffers {
+            items: entities.into_iter().map(CollectionEntry::from).collect(),
+            total: total as u64,
+            page,
+            page_size,
         })
     }
 }
@@ -542,7 +616,9 @@ mod tests {
         assert_eq!(
             result.items[0].collection_entry,
             CollectionEntry::Owned {
-                owner_username: "Bob".to_string()
+                owner_username: "Bob".to_string(),
+                quantity: 3,
+                selling_price: Some(100),
             }
         );
     }
@@ -844,5 +920,196 @@ mod tests {
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.total, 1);
         assert_eq!(result.items[0].name, "Expensive Card");
+    }
+
+    fn card_id(set_code: &str, collector_number: &str, language_code: &str, foil: bool) -> CardId {
+        use crate::domain::language_code::LanguageCode;
+        CardId::new(
+            set_code,
+            collector_number,
+            LanguageCode::new(language_code),
+            foil,
+        )
+    }
+
+    #[sqlx::test]
+    async fn exists_returns_true_when_card_is_owned_by_someone(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .exists(&card_id("TST", "1", "EN", false))
+            .await
+            .unwrap();
+
+        assert!(result);
+    }
+
+    #[sqlx::test]
+    async fn exists_returns_true_even_when_only_the_requesting_user_owns_it(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "user1", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .exists(&card_id("TST", "1", "EN", false))
+            .await
+            .unwrap();
+
+        assert!(result);
+    }
+
+    #[sqlx::test]
+    async fn exists_returns_false_when_no_one_owns_the_card(pool: PgPool) {
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .exists(&card_id("TST", "1", "EN", false))
+            .await
+            .unwrap();
+
+        assert!(!result);
+    }
+
+    #[sqlx::test]
+    async fn get_offers_returns_other_owners_with_quantity_and_selling_price(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_user(&pool, "userA", "Alice").await;
+        insert_user(&pool, "userB", "Bob").await;
+        insert_user(&pool, "userC", "Carol").await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userA", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userB", 2, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userC", 3, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .get_offers(
+                &UserId::new("userA"),
+                &card_id("TST", "1", "EN", false),
+                CardOfferSortField::SellingPrice,
+                0,
+                20,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(result.total, 2);
+        assert_eq!(result.items.len(), 2);
+        for item in &result.items {
+            match item {
+                CollectionEntry::Owned {
+                    owner_username,
+                    selling_price,
+                    ..
+                } => {
+                    assert_ne!(owner_username, "Alice");
+                    // All offers of the same card share the same trend price today (no
+                    // per-seller pricing yet), so `selling_price` is identical for every row.
+                    assert_eq!(*selling_price, Some(100));
+                }
+                CollectionEntry::Mine { .. } => panic!("expected CollectionEntry::Owned"),
+            }
+        }
+    }
+
+    #[sqlx::test]
+    async fn get_offers_breaks_ties_by_owner_username_ascending(pool: PgPool) {
+        // All offers of a given card share the same selling_price today (derived from the
+        // same trend), so the secondary sort key (owner_username) is what's actually
+        // observable in the returned order.
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_user(&pool, "userA", "Alice").await;
+        insert_user(&pool, "userB", "Zoe").await;
+        insert_user(&pool, "userC", "Bob").await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userB", 1, 100, Utc::now()).await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userC", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .get_offers(
+                &UserId::new("userA"),
+                &card_id("TST", "1", "EN", false),
+                CardOfferSortField::SellingPrice,
+                0,
+                20,
+            )
+            .await
+            .unwrap();
+
+        let usernames: Vec<&str> = result
+            .items
+            .iter()
+            .map(|item| match item {
+                CollectionEntry::Owned { owner_username, .. } => owner_username.as_str(),
+                CollectionEntry::Mine { .. } => panic!("expected CollectionEntry::Owned"),
+            })
+            .collect();
+        assert_eq!(usernames, vec!["Bob", "Zoe"]);
+    }
+
+    #[sqlx::test]
+    async fn get_offers_excludes_current_user(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_user(&pool, "userA", "Alice").await;
+        insert_collection_entry(&pool, "TST", "1", "EN", false, "userA", 1, 100, Utc::now()).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .get_offers(
+                &UserId::new("userA"),
+                &card_id("TST", "1", "EN", false),
+                CardOfferSortField::SellingPrice,
+                0,
+                20,
+            )
+            .await
+            .unwrap();
+
+        assert!(result.items.is_empty());
+        assert_eq!(result.total, 0);
+    }
+
+    #[sqlx::test]
+    async fn get_offers_paginates_results(pool: PgPool) {
+        insert_set(&pool, "TST").await;
+        insert_card(&pool, "TST", "1", "EN", false, "Test Card", 1).await;
+        insert_price(&pool, CardMarketPriceEntity::simple(1, 100)).await;
+        for (i, name) in ["userB", "userC", "userD"].iter().enumerate() {
+            insert_user(&pool, name, &format!("User{}", i)).await;
+            insert_collection_entry(&pool, "TST", "1", "EN", false, name, 1, 100, Utc::now()).await;
+        }
+        refresh_view(&pool).await;
+
+        let adapter = CardPricesViewRepositoryAdapter::new(pool);
+        let result = adapter
+            .get_offers(
+                &UserId::new("userA"),
+                &card_id("TST", "1", "EN", false),
+                CardOfferSortField::SellingPrice,
+                0,
+                2,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(result.items.len(), 2);
+        assert_eq!(result.total, 3);
+        assert_eq!(result.page, 0);
+        assert_eq!(result.page_size, 2);
     }
 }

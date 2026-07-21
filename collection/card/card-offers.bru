@@ -1,0 +1,19 @@
+meta {
+  name: card offers
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/card/offers?set_code=ECL&collector_number=166&language_code=FR&foil=false&sort_by=selling_price
+  body: none
+  auth: inherit
+}
+
+params:query {
+  set_code: ECL
+  collector_number: 166
+  language_code: FR
+  foil: false
+  sort_by: selling_price
+}

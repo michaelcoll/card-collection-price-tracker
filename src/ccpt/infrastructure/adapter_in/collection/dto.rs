@@ -233,7 +233,7 @@ impl From<Card> for CollectionCardResponse {
                 }),
                 None,
             ),
-            CollectionEntry::Owned { owner_username } => (None, Some(owner_username)),
+            CollectionEntry::Owned { owner_username, .. } => (None, Some(owner_username)),
         };
 
         Self {

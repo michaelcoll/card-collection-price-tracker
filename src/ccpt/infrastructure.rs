@@ -1,6 +1,7 @@
 use crate::application::caller::EdhRecCaller;
 use crate::application::service::auth_service::AuthService;
 use crate::application::service::card_collection_service::CardCollectionService;
+use crate::application::service::card_offer_service::CardOfferService;
 use crate::application::service::card_price_history_service::CardPriceHistoryService;
 use crate::application::service::cardmarket_id_enqueue_service::CardMarketIdEnqueueService;
 use crate::application::service::collection_price_history_service::CollectionPriceHistoryService;
@@ -16,8 +17,9 @@ use crate::application::service::update_card_market_service::CardMarketIdWorker;
 use crate::application::service::update_gatherer_service::GathererIdWorker;
 use crate::application::use_case::{
     CreateTradeUseCase, EnqueueCardMarketIdUpdateUseCase, EnqueueGathererIdUpdateUseCase,
-    GetCardPriceHistoryUseCase, GetCollectionPriceHistoryUseCase, GetCollectionStatsUseCase,
-    GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase, RegisterUserUseCase, StatsUseCase,
+    GetCardOffersUseCase, GetCardPriceHistoryUseCase, GetCollectionPriceHistoryUseCase,
+    GetCollectionStatsUseCase, GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase,
+    RegisterUserUseCase, StatsUseCase,
 };
 use crate::domain::card::CardId;
 use crate::infrastructure::adapter_in::card::controller::create_card_router;
@@ -68,6 +70,7 @@ pub struct AppState {
     pub get_collection_stats_use_case: Arc<dyn GetCollectionStatsUseCase>,
     pub register_user_use_case: Arc<dyn RegisterUserUseCase>,
     pub create_trade_use_case: Arc<dyn CreateTradeUseCase>,
+    pub get_card_offers_use_case: Arc<dyn GetCardOffersUseCase>,
 }
 
 pub async fn create_infra(pool: Pool<Postgres>) -> Router {
@@ -196,6 +199,10 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     let create_trade_service: Arc<dyn CreateTradeUseCase> =
         Arc::new(CreateTradeService::new(trade_repository_adapter));
 
+    let card_offer_service: Arc<dyn GetCardOffersUseCase> = Arc::new(CardOfferService::new(
+        card_prices_view_repository_adapter.clone(),
+    ));
+
     let app_state = AppState {
         import_card_use_case: import_card_service,
         edh_rec_caller_adapter,
@@ -210,6 +217,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         get_collection_stats_use_case: collection_stats_service,
         register_user_use_case: register_user_service,
         create_trade_use_case: create_trade_service,
+        get_card_offers_use_case: card_offer_service,
     };
 
     let mut cron = AsyncCron::new(Utc);
@@ -229,7 +237,7 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     cron.start().await;
 
     Router::new()
-        .nest("/cards", create_card_router())
+        .nest("/card", create_card_router())
         .nest("/collection", create_collection_router())
         .nest("/maintenance", create_maintenance_router())
         .nest("/user", create_user_router())
@@ -258,9 +266,10 @@ impl AppState {
         use crate::application::service::auth_service::MockAuthService;
         use crate::application::use_case::{
             MockCreateTradeUseCase, MockEnqueueCardMarketIdUpdateUseCase,
-            MockEnqueueGathererIdUpdateUseCase, MockGetCardPriceHistoryUseCase,
-            MockGetCollectionPriceHistoryUseCase, MockGetCollectionStatsUseCase,
-            MockGetCollectionUseCase, MockImportCardUseCase, MockRegisterUserUseCase,
+            MockEnqueueGathererIdUpdateUseCase, MockGetCardOffersUseCase,
+            MockGetCardPriceHistoryUseCase, MockGetCollectionPriceHistoryUseCase,
+            MockGetCollectionStatsUseCase, MockGetCollectionUseCase, MockImportCardUseCase,
+            MockRegisterUserUseCase,
         };
         use crate::domain::card::CardInfo;
         use crate::domain::user::User;
@@ -301,6 +310,7 @@ impl AppState {
             get_collection_stats_use_case: Arc::new(MockGetCollectionStatsUseCase::new()),
             register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
             create_trade_use_case: Arc::new(MockCreateTradeUseCase::new()),
+            get_card_offers_use_case: Arc::new(MockGetCardOffersUseCase::new()),
         }
     }
 
@@ -331,6 +341,21 @@ impl AppState {
         let mut base =
             Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
         base.create_trade_use_case = create_trade_use_case;
+        base
+    }
+
+    pub fn for_testing_with_card_offers(
+        stats_use_case: Arc<dyn StatsUseCase>,
+        get_card_offers_use_case: Arc<dyn GetCardOffersUseCase>,
+    ) -> Self {
+        use crate::application::use_case::MockImportPriceUseCase;
+        let mut mock_import_price = MockImportPriceUseCase::new();
+        mock_import_price
+            .expect_import_prices_for_current_date()
+            .returning(|| Box::pin(async { Ok(()) }));
+        let mut base =
+            Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
+        base.get_card_offers_use_case = get_card_offers_use_case;
         base
     }
 

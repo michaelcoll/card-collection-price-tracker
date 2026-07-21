@@ -280,8 +280,8 @@ pub struct CardWithPriceEntity {
     pub rarity: String,
     pub scryfall_id: Uuid,
     pub the_gatherer_id: Option<String>,
-    /// `NULL` when the row belongs to another user (masked in SQL).
-    pub quantity: Option<i32>,
+    /// Always present: no longer masked for other users' rows.
+    pub quantity: i32,
     /// `NULL` when the row belongs to another user (masked in SQL).
     pub purchase_price: Option<i32>,
     /// `NULL` when the row belongs to another user (masked in SQL).
@@ -309,20 +309,24 @@ impl From<Option<i32>> for Price {
 
 impl From<CardWithPriceEntity> for Card {
     fn from(e: CardWithPriceEntity) -> Self {
+        let selling_price = e.price.trend.map(|v| v as u32);
+
         let price_guide = if e.price.avg.is_some() || e.price.low.is_some() {
             Some(PriceGuide::from(e.price))
         } else {
             None
         };
 
-        let collection_entry = match (e.quantity, e.purchase_price, e.added_at) {
-            (Some(quantity), Some(purchase_price), Some(added_at)) => CollectionEntry::Mine {
-                quantity: quantity as u8,
+        let collection_entry = match (e.purchase_price, e.added_at) {
+            (Some(purchase_price), Some(added_at)) => CollectionEntry::Mine {
+                quantity: e.quantity as u8,
                 purchase_price: purchase_price as u32,
                 added_at,
             },
             _ => CollectionEntry::Owned {
                 owner_username: e.owner_username.unwrap_or_default(),
+                quantity: e.quantity as u8,
+                selling_price,
             },
         };
 
@@ -343,6 +347,23 @@ impl From<CardWithPriceEntity> for Card {
             the_gatherer_id: e.the_gatherer_id,
             collection_entry,
             price_guide,
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+pub struct CardOfferEntity {
+    pub owner_username: String,
+    pub quantity: i32,
+    pub selling_price: Option<i32>,
+}
+
+impl From<CardOfferEntity> for CollectionEntry {
+    fn from(e: CardOfferEntity) -> Self {
+        CollectionEntry::Owned {
+            owner_username: e.owner_username,
+            quantity: e.quantity as u8,
+            selling_price: e.selling_price.map(|v| v as u32),
         }
     }
 }

@@ -7,10 +7,10 @@ info:
     url: https://opensource.org/licenses/MIT
   version: 0.1.0
 paths:
-  /cards/card-info:
+  /card/card-info:
     post:
       tags:
-      - cards
+      - card
       operationId: get_card_info
       responses:
         '200':
@@ -19,10 +19,77 @@ paths:
           description: Missing or invalid token
       security:
       - bearer_auth: []
-  /cards/{scryfall_id}/price-history:
+  /card/offers:
     get:
       tags:
-      - cards
+      - card
+      operationId: get_card_offers
+      parameters:
+      - name: set_code
+        in: query
+        description: Card's set code
+        required: true
+        schema:
+          type: string
+      - name: collector_number
+        in: query
+        description: Card's collector number
+        required: true
+        schema:
+          type: string
+      - name: language_code
+        in: query
+        description: Card's language code
+        required: true
+        schema:
+          type: string
+      - name: foil
+        in: query
+        description: Whether the card is foil
+        required: true
+        schema:
+          type: boolean
+      - name: sort_by
+        in: query
+        description: Sort field (only selling_price supported for now)
+        required: false
+        schema:
+          $ref: '#/components/schemas/CardOffersSortByParam'
+      - name: page
+        in: query
+        description: Page number (starts at 0, max 10)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+      - name: page_size
+        in: query
+        description: Items per page (1 to 100)
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 0
+      responses:
+        '200':
+          description: Paginated list of sale offers for this card
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCardOffersResponse'
+        '400':
+          description: Invalid or missing query params
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: No card found for this CardId
+      security:
+      - bearer_auth: []
+  /card/{scryfall_id}/price-history:
+    get:
+      tags:
+      - card
       operationId: get_card_price_history
       parameters:
       - name: scryfall_id
@@ -294,6 +361,28 @@ paths:
       - bearer_auth: []
 components:
   schemas:
+    CardOfferResponse:
+      type: object
+      required:
+      - owner_username
+      - quantity
+      properties:
+        owner_username:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+          minimum: 0
+        selling_price:
+          type:
+          - integer
+          - 'null'
+          format: int32
+          minimum: 0
+    CardOffersSortByParam:
+      type: string
+      enum:
+      - selling_price
     CollectionCardResponse:
       type: object
       required:
@@ -425,6 +514,30 @@ components:
       properties:
         message:
           type: string
+    PaginatedCardOffersResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardOfferResponse'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        page_size:
+          type: integer
+          format: int32
+          minimum: 0
+        total:
+          type: integer
+          format: int64
+          minimum: 0
     PaginatedCollectionResponse:
       type: object
       required:
@@ -544,8 +657,8 @@ components:
       scheme: bearer
       bearerFormat: JWT
 tags:
-- name: cards
-  description: Card catalog and price history (authentication required)
+- name: card
+  description: Single card lookup, price history and sale offers (authentication required)
 - name: collection
   description: Player's collection (authentication required)
 - name: maintenance

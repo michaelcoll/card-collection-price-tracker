@@ -2,6 +2,7 @@ use crate::application::error::AppError;
 use async_trait::async_trait;
 
 use crate::domain::card::CardId;
+use crate::domain::card_offer::{CardOfferSortField, PaginatedCardOffers};
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::PriceHistoryEntry;
@@ -89,6 +90,19 @@ pub trait GetCardPriceHistoryUseCase: Send + Sync {
 #[cfg_attr(test, automock)]
 pub trait GetCollectionStatsUseCase: Send + Sync {
     async fn get_collection_stats(&self, user_id: &UserId) -> Result<CollectionStats, AppError>;
+}
+
+#[async_trait]
+#[cfg_attr(test, automock)]
+pub trait GetCardOffersUseCase: Send + Sync {
+    async fn get_card_offers(
+        &self,
+        user_id: &UserId,
+        card_id: CardId,
+        sort_by: CardOfferSortField,
+        page: u32,
+        page_size: u32,
+    ) -> Result<PaginatedCardOffers, AppError>;
 }
 
 #[async_trait]

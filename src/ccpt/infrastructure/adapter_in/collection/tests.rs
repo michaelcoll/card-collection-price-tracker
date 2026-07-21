@@ -245,6 +245,8 @@ async fn get_collection_masks_collection_entry_for_cards_owned_by_another_user()
     let mut card = make_card("FDN", "42");
     card.collection_entry = CollectionEntry::Owned {
         owner_username: "Bob".to_string(),
+        quantity: 3,
+        selling_price: Some(100),
     };
 
     let mut mock = MockGetCollectionUseCase::new();
