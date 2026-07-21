@@ -19,31 +19,6 @@ paths:
           description: Missing or invalid token
       security:
       - bearer_auth: []
-  /cards/import:
-    post:
-      tags:
-      - cards
-      operationId: import_cards
-      requestBody:
-        description: ManaBox CSV content (max 10 MB)
-        content:
-          text/plain:
-            schema:
-              type: string
-        required: true
-      responses:
-        '200':
-          description: Import successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
-        '400':
-          description: Invalid body (non UTF-8, ...)
-        '401':
-          description: Missing or invalid token
-      security:
-      - bearer_auth: []
   /cards/{scryfall_id}/price-history:
     get:
       tags:
@@ -167,6 +142,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedCollectionResponse'
+        '401':
+          description: Missing or invalid token
+      security:
+      - bearer_auth: []
+  /collection/import:
+    post:
+      tags:
+      - collection
+      operationId: import_cards
+      requestBody:
+        description: ManaBox CSV content (max 10 MB)
+        content:
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        '200':
+          description: Import successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Invalid body (non UTF-8, ...)
         '401':
           description: Missing or invalid token
       security:
@@ -446,7 +446,7 @@ components:
       bearerFormat: JWT
 tags:
 - name: cards
-  description: Card catalog, import and price history (authentication required)
+  description: Card catalog and price history (authentication required)
 - name: collection
   description: Player's collection (authentication required)
 - name: maintenance

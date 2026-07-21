@@ -10,8 +10,8 @@ CLERK_FRONTEND_API_URL=https://musical-pup-67.clerk.accounts.dev
 ```
 
 ### Protected Endpoints (Token Required)
-- `GET /cards/`: User's paginated collection.
-- `POST /cards/import`: Card import (ManaBox CSV).
+- `GET /collection`: User's paginated collection.
+- `POST /collection/import`: Card import (ManaBox CSV).
 - `POST /cards/card-info`: Information about a card.
 
 ### Public Endpoints

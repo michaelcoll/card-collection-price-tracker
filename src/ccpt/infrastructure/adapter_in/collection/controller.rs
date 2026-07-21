@@ -1,15 +1,61 @@
 use super::dto::{
-    CollectionCardResponse, CollectionParams, PaginatedCollectionResponse, max_page_size,
+    CollectionCardResponse, CollectionParams, MessageResponse, PaginatedCollectionResponse,
+    max_page_size,
 };
 use crate::application::error::AppError;
 use crate::domain::collection::CollectionQuery;
+use crate::domain::error::FunctionalError;
 use crate::infrastructure::AppState;
 use crate::infrastructure::adapter_in::auth_extractor::AuthenticatedUser;
+use axum::body::to_bytes;
 use axum::extract::{Query, State};
-use axum::routing::get;
+use axum::routing::{get, post};
 
 pub fn create_collection_router() -> axum::Router<AppState> {
-    axum::Router::new().route("/", get(get_collection))
+    axum::Router::new()
+        .route("/", get(get_collection))
+        .route("/import", post(import_cards))
+}
+
+#[utoipa::path(
+    post,
+    path = "/collection/import",
+    request_body(
+        content = String,
+        content_type = "text/plain",
+        description = "ManaBox CSV content (max 10 MB)",
+    ),
+    responses(
+        (status = 200, description = "Import successful", body = MessageResponse),
+        (status = 400, description = "Invalid body (non UTF-8, ...)"),
+        (status = 401, description = "Missing or invalid token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "collection",
+)]
+pub(crate) async fn import_cards(
+    AuthenticatedUser(user): AuthenticatedUser,
+    State(state): State<AppState>,
+    body: axum::body::Body,
+) -> Result<axum::Json<MessageResponse>, AppError> {
+    let bytes = to_bytes(body, 10 * 1024 * 1024)
+        .await
+        .map_err(|e| FunctionalError::WrongFormat(format!("Failed to read body: {}", e)))?;
+
+    let csv = String::from_utf8(bytes.to_vec())
+        .map_err(|_| FunctionalError::WrongFormat("Body is not valid UTF-8".to_string()))?;
+
+    tracing::info!("Importing cards for user: {}", user.id);
+
+    state
+        .import_card_use_case
+        .clone()
+        .import_cards(&csv, user)
+        .await?;
+
+    Ok(axum::Json(MessageResponse {
+        message: "Cards imported successfully".to_string(),
+    }))
 }
 
 #[utoipa::path(

@@ -4,13 +4,6 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use utoipa::ToSchema;
 
-#[derive(Serialize, Debug, TS, ToSchema)]
-#[serde(rename = "Message")]
-#[ts(export, export_to = "Message.ts")]
-pub struct MessageResponse {
-    pub message: String,
-}
-
 // --- Collection stats ---
 #[derive(Serialize, Debug, TS, ToSchema)]
 #[serde(rename = "SetInfo")]
