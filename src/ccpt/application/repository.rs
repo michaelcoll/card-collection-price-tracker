@@ -1,5 +1,6 @@
 use crate::application::error::AppError;
 use crate::domain::card::{Card, CardId};
+use crate::domain::card_offer::{CardOfferSortField, PaginatedCardOffers};
 use crate::domain::collection::{CollectionQuery, PaginatedCollection};
 use crate::domain::collection_stats::CollectionStats;
 use crate::domain::price::{FullPriceGuide, PriceHistoryEntry};
@@ -103,6 +104,17 @@ pub trait CardPricesViewRepository: Send + Sync {
         user_id: &UserId,
         query: CollectionQuery,
     ) -> Result<PaginatedCollection, AppError>;
+    /// Whether any user owns a card matching `card_id`, regardless of who.
+    async fn exists(&self, card_id: &CardId) -> Result<bool, AppError>;
+    /// Other users' offers for `card_id` (the caller's own entry, if any, is excluded).
+    async fn get_offers(
+        &self,
+        user_id: &UserId,
+        card_id: &CardId,
+        sort_by: CardOfferSortField,
+        page: u32,
+        page_size: u32,
+    ) -> Result<PaginatedCardOffers, AppError>;
 }
 
 #[async_trait]

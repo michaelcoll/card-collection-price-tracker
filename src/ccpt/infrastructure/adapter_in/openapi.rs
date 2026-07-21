@@ -1,4 +1,7 @@
-use super::card::dto::PriceHistoryEntryResponse;
+use super::card::dto::{
+    CardOfferResponse, CardOffersSortByParam, PaginatedCardOffersResponse,
+    PriceHistoryEntryResponse,
+};
 use super::collection::dto::{
     CollectionCardResponse, CollectionStatsResponse, MessageResponse, PaginatedCollectionResponse,
     PriceGuideResponse, RarityCodeParam, SetInfoResponse, SortByParam, SortDirParam,
@@ -16,6 +19,7 @@ use utoipa::OpenApi;
         super::collection::controller::get_collection_price_history,
         super::card::controller::get_card_info,
         super::card::controller::get_card_price_history,
+        super::card::controller::get_card_offers,
         super::maintenance::controller::get_stats,
         super::maintenance::controller::trigger_price_update,
         super::maintenance::controller::update_cardmarket_ids,
@@ -36,6 +40,9 @@ use utoipa::OpenApi;
         StatsResponse,
         EnqueueResponse,
         CreateTradeRequest,
+        CardOfferResponse,
+        PaginatedCardOffersResponse,
+        CardOffersSortByParam,
     )),
     modifiers(&SecurityAddon),
     info(
@@ -45,7 +52,7 @@ use utoipa::OpenApi;
         license(name = "MIT", url = "https://opensource.org/licenses/MIT")
     ),
     tags(
-        (name = "cards", description = "Card catalog and price history (authentication required)"),
+        (name = "card", description = "Single card lookup, price history and sale offers (authentication required)"),
         (name = "collection", description = "Player's collection (authentication required)"),
         (name = "maintenance", description = "Maintenance operations (public)"),
         (name = "auth", description = "Authentication and user registration (authentication required)"),

@@ -72,6 +72,9 @@ pub enum CollectionEntry {
     },
     Owned {
         owner_username: String,
+        quantity: u8,
+        /// Price in cents, derived from the card's `trend` price guide.
+        selling_price: Option<u32>,
     },
 }
 
