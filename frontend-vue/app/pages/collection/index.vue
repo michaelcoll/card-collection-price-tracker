@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import type { CollectionCard } from '~/bindings/CollectionCard';
 import type { PriceHistoryEntry } from '~/bindings/PriceHistoryEntry';
+import type { RarityCode } from '~/bindings/RarityCode';
 import type { SortBy } from '~/bindings/SortBy';
 import type { SortDir } from '~/bindings/SortDir';
 
-const { getCollection, getCollectionStats, importCards, getPriceHistory, getCardPriceHistory } =
-  useCardsService();
-
-const RARITY_CODES: Record<string, string> = {
-  Mythique: 'M',
-  Rare: 'R',
-  Unco: 'U',
-  Commune: 'C',
-};
+const { getCollection, getCollectionStats, importCards, getPriceHistory } = useCollectionService();
+const { getCardPriceHistory } = useCardsService();
 
 const q = ref('');
 const qDebounced = refDebounced(q, 200);
@@ -23,7 +17,7 @@ const params = ref({
   page: 0,
   page_size: 20,
   q: '',
-  rarity: undefined as string | undefined,
+  rarity: [] as RarityCode[],
   sets: undefined as string | undefined,
   price_min: undefined as number | undefined,
   price_max: undefined as number | undefined,
@@ -163,7 +157,7 @@ const importLoading = ref(false);
 const importError = ref<string | null>(null);
 const isDragging = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
-const active = ref({ rar: [] as string[], sets: [] as string[] });
+const active = ref({ rar: [] as RarityCode[], sets: [] as string[] });
 const detail = ref<CollectionCard | null>(null);
 
 const cardHistoryData = ref<PriceHistoryEntry[]>([]);
@@ -190,16 +184,21 @@ const cardHasEnoughHistory = computed(() => cardEnvelopeData.value.length >= 2);
 const cardVariation = computed(() => computeVariation(cardHistoryData.value));
 
 const toggle = (k: 'rar' | 'sets', v: string) => {
-  const arr = active.value[k];
-  active.value[k] = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+  if (k === 'rar') {
+    const arr = active.value.rar;
+    active.value.rar = arr.includes(v as RarityCode)
+      ? arr.filter((x) => x !== v)
+      : [...arr, v as RarityCode];
+  } else {
+    const arr = active.value.sets;
+    active.value.sets = arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
+  }
 };
 
 watch(
   () => [active.value.rar, active.value.sets],
   () => {
-    params.value.rarity = active.value.rar.length
-      ? active.value.rar.map((r) => RARITY_CODES[r]).join(',')
-      : undefined;
+    params.value.rarity = active.value.rar;
     params.value.sets = active.value.sets.length ? active.value.sets.join(',') : undefined;
     allCards.value = [];
     params.value.page = 0;

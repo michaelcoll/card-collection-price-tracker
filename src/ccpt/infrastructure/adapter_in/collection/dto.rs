@@ -1,5 +1,7 @@
 use crate::domain::card::{Card, CollectionEntry};
 use crate::domain::collection::{CollectionSortField, SortDirection};
+use crate::domain::collection_stats::CollectionStats;
+use crate::domain::rarity_code::RarityCode;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use utoipa::ToSchema;
@@ -9,6 +11,45 @@ use utoipa::ToSchema;
 #[ts(export, export_to = "Message.ts")]
 pub struct MessageResponse {
     pub message: String,
+}
+
+// --- Collection stats ---
+#[derive(Serialize, Debug, TS, ToSchema)]
+#[serde(rename = "SetInfo")]
+#[ts(export, export_to = "SetInfo.ts")]
+pub struct SetInfoResponse {
+    pub code: String,
+    pub name: String,
+}
+
+#[derive(Serialize, Debug, TS, ToSchema)]
+#[serde(rename = "CollectionStats")]
+#[ts(export, export_to = "CollectionStats.ts")]
+pub struct CollectionStatsResponse {
+    pub total_cards: u64,
+    pub unique_cards: u64,
+    pub price_trend_min: Option<u32>,
+    pub price_trend_max: Option<u32>,
+    pub sets: Vec<SetInfoResponse>,
+}
+
+impl From<CollectionStats> for CollectionStatsResponse {
+    fn from(s: CollectionStats) -> Self {
+        Self {
+            total_cards: s.total_cards,
+            unique_cards: s.unique_cards,
+            price_trend_min: s.price_trend_min.value,
+            price_trend_max: s.price_trend_max.value,
+            sets: s
+                .sets
+                .into_iter()
+                .map(|sn| SetInfoResponse {
+                    code: sn.code.to_string(),
+                    name: sn.name,
+                })
+                .collect(),
+        }
+    }
 }
 
 // --- Query params ---
@@ -52,6 +93,27 @@ impl From<SortDirParam> for SortDirection {
     }
 }
 
+#[derive(Deserialize, TS, ToSchema)]
+#[serde(rename = "RarityCode")]
+#[ts(export, export_to = "RarityCode.ts")]
+pub enum RarityCodeParam {
+    C,
+    U,
+    R,
+    M,
+}
+
+impl From<RarityCodeParam> for RarityCode {
+    fn from(p: RarityCodeParam) -> Self {
+        match p {
+            RarityCodeParam::C => RarityCode::C,
+            RarityCodeParam::U => RarityCode::U,
+            RarityCodeParam::R => RarityCode::R,
+            RarityCodeParam::M => RarityCode::M,
+        }
+    }
+}
+
 pub(crate) fn default_page_size() -> u32 {
     20
 }
@@ -60,7 +122,8 @@ pub(crate) fn max_page_size() -> u32 {
     100
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TS)]
+#[ts(export, export_to = "CollectionParams.ts")]
 pub(crate) struct CollectionParams {
     #[serde(default)]
     pub(crate) page: u32,
@@ -70,14 +133,19 @@ pub(crate) struct CollectionParams {
     pub(crate) sort_by: SortByParam,
     #[serde(default)]
     pub(crate) sort_dir: SortDirParam,
+    #[ts(optional)]
     pub(crate) q: Option<String>,
-    /// Comma-separated rarity codes (C, U, R, M)
-    pub(crate) rarity: Option<String>,
+    /// Rarity codes, repeated for multiple values (e.g. `?rarity=C&rarity=U`)
+    #[serde(default)]
+    pub(crate) rarity: Vec<RarityCodeParam>,
     /// Comma-separated set codes
+    #[ts(optional)]
     pub(crate) sets: Option<String>,
     /// Minimum trend price in cents
+    #[ts(optional)]
     pub(crate) price_min: Option<u32>,
     /// Maximum trend price in cents
+    #[ts(optional)]
     pub(crate) price_max: Option<u32>,
     /// Restrict to cards owned by the authenticated user (default: false — full catalog)
     #[serde(default)]
@@ -92,7 +160,7 @@ impl Default for CollectionParams {
             sort_by: SortByParam::default(),
             sort_dir: SortDirParam::default(),
             q: None,
-            rarity: None,
+            rarity: Vec::new(),
             sets: None,
             price_min: None,
             price_max: None,

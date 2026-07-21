@@ -1,20 +1,24 @@
 use super::dto::{
-    CollectionCardResponse, CollectionParams, MessageResponse, PaginatedCollectionResponse,
-    max_page_size,
+    CollectionCardResponse, CollectionParams, CollectionStatsResponse, MessageResponse,
+    PaginatedCollectionResponse, max_page_size,
 };
 use crate::application::error::AppError;
 use crate::domain::collection::CollectionQuery;
 use crate::domain::error::FunctionalError;
 use crate::infrastructure::AppState;
 use crate::infrastructure::adapter_in::auth_extractor::AuthenticatedUser;
+use crate::infrastructure::adapter_in::card::dto::{PriceHistoryEntryResponse, PriceHistoryParams};
 use axum::body::to_bytes;
-use axum::extract::{Query, State};
+use axum::extract::State;
 use axum::routing::{get, post};
+use axum_extra::extract::Query;
 
 pub fn create_collection_router() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/", get(get_collection))
         .route("/import", post(import_cards))
+        .route("/stats", get(get_collection_stats))
+        .route("/price-history", get(get_collection_price_history))
 }
 
 #[utoipa::path(
@@ -67,7 +71,7 @@ pub(crate) async fn import_cards(
         ("sort_by" = Option<super::dto::SortByParam>, Query, description = "Sort field"),
         ("sort_dir" = Option<super::dto::SortDirParam>, Query, description = "Sort direction"),
         ("q" = Option<String>, Query, description = "Fuzzy search on card name or set"),
-        ("rarity" = Option<String>, Query, description = "Comma-separated rarity codes (C, U, R, M)"),
+        ("rarity" = Option<Vec<super::dto::RarityCodeParam>>, Query, description = "Rarity codes, repeated for multiple values (e.g. rarity=C&rarity=U)"),
         ("sets" = Option<String>, Query, description = "Comma-separated set codes"),
         ("price_min" = Option<u32>, Query, description = "Minimum trend price in cents"),
         ("price_max" = Option<u32>, Query, description = "Maximum trend price in cents"),
@@ -87,15 +91,7 @@ pub(crate) async fn get_collection(
 ) -> Result<axum::Json<PaginatedCollectionResponse>, AppError> {
     let page_size = params.page_size.min(max_page_size());
 
-    let rarity = params
-        .rarity
-        .as_deref()
-        .unwrap_or("")
-        .split(',')
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(|s| crate::domain::rarity_code::RarityCode::try_new(s).map_err(AppError::from))
-        .collect::<Result<Vec<_>, _>>()?;
+    let rarity = params.rarity.into_iter().map(Into::into).collect();
 
     let sets = params
         .sets
@@ -135,4 +131,63 @@ pub(crate) async fn get_collection(
         page: result.page,
         page_size: result.page_size,
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/collection/stats",
+    responses(
+        (status = 200, description = "Collection stats for the authenticated user", body = CollectionStatsResponse),
+        (status = 401, description = "Missing or invalid token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "collection",
+)]
+pub(crate) async fn get_collection_stats(
+    AuthenticatedUser(user): AuthenticatedUser,
+    State(state): State<AppState>,
+) -> Result<axum::Json<CollectionStatsResponse>, AppError> {
+    let stats = state
+        .get_collection_stats_use_case
+        .get_collection_stats(&user.id)
+        .await?;
+    Ok(axum::Json(CollectionStatsResponse::from(stats)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/collection/price-history",
+    params(
+        ("start_date" = Option<String>, Query, description = "Start date (ISO 8601: YYYY-MM-DD, inclusive). Defaults to end_date minus 30 days"),
+        ("end_date" = Option<String>, Query, description = "End date (ISO 8601: YYYY-MM-DD, inclusive). Defaults to today"),
+    ),
+    responses(
+        (status = 200, description = "Collection price history", body = Vec<PriceHistoryEntryResponse>),
+        (status = 400, description = "Invalid date range (start_date > end_date)"),
+        (status = 401, description = "Missing or invalid token"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "collection",
+)]
+pub(crate) async fn get_collection_price_history(
+    AuthenticatedUser(user): AuthenticatedUser,
+    State(state): State<AppState>,
+    Query(params): Query<PriceHistoryParams>,
+) -> Result<axum::Json<Vec<PriceHistoryEntryResponse>>, AppError> {
+    let entries = state
+        .get_collection_price_history_use_case
+        .get_collection_price_history(&user.id, params.start_date, params.end_date)
+        .await?;
+
+    Ok(axum::Json(
+        entries
+            .into_iter()
+            .map(|e| PriceHistoryEntryResponse {
+                date: e.date.to_string(),
+                low: e.price_guide.low.value.unwrap_or(0) as i64,
+                trend: e.price_guide.trend.value.unwrap_or(0) as i64,
+                avg: e.price_guide.avg.value.unwrap_or(0) as i64,
+            })
+            .collect(),
+    ))
 }

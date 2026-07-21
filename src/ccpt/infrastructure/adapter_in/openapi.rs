@@ -1,7 +1,7 @@
 use super::card::dto::PriceHistoryEntryResponse;
 use super::collection::dto::{
-    CollectionCardResponse, MessageResponse, PaginatedCollectionResponse, PriceGuideResponse,
-    SortByParam, SortDirParam,
+    CollectionCardResponse, CollectionStatsResponse, MessageResponse, PaginatedCollectionResponse,
+    PriceGuideResponse, RarityCodeParam, SetInfoResponse, SortByParam, SortDirParam,
 };
 use super::maintenance::dto::{EnqueueResponse, StatsResponse};
 use super::trade::dto::CreateTradeRequest;
@@ -12,6 +12,8 @@ use utoipa::OpenApi;
     paths(
         super::collection::controller::get_collection,
         super::collection::controller::import_cards,
+        super::collection::controller::get_collection_stats,
+        super::collection::controller::get_collection_price_history,
         super::card::controller::get_card_info,
         super::card::controller::get_card_price_history,
         super::maintenance::controller::get_stats,
@@ -28,6 +30,9 @@ use utoipa::OpenApi;
         PriceHistoryEntryResponse,
         SortByParam,
         SortDirParam,
+        RarityCodeParam,
+        CollectionStatsResponse,
+        SetInfoResponse,
         StatsResponse,
         EnqueueResponse,
         CreateTradeRequest,
