@@ -12,7 +12,7 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    container: rust:1-bullseye
+    container: rust:latest
 
     services:
       postgres:
@@ -32,12 +32,11 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: rust-backend
-          save-if: false
 
-      - run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - uses: taiki-e/install-action@cargo-hack
+
+      - uses: jdx/mise-action@v4
+
       - run: sqlx migrate run
 
       - name: Rustfmt Check
@@ -49,7 +48,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
 
-    container: rust:1-bullseye
+    container: rust:latest
 
     services:
       postgres:
@@ -70,10 +69,10 @@ jobs:
         with:
           components: llvm-tools
 
-      - uses: taiki-e/install-action@cargo-llvm-cov
-      - uses: taiki-e/install-action@nextest
+      - uses: taiki-e/install-action@cargo-hack
 
-      - run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - uses: jdx/mise-action@v4
+
       - run: sqlx migrate run
 
       - run: cargo llvm-cov nextest --status-level slow --locked --workspace --all-features --bins --examples --tests --lcov --output-path lcov.info
@@ -89,8 +88,6 @@ jobs:
     name: Build Offline
     runs-on: ubuntu-latest
 
-    container: rust:1-bullseye
-
     steps:
       - uses: actions/checkout@v7
 
@@ -101,8 +98,6 @@ jobs:
   check-openapi:
     name: OpenAPI spec up-to-date
     runs-on: ubuntu-latest
-
-    container: rust:1-bullseye
 
     steps:
       - uses: actions/checkout@v7
