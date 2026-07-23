@@ -1,3 +1,4 @@
+use ccpt::config::Config;
 use ccpt::infrastructure;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
@@ -31,15 +32,15 @@ fn main() -> Result<(), sqlx::Error> {
         },
     ));
 
+    let config = Config::from_env();
+
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?
         .block_on(async {
-            let database_url = std::env::var("DATABASE_URL")
-                .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
             let pool = PgPoolOptions::new()
-                .max_connections(5)
-                .connect(database_url.as_str())
+                .max_connections(config.database_max_connections)
+                .connect(config.database_url.as_str())
                 .await
                 .expect("Failed to create database connection pool !");
 
@@ -52,11 +53,9 @@ fn main() -> Result<(), sqlx::Error> {
 
             info!("Database schema migration done.");
 
-            let infra = infrastructure::create_infra(pool).await;
+            let infra = infrastructure::create_infra(pool, &config).await;
 
-            let port = std::env::var("BACKEND_PORT").unwrap_or("8080".to_string());
-            let port: u16 = port.parse().expect("Port should be valid range !");
-            let addr = SocketAddr::from(([0, 0, 0, 0], port));
+            let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
             let listener = TcpListener::bind(addr)
                 .await
                 .expect("Failed to bind to address !");

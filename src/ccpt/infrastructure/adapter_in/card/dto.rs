@@ -36,14 +36,6 @@ pub(crate) fn default_page_size() -> u32 {
     6
 }
 
-pub(crate) fn max_page_size() -> u32 {
-    100
-}
-
-pub(crate) fn max_page() -> u32 {
-    10
-}
-
 #[derive(Deserialize, Default, TS, ToSchema)]
 #[serde(rename = "CardOffersSortBy", rename_all = "snake_case")]
 #[ts(export, export_to = "CardOffersSortBy.ts")]

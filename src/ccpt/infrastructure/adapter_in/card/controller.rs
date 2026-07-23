@@ -1,6 +1,6 @@
 use super::dto::{
     CardOfferResponse, CardOffersParams, PaginatedCardOffersResponse, PriceHistoryEntryResponse,
-    PriceHistoryParams, max_page, max_page_size,
+    PriceHistoryParams,
 };
 use crate::application::error::AppError;
 use crate::domain::card::CardId;
@@ -118,8 +118,8 @@ pub(crate) async fn get_card_offers(
         language_code,
         params.foil,
     )?;
-    let page_size = params.page_size.clamp(1, max_page_size());
-    let page = params.page.min(max_page());
+    let page_size = params.page_size.clamp(1, state.max_page_size);
+    let page = params.page.min(state.max_page_number);
 
     let result = state
         .get_card_offers_use_case

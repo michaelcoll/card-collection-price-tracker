@@ -86,6 +86,8 @@ mod tests {
             register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
             create_trade_use_case: Arc::new(MockCreateTradeUseCase::new()),
             get_card_offers_use_case: Arc::new(MockGetCardOffersUseCase::new()),
+            max_page_size: 100,
+            max_page_number: 10,
         }
     }
 

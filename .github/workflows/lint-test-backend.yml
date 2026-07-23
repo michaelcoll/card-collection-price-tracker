@@ -72,14 +72,11 @@ jobs:
 
       - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: rust-backend
 
       - run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
       - run: sqlx migrate run
 
-      - run: cargo llvm-cov nextest --locked --workspace --all-features --bins --examples --tests --lcov --output-path lcov.info
+      - run: cargo llvm-cov nextest --status-level slow --locked --workspace --all-features --bins --examples --tests --lcov --output-path lcov.info
 
       - uses: codecov/codecov-action@v7
         with:
@@ -99,11 +96,6 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: rust-backend
-          save-if: false
-
       - run: SQLX_OFFLINE=true cargo build
 
   check-openapi:
@@ -116,11 +108,6 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: rust-backend
-          save-if: false
 
       - name: Save current OpenAPI spec
         run: cp doc/openapi.yml doc/openapi.yml.bak
