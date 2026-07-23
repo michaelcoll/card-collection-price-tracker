@@ -1,6 +1,6 @@
 use super::dto::{
     CollectionCardResponse, CollectionParams, CollectionStatsResponse, MessageResponse,
-    PaginatedCollectionResponse, max_page_size,
+    PaginatedCollectionResponse,
 };
 use crate::application::error::AppError;
 use crate::domain::collection::CollectionQuery;
@@ -89,7 +89,7 @@ pub(crate) async fn get_collection(
     State(state): State<AppState>,
     Query(params): Query<CollectionParams>,
 ) -> Result<axum::Json<PaginatedCollectionResponse>, AppError> {
-    let page_size = params.page_size.min(max_page_size());
+    let page_size = params.page_size.min(state.max_page_size);
 
     let rarity = params.rarity.into_iter().map(Into::into).collect();
 

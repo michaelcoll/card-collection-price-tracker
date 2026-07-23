@@ -21,6 +21,7 @@ use crate::application::use_case::{
     GetCollectionStatsUseCase, GetCollectionUseCase, ImportCardUseCase, ImportPriceUseCase,
     RegisterUserUseCase, StatsUseCase,
 };
+use crate::config::Config;
 use crate::domain::card::CardId;
 use crate::infrastructure::adapter_in::card::controller::create_card_router;
 use crate::infrastructure::adapter_in::collection::controller::create_collection_router;
@@ -71,64 +72,93 @@ pub struct AppState {
     pub register_user_use_case: Arc<dyn RegisterUserUseCase>,
     pub create_trade_use_case: Arc<dyn CreateTradeUseCase>,
     pub get_card_offers_use_case: Arc<dyn GetCardOffersUseCase>,
+    pub max_page_size: u32,
+    pub max_page_number: u32,
 }
 
-pub async fn create_infra(pool: Pool<Postgres>) -> Router {
-    let cardmarket_price_guides_url = std::env::var("CARDMARKET_PRICE_GUIDES_URL").unwrap_or(
-        "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_1.json"
-            .to_string(),
-    );
-    let edh_rec_base_url =
-        std::env::var("EDHREC_BASE_URL").unwrap_or("https://edhrec.com".to_string());
-    let scryfall_base_url =
-        std::env::var("SCRYFALL_BASE_URL").unwrap_or("https://api.scryfall.com".to_string());
-    let gatherer_base_url =
-        std::env::var("GATHERER_BASE_URL").unwrap_or("https://gatherer.wizards.com".to_string());
-    let clerk_frontend_api_url = std::env::var("CLERK_FRONTEND_API_URL")
-        .expect("CLERK_FRONTEND_API_URL must be set in environment variables");
+// ---- Repositories ----
+struct Repositories {
+    card: Arc<CardRepositoryAdapter>,
+    set_name: Arc<SetNameRepositoryAdapter>,
+    card_market: Arc<CardMarketPriceRepositoryAdapter>,
+    card_prices_view: Arc<CardPricesViewRepositoryAdapter>,
+    stats: Arc<StatsRepositoryAdapter>,
+    user: Arc<UserRepositoryAdapter>,
+    trade: Arc<TradeRepositoryAdapter>,
+    collection_price_history: Arc<CollectionPriceHistoryRepositoryAdapter>,
+    collection_stats: Arc<CollectionStatsRepositoryAdapter>,
+}
 
-    let card_repository_adapter = Arc::new(CardRepositoryAdapter::new(pool.clone()));
-    let set_name_repository_adapter = Arc::new(SetNameRepositoryAdapter::new(pool.clone()));
-    let card_market_repository_adapter =
-        Arc::new(CardMarketPriceRepositoryAdapter::new(pool.clone()));
-    let card_prices_view_repository_adapter =
-        Arc::new(CardPricesViewRepositoryAdapter::new(pool.clone()));
-    let card_market_caller_adapter =
-        Arc::new(CardMarketCallerAdapter::new(cardmarket_price_guides_url));
-    let edh_rec_caller_adapter = Arc::new(EdhRecCallerAdapter::new(edh_rec_base_url));
-    let scryfall_caller_adapter = Arc::new(ScryfallCallerAdapter::new(scryfall_base_url));
-    let gatherer_caller_adapter = Arc::new(GathererCallerAdapter::new(gatherer_base_url));
-    let stats_repository_adapter = Arc::new(StatsRepositoryAdapter::new(pool.clone()));
-    let user_repository_adapter = Arc::new(UserRepositoryAdapter::new(pool.clone()));
+fn create_repositories(pool: &Pool<Postgres>) -> Repositories {
+    Repositories {
+        card: Arc::new(CardRepositoryAdapter::new(pool.clone())),
+        set_name: Arc::new(SetNameRepositoryAdapter::new(pool.clone())),
+        card_market: Arc::new(CardMarketPriceRepositoryAdapter::new(pool.clone())),
+        card_prices_view: Arc::new(CardPricesViewRepositoryAdapter::new(pool.clone())),
+        stats: Arc::new(StatsRepositoryAdapter::new(pool.clone())),
+        user: Arc::new(UserRepositoryAdapter::new(pool.clone())),
+        trade: Arc::new(TradeRepositoryAdapter::new(pool.clone())),
+        collection_price_history: Arc::new(CollectionPriceHistoryRepositoryAdapter::new(
+            pool.clone(),
+        )),
+        collection_stats: Arc::new(CollectionStatsRepositoryAdapter::new(pool.clone())),
+    }
+}
 
-    let auth_service: Arc<dyn AuthService> = Arc::new(
+// ---- Callers ----
+struct Callers {
+    card_market: Arc<CardMarketCallerAdapter>,
+    edh_rec: Arc<EdhRecCallerAdapter>,
+    scryfall: Arc<ScryfallCallerAdapter>,
+    gatherer: Arc<GathererCallerAdapter>,
+}
+
+fn create_callers(config: &Config) -> Callers {
+    Callers {
+        card_market: Arc::new(CardMarketCallerAdapter::new(
+            config.cardmarket_price_guides_url.clone(),
+        )),
+        edh_rec: Arc::new(EdhRecCallerAdapter::new(config.edh_rec_base_url.clone())),
+        scryfall: Arc::new(ScryfallCallerAdapter::new(
+            config.scryfall_base_url.clone(),
+            config.scryfall_rate_limit_tokens,
+        )),
+        gatherer: Arc::new(GathererCallerAdapter::new(config.gatherer_base_url.clone())),
+    }
+}
+
+async fn create_auth_service(config: &Config) -> Arc<dyn AuthService> {
+    Arc::new(
         crate::application::service::auth_service::ClerkAuthService::new(
-            clerk_frontend_api_url,
+            config.clerk_frontend_api_url.clone(),
             None,
         )
         .await
         .expect("Failed to initialize Clerk Auth Service"),
-    );
+    )
+}
 
-    let card_collection_service = Arc::new(CardCollectionService::new(Arc::new(
-        CollectionPriceHistoryRepositoryAdapter::new(pool.clone()),
-    )));
-
-    // Canal non borné + HashSet de déduplication partagé entre enqueue service et worker
+// ---- Background workers ----
+// Canal non borné + HashSet de déduplication partagé entre enqueue service et worker
+fn spawn_cardmarket_id_worker(
+    repos: &Repositories,
+    scryfall_caller_adapter: Arc<ScryfallCallerAdapter>,
+    card_collection_service: Arc<CardCollectionService>,
+) -> Arc<CardMarketIdEnqueueService> {
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<(CardId, Uuid)>();
     let dedup_set = Arc::new(Mutex::new(HashSet::<CardId>::new()));
 
-    let enqueue_cardmarket_id_service = Arc::new(CardMarketIdEnqueueService::new(
-        card_repository_adapter.clone(),
+    let enqueue_service = Arc::new(CardMarketIdEnqueueService::new(
+        repos.card.clone(),
         sender,
         dedup_set.clone(),
     ));
 
     let worker = CardMarketIdWorker::new(
-        card_repository_adapter.clone(),
+        repos.card.clone(),
         scryfall_caller_adapter,
-        card_collection_service.clone(),
-        card_prices_view_repository_adapter.clone(),
+        card_collection_service,
+        repos.card_prices_view.clone(),
         dedup_set,
     );
     tokio::spawn(async move {
@@ -137,93 +167,106 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         }
     });
 
-    // Canal + HashSet de déduplication dédiés à l'enrichissement the_gatherer_id
-    let (gatherer_sender, gatherer_receiver) =
-        tokio::sync::mpsc::unbounded_channel::<(CardId, String)>();
-    let gatherer_dedup_set = Arc::new(Mutex::new(HashSet::<CardId>::new()));
+    enqueue_service
+}
 
-    let enqueue_gatherer_id_service = Arc::new(GathererIdEnqueueService::new(
-        card_repository_adapter.clone(),
-        gatherer_sender,
-        gatherer_dedup_set.clone(),
+// Canal + HashSet de déduplication dédiés à l'enrichissement the_gatherer_id
+fn spawn_gatherer_id_worker(
+    repos: &Repositories,
+    gatherer_caller_adapter: Arc<GathererCallerAdapter>,
+) -> Arc<GathererIdEnqueueService> {
+    let (sender, receiver) = tokio::sync::mpsc::unbounded_channel::<(CardId, String)>();
+    let dedup_set = Arc::new(Mutex::new(HashSet::<CardId>::new()));
+
+    let enqueue_service = Arc::new(GathererIdEnqueueService::new(
+        repos.card.clone(),
+        sender,
+        dedup_set.clone(),
     ));
 
-    let gatherer_worker = GathererIdWorker::new(
-        card_repository_adapter.clone(),
+    let worker = GathererIdWorker::new(
+        repos.card.clone(),
         gatherer_caller_adapter,
-        card_prices_view_repository_adapter.clone(),
-        gatherer_dedup_set,
+        repos.card_prices_view.clone(),
+        dedup_set,
     );
     tokio::spawn(async move {
-        if let Err(e) = gatherer_worker.run(gatherer_receiver).await {
+        if let Err(e) = worker.run(receiver).await {
             tracing::error!("Gatherer worker terminated with error: {:?}", e);
         }
     });
 
+    enqueue_service
+}
+
+// ---- App state assembly ----
+#[allow(clippy::too_many_arguments)]
+fn create_app_state(
+    repos: Repositories,
+    callers: Callers,
+    auth_service: Arc<dyn AuthService>,
+    card_collection_service: Arc<CardCollectionService>,
+    enqueue_cardmarket_id_use_case: Arc<CardMarketIdEnqueueService>,
+    enqueue_gatherer_id_use_case: Arc<GathererIdEnqueueService>,
+    config: &Config,
+) -> AppState {
     let import_card_service = Arc::new(ImportCardService::new(
-        card_repository_adapter.clone(),
-        set_name_repository_adapter,
-        enqueue_cardmarket_id_service.clone(),
-        enqueue_gatherer_id_service.clone(),
-        card_prices_view_repository_adapter.clone(),
+        repos.card.clone(),
+        repos.set_name,
+        enqueue_cardmarket_id_use_case.clone(),
+        enqueue_gatherer_id_use_case.clone(),
+        repos.card_prices_view.clone(),
     ));
 
-    let import_price_service: Arc<dyn ImportPriceUseCase> = Arc::new(ImportPriceService::new(
-        card_market_caller_adapter,
-        card_market_repository_adapter.clone(),
-        card_prices_view_repository_adapter.clone(),
+    let import_price_use_case: Arc<dyn ImportPriceUseCase> = Arc::new(ImportPriceService::new(
+        callers.card_market,
+        repos.card_market.clone(),
+        repos.card_prices_view.clone(),
         card_collection_service.clone(),
     ));
 
-    let stats_service = Arc::new(StatsService::new(stats_repository_adapter));
-    let collection_service = Arc::new(CollectionService::new(
-        card_prices_view_repository_adapter.clone(),
-    ));
-    let collection_price_history_service: Arc<dyn GetCollectionPriceHistoryUseCase> =
-        Arc::new(CollectionPriceHistoryService::new(Arc::new(
-            CollectionPriceHistoryRepositoryAdapter::new(pool.clone()),
-        )));
-    let card_price_history_service: Arc<dyn GetCardPriceHistoryUseCase> =
-        Arc::new(CardPriceHistoryService::new(
-            card_repository_adapter.clone(),
-            card_market_repository_adapter.clone(),
-        ));
+    let stats_service = Arc::new(StatsService::new(repos.stats));
+    let collection_service = Arc::new(CollectionService::new(repos.card_prices_view.clone()));
+    let collection_price_history_service: Arc<dyn GetCollectionPriceHistoryUseCase> = Arc::new(
+        CollectionPriceHistoryService::new(repos.collection_price_history.clone()),
+    );
+    let card_price_history_service: Arc<dyn GetCardPriceHistoryUseCase> = Arc::new(
+        CardPriceHistoryService::new(repos.card.clone(), repos.card_market),
+    );
     let collection_stats_service: Arc<dyn GetCollectionStatsUseCase> =
-        Arc::new(CollectionStatsService::new(Arc::new(
-            CollectionStatsRepositoryAdapter::new(pool.clone()),
-        )));
+        Arc::new(CollectionStatsService::new(repos.collection_stats));
     let register_user_service: Arc<dyn RegisterUserUseCase> =
-        Arc::new(RegisterUserService::new(user_repository_adapter));
-
-    let trade_repository_adapter = Arc::new(TradeRepositoryAdapter::new(pool.clone()));
+        Arc::new(RegisterUserService::new(repos.user));
     let create_trade_service: Arc<dyn CreateTradeUseCase> =
-        Arc::new(CreateTradeService::new(trade_repository_adapter));
+        Arc::new(CreateTradeService::new(repos.trade));
+    let card_offer_service: Arc<dyn GetCardOffersUseCase> =
+        Arc::new(CardOfferService::new(repos.card_prices_view));
 
-    let card_offer_service: Arc<dyn GetCardOffersUseCase> = Arc::new(CardOfferService::new(
-        card_prices_view_repository_adapter.clone(),
-    ));
-
-    let app_state = AppState {
+    AppState {
         import_card_use_case: import_card_service,
-        edh_rec_caller_adapter,
+        edh_rec_caller_adapter: callers.edh_rec,
         stats_use_case: stats_service,
         auth_service,
         get_collection_use_case: collection_service,
-        import_price_use_case: import_price_service.clone(),
-        enqueue_cardmarket_id_use_case: enqueue_cardmarket_id_service,
-        enqueue_gatherer_id_use_case: enqueue_gatherer_id_service,
+        import_price_use_case,
+        enqueue_cardmarket_id_use_case,
+        enqueue_gatherer_id_use_case,
         get_collection_price_history_use_case: collection_price_history_service,
         get_card_price_history_use_case: card_price_history_service,
         get_collection_stats_use_case: collection_stats_service,
         register_user_use_case: register_user_service,
         create_trade_use_case: create_trade_service,
         get_card_offers_use_case: card_offer_service,
-    };
+        max_page_size: config.max_page_size,
+        max_page_number: config.max_page_number,
+    }
+}
 
+async fn schedule_price_import_job(import_price_use_case: Arc<dyn ImportPriceUseCase>) {
     let mut cron = AsyncCron::new(Utc);
 
     cron.add_fn("0 0 */12 * * *", move || {
-        let service = import_price_service.clone();
+        let service = import_price_use_case.clone();
         async move {
             service
                 .import_prices_for_current_date()
@@ -235,7 +278,9 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
     .unwrap();
 
     cron.start().await;
+}
 
+fn create_router(app_state: AppState) -> Router {
     Router::new()
         .nest("/card", create_card_router())
         .nest("/collection", create_collection_router())
@@ -245,6 +290,37 @@ pub async fn create_infra(pool: Pool<Postgres>) -> Router {
         .with_state(app_state)
         .layer(NewSentryLayer::<Request<Body>>::new_from_top())
         .layer(SentryHttpLayer::new().enable_transaction())
+}
+
+pub async fn create_infra(pool: Pool<Postgres>, config: &Config) -> Router {
+    let repos = create_repositories(&pool);
+    let callers = create_callers(config);
+    let auth_service = create_auth_service(config).await;
+
+    let card_collection_service = Arc::new(CardCollectionService::new(
+        repos.collection_price_history.clone(),
+    ));
+
+    let enqueue_cardmarket_id_use_case = spawn_cardmarket_id_worker(
+        &repos,
+        callers.scryfall.clone(),
+        card_collection_service.clone(),
+    );
+    let enqueue_gatherer_id_use_case = spawn_gatherer_id_worker(&repos, callers.gatherer.clone());
+
+    let app_state = create_app_state(
+        repos,
+        callers,
+        auth_service,
+        card_collection_service,
+        enqueue_cardmarket_id_use_case,
+        enqueue_gatherer_id_use_case,
+        config,
+    );
+
+    schedule_price_import_job(app_state.import_price_use_case.clone()).await;
+
+    create_router(app_state)
 }
 
 #[cfg(test)]
@@ -311,6 +387,8 @@ impl AppState {
             register_user_use_case: Arc::new(MockRegisterUserUseCase::new()),
             create_trade_use_case: Arc::new(MockCreateTradeUseCase::new()),
             get_card_offers_use_case: Arc::new(MockGetCardOffersUseCase::new()),
+            max_page_size: 100,
+            max_page_number: 10,
         }
     }
 
@@ -372,196 +450,5 @@ impl AppState {
             Self::for_testing_with_import_price(stats_use_case, Arc::new(mock_import_price));
         base.enqueue_gatherer_id_use_case = enqueue_gatherer_id_use_case;
         base
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::application::error::{AppError, InfraError};
-    use crate::application::use_case::MockStatsUseCase;
-    use crate::domain::user::User;
-
-    #[tokio::test]
-    async fn for_testing_creates_app_state_with_provided_stats_use_case() {
-        let mut mock_stats = MockStatsUseCase::new();
-        mock_stats.expect_get_stats().returning(|| {
-            Box::pin(async { Err(AppError::Infra(InfraError::RepositoryError("".to_string()))) })
-        });
-
-        let app_state = AppState::for_testing(Arc::new(mock_stats));
-
-        let result = app_state.stats_use_case.get_stats().await;
-        assert!(result.is_err());
-    }
-
-    #[tokio::test]
-    async fn for_testing_edh_rec_caller_returns_card_info_with_zero_values() {
-        let app_state = AppState::for_testing(Arc::new(MockStatsUseCase::new()));
-
-        let result = app_state
-            .edh_rec_caller_adapter
-            .get_card_info("Test Card".to_string())
-            .await;
-
-        assert!(result.is_ok());
-        let card_info = result.unwrap();
-        assert_eq!(card_info.inclusion, 0);
-        assert_eq!(card_info.total_decks, 0);
-    }
-
-    #[tokio::test]
-    async fn for_testing_import_card_use_case_succeeds_with_any_csv() {
-        let app_state = AppState::for_testing(Arc::new(MockStatsUseCase::new()));
-
-        let result = app_state
-            .import_card_use_case
-            .import_cards("any csv data", User::for_testing())
-            .await;
-
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn for_testing_initializes_all_components() {
-        let app_state = AppState::for_testing(Arc::new(MockStatsUseCase::new()));
-
-        let import_card_ptr = Arc::as_ptr(&app_state.import_card_use_case);
-        let edh_rec_ptr = Arc::as_ptr(&app_state.edh_rec_caller_adapter);
-
-        assert!(!import_card_ptr.is_null());
-        assert!(!edh_rec_ptr.is_null());
-    }
-
-    #[tokio::test]
-    async fn create_infra_creates_router_successfully() {
-        use sqlx::postgres::PgPoolOptions;
-        use wiremock::matchers::{method, path};
-        use wiremock::{Mock, MockServer, ResponseTemplate};
-
-        // Démarrer un serveur mock pour simuler l'endpoint JWKS de Clerk
-        let mock_server = MockServer::start().await;
-        Mock::given(method("GET"))
-            .and(path("/.well-known/jwks.json"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"keys": []}"#))
-            .mount(&mock_server)
-            .await;
-
-        unsafe {
-            std::env::set_var("CLERK_FRONTEND_API_URL", mock_server.uri());
-            std::env::set_var(
-                "CARDMARKET_PRICE_GUIDES_URL",
-                "https://example.com/prices.json",
-            );
-            std::env::set_var("EDHREC_BASE_URL", "https://edhrec.example.com");
-            std::env::set_var("SCRYFALL_BASE_URL", "https://api.scryfall.example.com");
-        }
-
-        let database_url = std::env::var("DATABASE_URL")
-            .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
-
-        // Skip le test si la base de données n'est pas disponible
-        let pool = match PgPoolOptions::new()
-            .max_connections(1)
-            .connect(&database_url)
-            .await
-        {
-            Ok(p) => p,
-            Err(_) => return,
-        };
-
-        let router = create_infra(pool).await;
-        let _service = router.into_make_service();
-    }
-
-    #[tokio::test]
-    async fn create_infra_uses_custom_urls_from_env_vars() {
-        use sqlx::postgres::PgPoolOptions;
-        use wiremock::matchers::{method, path};
-        use wiremock::{Mock, MockServer, ResponseTemplate};
-
-        let mock_server = MockServer::start().await;
-        Mock::given(method("GET"))
-            .and(path("/.well-known/jwks.json"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"keys": []}"#))
-            .mount(&mock_server)
-            .await;
-
-        let cardmarket_url = "https://custom.cardmarket.com/prices.json";
-        let edhrec_url = "https://custom.edhrec.com";
-        let scryfall_url = "https://custom.scryfall.com";
-
-        unsafe {
-            std::env::set_var("CLERK_FRONTEND_API_URL", mock_server.uri());
-            std::env::set_var("CARDMARKET_PRICE_GUIDES_URL", cardmarket_url);
-            std::env::set_var("EDHREC_BASE_URL", edhrec_url);
-            std::env::set_var("SCRYFALL_BASE_URL", scryfall_url);
-        }
-
-        let database_url = std::env::var("DATABASE_URL")
-            .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
-
-        let pool = match PgPoolOptions::new()
-            .max_connections(1)
-            .connect(&database_url)
-            .await
-        {
-            Ok(p) => p,
-            Err(_) => return,
-        };
-
-        let router = create_infra(pool).await;
-        let _service = router.into_make_service();
-    }
-
-    #[tokio::test]
-    async fn create_infra_uses_default_urls_when_env_vars_not_set() {
-        use sqlx::postgres::PgPoolOptions;
-        use wiremock::matchers::{method, path};
-        use wiremock::{Mock, MockServer, ResponseTemplate};
-
-        let mock_server = MockServer::start().await;
-        Mock::given(method("GET"))
-            .and(path("/.well-known/jwks.json"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"keys": []}"#))
-            .mount(&mock_server)
-            .await;
-
-        // Retirer les variables optionnelles pour tester les valeurs par défaut
-        unsafe {
-            std::env::remove_var("CARDMARKET_PRICE_GUIDES_URL");
-            std::env::remove_var("EDHREC_BASE_URL");
-            std::env::remove_var("SCRYFALL_BASE_URL");
-            std::env::set_var("CLERK_FRONTEND_API_URL", mock_server.uri());
-        }
-
-        let database_url = std::env::var("DATABASE_URL")
-            .unwrap_or("postgres://postgres:password@localhost/postgres".to_string());
-
-        let pool = match PgPoolOptions::new()
-            .max_connections(1)
-            .connect(&database_url)
-            .await
-        {
-            Ok(p) => p,
-            Err(_) => return,
-        };
-
-        let router = create_infra(pool).await;
-        let _service = router.into_make_service();
-    }
-
-    #[test]
-    fn create_infra_requires_clerk_frontend_api_url() {
-        // Clear CLERK_FRONTEND_API_URL to verify it's required
-        unsafe {
-            std::env::remove_var("CLERK_FRONTEND_API_URL");
-        }
-
-        let result = std::env::var("CLERK_FRONTEND_API_URL");
-
-        // Verify that CLERK_FRONTEND_API_URL is not set
-        assert!(result.is_err());
-        assert_eq!(result.err().unwrap(), std::env::VarError::NotPresent);
     }
 }

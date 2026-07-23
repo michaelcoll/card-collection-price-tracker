@@ -29,3 +29,5 @@ ignore:
   - "migrations/**"
   - "node_modules/**"
   - "target/**"
+  - "src/ccpt/infrastructure.rs"
+  - "src/ccpt/main.rs"

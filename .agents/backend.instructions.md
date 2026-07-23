@@ -23,8 +23,12 @@
 
 ## Configuration
 
-- **Env Vars**: `DATABASE_URL`, `BACKEND_PORT` (default: 8080), `CARDMARKET_PRICE_GUIDES_URL`, `EDHREC_BASE_URL`,
-  `SCRYFALL_BASE_URL`, `CLERK_FRONTEND_API_URL` (required).
+- **Typed config**: `config.rs` (`Config::from_env()`) centralizes all startup config; `create_infra()` never reads
+  env vars directly.
+- **Env Vars**: `DATABASE_URL`, `DATABASE_MAX_CONNECTIONS` (default: 5), `BACKEND_PORT` (default: 8080),
+  `SCRYFALL_RATE_LIMIT_TOKENS` (default: 8), `MAX_PAGE_SIZE` (default: 100), `MAX_PAGE_NUMBER` (default: 10),
+  `CARDMARKET_PRICE_GUIDES_URL`, `EDHREC_BASE_URL`, `SCRYFALL_BASE_URL`, `GATHERER_BASE_URL`,
+  `CLERK_FRONTEND_API_URL` (required).
 - **Scheduled Tasks**: Price import every 12 hours via `AsyncCron` in `infrastructure.rs`.
 
 ## Data Ingestion

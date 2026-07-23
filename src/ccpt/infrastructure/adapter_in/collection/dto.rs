@@ -118,10 +118,6 @@ pub(crate) fn default_page_size() -> u32 {
     20
 }
 
-pub(crate) fn max_page_size() -> u32 {
-    100
-}
-
 #[derive(Deserialize, TS)]
 #[ts(export, export_to = "CollectionParams.ts")]
 pub(crate) struct CollectionParams {

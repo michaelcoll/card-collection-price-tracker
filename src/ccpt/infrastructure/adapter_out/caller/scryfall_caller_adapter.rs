@@ -12,14 +12,18 @@ pub struct ScryfallCallerAdapter {
 }
 
 impl ScryfallCallerAdapter {
-    pub fn new(scryfall_base_url: impl Into<String>) -> Self {
+    pub fn new(scryfall_base_url: impl Into<String>, rate_limit_tokens: u32) -> Self {
+        let rate_limit_tokens = u64::from(rate_limit_tokens);
         Self {
             client: reqwest::Client::builder()
                 .user_agent("reqwest")
                 .build()
                 .unwrap(),
             scryfall_base_url: scryfall_base_url.into(),
-            ratelimiter: Ratelimiter::builder(8).max_tokens(8).build().unwrap(),
+            ratelimiter: Ratelimiter::builder(rate_limit_tokens)
+                .max_tokens(rate_limit_tokens)
+                .build()
+                .unwrap(),
         }
     }
 }
@@ -75,7 +79,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let adapter = ScryfallCallerAdapter::new(mock_server.uri());
+        let adapter = ScryfallCallerAdapter::new(mock_server.uri(), 8);
         let result = adapter.get_card_market_id(card_id).await;
 
         assert!(result.is_ok());
@@ -94,7 +98,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let adapter = ScryfallCallerAdapter::new(mock_server.uri());
+        let adapter = ScryfallCallerAdapter::new(mock_server.uri(), 8);
         let result = adapter.get_card_market_id(card_id).await;
 
         assert!(result.is_ok());
@@ -113,7 +117,7 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let adapter = ScryfallCallerAdapter::new(mock_server.uri());
+        let adapter = ScryfallCallerAdapter::new(mock_server.uri(), 8);
         let result = adapter.get_card_market_id(card_id).await;
 
         assert!(result.is_ok());
